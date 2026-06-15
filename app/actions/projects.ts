@@ -178,7 +178,8 @@ export async function generateClientAccess(
         user_metadata: { role: "CLIENT" },
       });
     if (createError) return { error: createError.message };
-    authUserId = newUserData.user.id;
+    authUserId = newUserData.user?.id ?? null;
+    if (!authUserId) return { error: "Failed to create the client's login." };
 
     await prisma.profile.upsert({
       where: { id: authUserId },
