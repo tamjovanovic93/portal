@@ -1,0 +1,357 @@
+/* ============================================================
+   ZERO POINT — design system (Claude Design handoff)
+   Two themes (.theme-dark internal app, .theme-light client portal)
+   share one set of component classes that read CSS vars from the
+   nearest themed ancestor.
+   ============================================================ */
+
+:root {
+  /* fonts — same across both themes (mapped from next/font vars) */
+  --f-display: var(--font-fredoka), system-ui, sans-serif;
+  --f-tech:    var(--font-chakra), system-ui, sans-serif;
+  --f-sans:    var(--font-plex-sans), system-ui, sans-serif;
+  --f-mono:    var(--font-plex-mono), ui-monospace, monospace;
+}
+
+/* ---------- DARK theme (internal team app) ---------- */
+.theme-dark {
+  --bg:        #0A0E0C;
+  --panel:     #0C1110;
+  --surface:   #111714;
+  --surface-2: #161E1A;
+  --surface-3: #1C2721;
+  --overlay:   #0d1311;
+
+  --border:   rgba(200, 240, 224, 0.075);
+  --border-2: rgba(200, 240, 224, 0.14);
+  --border-3: rgba(200, 240, 224, 0.22);
+
+  --text:   #E9F1ED;
+  --text-2: #97A59E;
+  --text-3: #63716B;
+  --text-4: #475450;
+
+  --mint:        #56E8C8;
+  --mint-bright: #74F3D8;
+  --mint-deep:   #2BBfA2;
+  --mint-soft:   #56E8C8;
+  --amber:  #E7B65E;
+  --purple: #BB8DE8;
+  --rose:   #F08A7E;
+  --blue:   #74B2F0;
+
+  --mint-fill:   rgba(86, 232, 200, 0.10);
+  --mint-fill-2: rgba(86, 232, 200, 0.16);
+  --amber-fill:  rgba(231, 182, 94, 0.12);
+  --purple-fill: rgba(187, 141, 232, 0.12);
+  --rose-fill:   rgba(240, 138, 126, 0.12);
+  --blue-fill:   rgba(116, 178, 240, 0.12);
+
+  --feature-grad: linear-gradient(135deg, #14241D 0%, #0E1714 60%, #0C1311 100%);
+  --mint-glow: 0 0 24px -6px rgba(86, 232, 200, 0.45);
+
+  --r-sm: 7px; --r-md: 10px; --r-lg: 14px; --r-xl: 18px;
+  --shadow:    0 1px 0 rgba(255,255,255,0.025) inset, 0 10px 30px -12px rgba(0,0,0,0.6);
+  --shadow-lg: 0 1px 0 rgba(255,255,255,0.03) inset, 0 24px 60px -20px rgba(0,0,0,0.75);
+  --sidebar-w: 248px;
+
+  --grid-dot: rgba(120,180,160,0.05);
+}
+
+/* ---------- LIGHT theme (client portal) ---------- */
+.theme-light {
+  --bg:        #EEF2EF;
+  --panel:     #FFFFFF;
+  --surface:   #FFFFFF;
+  --surface-2: #F3F7F4;
+  --surface-3: #E8EFEA;
+  --overlay:   #F7FAF8;
+
+  --border:   rgba(18, 44, 34, 0.085);
+  --border-2: rgba(18, 44, 34, 0.15);
+  --border-3: rgba(18, 44, 34, 0.26);
+
+  --text:   #102019;
+  --text-2: #54635C;
+  --text-3: #859089;
+  --text-4: #AAB4AE;
+
+  --mint:        #0E9E80;
+  --mint-bright: #12B894;
+  --mint-deep:   #0A7560;
+  --mint-soft:   #56E8C8;
+  --amber:  #B07A18;
+  --purple: #8552C6;
+  --rose:   #CF5849;
+  --blue:   #2F73C9;
+
+  --mint-fill:   rgba(14, 158, 128, 0.10);
+  --mint-fill-2: rgba(14, 158, 128, 0.16);
+  --amber-fill:  rgba(176, 122, 24, 0.12);
+  --purple-fill: rgba(133, 82, 198, 0.12);
+  --rose-fill:   rgba(207, 88, 73, 0.12);
+  --blue-fill:   rgba(47, 115, 201, 0.12);
+
+  --feature-grad: linear-gradient(135deg, #E5F6F0 0%, #EFF7F3 60%, #FFFFFF 100%);
+  --mint-glow: 0 8px 22px -10px rgba(14, 158, 128, 0.55);
+
+  --r-sm: 8px; --r-md: 11px; --r-lg: 15px; --r-xl: 20px;
+  --shadow:    0 1px 2px rgba(18,44,34,0.04), 0 12px 30px -16px rgba(18,44,34,0.18);
+  --shadow-lg: 0 2px 6px rgba(18,44,34,0.06), 0 28px 60px -24px rgba(18,44,34,0.30);
+  --sidebar-w: 256px;
+
+  --grid-dot: rgba(18,44,34,0.04);
+}
+
+/* themed app surface fills the viewport + faint dotted grid */
+.theme-root {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--f-sans);
+  position: relative;
+  isolation: isolate;
+}
+.theme-root::before {
+  content: "";
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image: radial-gradient(var(--grid-dot) 1px, transparent 1px);
+  background-size: 26px 26px;
+  mask-image: radial-gradient(ellipse 120% 90% at 70% 0%, #000 30%, transparent 80%);
+}
+.theme-root > * { position: relative; z-index: 1; }
+.theme-root ::selection { background: rgba(86,232,200,0.28); color: #fff; }
+
+/* scrollbar (dark only — light keeps native) */
+.theme-dark *::-webkit-scrollbar { width: 10px; height: 10px; }
+.theme-dark *::-webkit-scrollbar-thumb { background: #1e2a25; border-radius: 8px; border: 2px solid var(--bg); }
+.theme-dark *::-webkit-scrollbar-thumb:hover { background: #2a3a33; }
+.theme-dark *::-webkit-scrollbar-track { background: transparent; }
+
+/* ============================================================
+   Type helpers
+   ============================================================ */
+.eyebrow {
+  font-family: var(--f-tech);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 11px; font-weight: 600;
+  color: var(--text-3);
+}
+.page-title {
+  font-family: var(--f-display);
+  font-weight: 600; letter-spacing: -0.01em; line-height: 1.02; margin: 0;
+}
+.tech { font-family: var(--f-tech); }
+.mono { font-family: var(--f-mono); }
+.mint { color: var(--mint); }
+.muted { color: var(--text-2); }
+.faint { color: var(--text-3); }
+.figure {
+  font-family: var(--f-tech);
+  font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0.01em;
+}
+
+/* ============================================================
+   Pills / badges
+   ============================================================ */
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--f-tech); text-transform: uppercase; letter-spacing: 0.1em;
+  font-size: 10.5px; font-weight: 600; padding: 3px 9px;
+  border-radius: var(--r-sm); border: 1px solid var(--border-2);
+  color: var(--text-2); background: rgba(127,127,127,0.04);
+  white-space: nowrap; line-height: 1.45;
+}
+.pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pill-mint   { color: var(--mint);   border-color: color-mix(in srgb, var(--mint) 40%, transparent);   background: var(--mint-fill); }
+.pill-amber  { color: var(--amber);  border-color: color-mix(in srgb, var(--amber) 40%, transparent);  background: var(--amber-fill); }
+.pill-purple { color: var(--purple); border-color: color-mix(in srgb, var(--purple) 40%, transparent); background: var(--purple-fill); }
+.pill-rose   { color: var(--rose);   border-color: color-mix(in srgb, var(--rose) 40%, transparent);   background: var(--rose-fill); }
+.pill-blue   { color: var(--blue);   border-color: color-mix(in srgb, var(--blue) 40%, transparent);   background: var(--blue-fill); }
+.pill.glow.pill-mint   { box-shadow: 0 0 16px -4px color-mix(in srgb, var(--mint) 55%, transparent); }
+.pill.glow.pill-amber  { box-shadow: 0 0 16px -4px color-mix(in srgb, var(--amber) 50%, transparent); }
+.pill.glow.pill-purple { box-shadow: 0 0 16px -4px color-mix(in srgb, var(--purple) 50%, transparent); }
+
+/* ============================================================
+   Cards
+   ============================================================ */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+}
+.card-pad { padding: 20px; }
+.feature {
+  background: var(--feature-grad);
+  border: 1px solid color-mix(in srgb, var(--mint) 18%, transparent);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow), 0 0 40px -18px color-mix(in srgb, var(--mint) 40%, transparent);
+}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 36px; padding: 0 14px; border-radius: var(--r-md);
+  font-family: var(--f-sans); font-size: 13px; font-weight: 600;
+  border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text);
+  transition: background .15s, border-color .15s, transform .05s, box-shadow .15s;
+  white-space: nowrap; cursor: pointer;
+}
+.btn:hover { background: var(--surface-3); border-color: var(--border-3); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn svg { width: 16px; height: 16px; }
+.btn-primary { background: var(--mint); color: #04130F; border-color: transparent; font-weight: 700; box-shadow: var(--mint-glow); }
+.btn-primary:hover { background: var(--mint-bright); }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--text-2); }
+.btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+.btn-sm { height: 30px; padding: 0 11px; font-size: 12.5px; border-radius: var(--r-sm); }
+.btn-icon { width: 36px; padding: 0; }
+.btn-icon.btn-sm { width: 30px; }
+
+/* ============================================================
+   Misc
+   ============================================================ */
+.hr { height: 1px; background: var(--border); border: 0; margin: 0; }
+.track { height: 4px; border-radius: 99px; background: rgba(127,127,127,0.14); overflow: hidden; }
+.track > span { display: block; height: 100%; border-radius: 99px; background: var(--mint); }
+
+/* ============================================================
+   Form controls + tables (used by Brief & Data, verification)
+   ============================================================ */
+.zp-input, .zp-select, .zp-textarea {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-family: var(--f-sans);
+  font-size: 13px;
+  padding: 7px 10px;
+  transition: border-color .12s, background .12s;
+}
+.zp-textarea { resize: vertical; line-height: 1.5; }
+.zp-input::placeholder, .zp-textarea::placeholder { color: var(--text-4); }
+.zp-input:focus, .zp-select:focus, .zp-textarea:focus {
+  outline: none; border-color: var(--mint); background: var(--surface-3);
+}
+.zp-select { appearance: none; background-color: var(--surface-2); }
+.zp-label { display: block; font-size: 11px; font-weight: 600; color: var(--text-2); margin-bottom: 5px; }
+
+.zp-table { width: 100%; font-size: 13px; border-collapse: collapse; }
+.zp-table th {
+  text-align: left; padding: 10px 14px;
+  font-family: var(--f-tech); text-transform: uppercase; letter-spacing: 0.06em;
+  font-size: 10.5px; font-weight: 600; color: var(--text-3);
+  border-bottom: 1px solid var(--border); background: var(--surface-2);
+  white-space: nowrap;
+}
+.zp-table td { padding: 10px 14px; color: var(--text); border-top: 1px solid var(--border); vertical-align: top; }
+.zp-table tbody tr:hover { background: var(--surface-2); }
+
+/* ============================================================
+   Dark-theme compatibility layer
+   Pages not yet hand-restyled use neutral/accent Tailwind utilities.
+   Remap them to theme tokens *inside .theme-dark only* so the whole
+   internal app reads as one dark surface. The client portal
+   (.theme-light) and Tailwind's own light defaults are untouched.
+   Unlayered rules here win over Tailwind's layered utilities.
+   ============================================================ */
+.theme-dark .bg-white,
+.theme-dark .bg-neutral-50 { background-color: var(--surface) !important; }
+.theme-dark .bg-neutral-100 { background-color: var(--surface-2) !important; }
+.theme-dark .bg-neutral-200 { background-color: var(--surface-3) !important; }
+.theme-dark .bg-neutral-900 { background-color: var(--mint) !important; color: #04130F !important; }
+
+.theme-dark .border-neutral-100,
+.theme-dark .border-neutral-200 { border-color: var(--border) !important; }
+.theme-dark .border-neutral-300 { border-color: var(--border-2) !important; }
+.theme-dark .border-neutral-400 { border-color: var(--border-3) !important; }
+.theme-dark .hover\:border-neutral-400:hover { border-color: var(--border-3) !important; }
+.theme-dark .divide-neutral-100 > :not([hidden]) ~ :not([hidden]),
+.theme-dark .divide-neutral-200 > :not([hidden]) ~ :not([hidden]) { border-color: var(--border) !important; }
+
+.theme-dark .text-neutral-900,
+.theme-dark .text-neutral-800 { color: var(--text) !important; }
+.theme-dark .text-neutral-700,
+.theme-dark .text-neutral-600 { color: var(--text-2) !important; }
+.theme-dark .text-neutral-500 { color: var(--text-3) !important; }
+.theme-dark .text-neutral-400,
+.theme-dark .text-neutral-300 { color: var(--text-4) !important; }
+
+.theme-dark .hover\:bg-neutral-50:hover,
+.theme-dark .hover\:bg-neutral-100:hover { background-color: var(--surface-2) !important; }
+.theme-dark .hover\:text-neutral-900:hover { color: var(--text) !important; }
+
+/* semantic accent chips → theme accent fills */
+.theme-dark .bg-green-50, .theme-dark .bg-green-100 { background-color: var(--mint-fill) !important; }
+.theme-dark .text-green-700, .theme-dark .text-green-800 { color: var(--mint) !important; }
+.theme-dark .border-green-200, .theme-dark .border-green-300 { border-color: color-mix(in srgb, var(--mint) 35%, transparent) !important; }
+.theme-dark .bg-amber-50, .theme-dark .bg-amber-100 { background-color: var(--amber-fill) !important; }
+.theme-dark .text-amber-700, .theme-dark .text-amber-800, .theme-dark .text-amber-600 { color: var(--amber) !important; }
+.theme-dark .border-amber-200, .theme-dark .border-amber-300 { border-color: color-mix(in srgb, var(--amber) 35%, transparent) !important; }
+.theme-dark .bg-red-50, .theme-dark .bg-red-100 { background-color: var(--rose-fill) !important; }
+.theme-dark .text-red-700, .theme-dark .text-red-600, .theme-dark .text-red-500 { color: var(--rose) !important; }
+.theme-dark .border-red-200, .theme-dark .border-red-300 { border-color: color-mix(in srgb, var(--rose) 35%, transparent) !important; }
+.theme-dark .bg-blue-50, .theme-dark .bg-blue-100 { background-color: var(--blue-fill) !important; }
+.theme-dark .text-blue-700, .theme-dark .text-blue-600 { color: var(--blue) !important; }
+.theme-dark .border-blue-200, .theme-dark .border-l-blue-500 { border-color: color-mix(in srgb, var(--blue) 45%, transparent) !important; }
+.theme-dark .bg-violet-50, .theme-dark .bg-violet-100, .theme-dark .bg-purple-50 { background-color: var(--purple-fill) !important; }
+.theme-dark .text-violet-700, .theme-dark .text-purple-700 { color: var(--purple) !important; }
+
+/* inputs in not-yet-restyled pages */
+.theme-dark input:not([type="checkbox"]):not([type="radio"]),
+.theme-dark textarea,
+.theme-dark select {
+  background-color: var(--surface-2);
+  border-color: var(--border-2);
+  color: var(--text);
+}
+.theme-dark input::placeholder, .theme-dark textarea::placeholder { color: var(--text-4); }
+
+/* ============================================================
+   Light-theme compatibility layer (client portal)
+   Same idea, scoped to .theme-light → sage-white tokens.
+   ============================================================ */
+.theme-light .bg-white { background-color: var(--surface) !important; }
+.theme-light .bg-neutral-50 { background-color: var(--bg) !important; }
+.theme-light .bg-neutral-100 { background-color: var(--surface-3) !important; }
+.theme-light .border-neutral-100,
+.theme-light .border-neutral-200 { border-color: var(--border) !important; }
+.theme-light .border-neutral-300 { border-color: var(--border-2) !important; }
+.theme-light .hover\:border-neutral-400:hover { border-color: var(--border-3) !important; }
+.theme-light .divide-neutral-100 > :not([hidden]) ~ :not([hidden]),
+.theme-light .divide-neutral-200 > :not([hidden]) ~ :not([hidden]) { border-color: var(--border) !important; }
+.theme-light .text-neutral-900, .theme-light .text-neutral-800 { color: var(--text) !important; }
+.theme-light .text-neutral-700, .theme-light .text-neutral-600 { color: var(--text-2) !important; }
+.theme-light .text-neutral-500 { color: var(--text-3) !important; }
+.theme-light .text-neutral-400, .theme-light .text-neutral-300 { color: var(--text-4) !important; }
+.theme-light .hover\:bg-neutral-50:hover, .theme-light .hover\:bg-neutral-100:hover { background-color: var(--surface-2) !important; }
+.theme-light .hover\:text-neutral-900:hover { color: var(--text) !important; }
+.theme-light .bg-green-50, .theme-light .bg-green-100 { background-color: var(--mint-fill) !important; }
+.theme-light .text-green-700, .theme-light .text-green-800 { color: var(--mint) !important; }
+.theme-light .bg-amber-50, .theme-light .bg-amber-100 { background-color: var(--amber-fill) !important; }
+.theme-light .text-amber-700, .theme-light .text-amber-800, .theme-light .text-amber-600 { color: var(--amber) !important; }
+.theme-light .bg-red-50, .theme-light .bg-red-100 { background-color: var(--rose-fill) !important; }
+.theme-light .text-red-700, .theme-light .text-red-600 { color: var(--rose) !important; }
+.theme-light .bg-blue-50, .theme-light .bg-blue-100 { background-color: var(--blue-fill) !important; }
+.theme-light .text-blue-700, .theme-light .text-blue-600 { color: var(--blue) !important; }
+.theme-light .border-l-blue-500 { border-color: color-mix(in srgb, var(--blue) 50%, transparent) !important; }
+.theme-light .bg-violet-50, .theme-light .bg-purple-50 { background-color: var(--purple-fill) !important; }
+.theme-light .text-violet-700, .theme-light .text-purple-700 { color: var(--purple) !important; }
+.theme-light input:not([type="checkbox"]):not([type="radio"]),
+.theme-light textarea,
+.theme-light select {
+  background-color: var(--surface);
+  border-color: var(--border-2);
+  color: var(--text);
+}
+.theme-light input::placeholder, .theme-light textarea::placeholder { color: var(--text-4); }
+
+@keyframes zpFadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.fade-up { animation: zpFadeUp .4s cubic-bezier(.2,.7,.3,1) both; }
+@keyframes zpPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+.live-dot { animation: zpPulse 2s ease-in-out infinite; }

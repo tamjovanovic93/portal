@@ -1,0 +1,167 @@
+{
+  "_meta": {
+    "client_id": "",
+    "company_name": "",
+    "brand_name": "",
+    "created_date": "",
+    "created_by": "",
+    "schema_version": "1.0",
+    "status": "draft",
+    "source": "Generated from verified client_profile.json"
+  },
+
+  "objectives": [
+    {
+      "objective_id": "OBJ_001",
+      "level": "primary | sub",
+      "parent_objective_id": null,
+      "objective_text": "",
+      "timeframe": "",
+      "owner": "Zero-Point | Client | Shared",
+      "priority": 1,
+      "status": "not started",
+      "notes": null,
+      "initiatives": [
+        {
+          "initiative_id": "INI_001",
+          "initiative_name": "",
+          "description": "",
+          "viability_score": null,
+          "effort_score": null,
+          "priority_score": null,
+          "status": "proposed",
+          "timeline": "",
+          "budget_estimate": "",
+          "notes": null
+        }
+      ],
+      "key_results": [
+        {
+          "kr_id": "KR_001",
+          "level": 1,
+          "kr_description": "",
+          "measurement_type": "number | percentage | binary | score",
+          "baseline": "",
+          "target": "",
+          "current_value": "0",
+          "deadline": "",
+          "status": "on track",
+          "notes": null
+        }
+      ]
+    }
+  ],
+
+  "cross_cutting": [
+    {
+      "initiative_id": "XCI_001",
+      "name": "",
+      "description": "",
+      "objectives_served": [],
+      "type": "asset | process | campaign | infrastructure",
+      "status": "proposed",
+      "timeline": "",
+      "notes": null,
+      "deployment": [
+        {
+          "deployment_id": "XCD_001",
+          "channel": "",
+          "asset_type": "image | video | copy | template | other",
+          "deployment_frequency": "",
+          "status": "planned",
+          "notes": null
+        }
+      ],
+      "key_results": [
+        {
+          "kr_id": "XKR_001",
+          "metric_name": "",
+          "measurement_type": "number | percentage | binary",
+          "baseline": 0,
+          "target": null,
+          "current_value": 0,
+          "frequency": "monthly | weekly | quarterly",
+          "status": "on track",
+          "notes": null
+        }
+      ]
+    }
+  ],
+
+  "funnel": [
+    {
+      "stage_id": "FS_001",
+      "stage_name": "Awareness",
+      "stage_order": 1,
+      "stage_description": "",
+      "entry_criteria": "",
+      "exit_criteria": "",
+      "key_content_types": [],
+      "key_metrics": [],
+      "notes": null
+    },
+    {
+      "stage_id": "FS_002",
+      "stage_name": "Consideration",
+      "stage_order": 2,
+      "stage_description": "",
+      "entry_criteria": "",
+      "exit_criteria": "",
+      "key_content_types": [],
+      "key_metrics": [],
+      "notes": null
+    },
+    {
+      "stage_id": "FS_003",
+      "stage_name": "Decision",
+      "stage_order": 3,
+      "stage_description": "",
+      "entry_criteria": "",
+      "exit_criteria": "",
+      "key_content_types": [],
+      "key_metrics": [],
+      "notes": null
+    },
+    {
+      "stage_id": "FS_004",
+      "stage_name": "Retention",
+      "stage_order": 4,
+      "stage_description": "",
+      "entry_criteria": "",
+      "exit_criteria": "",
+      "key_content_types": [],
+      "key_metrics": [],
+      "notes": null
+    }
+  ],
+
+  "calendar": [
+    {
+      "calendar_id": "CAL_001",
+      "period_type": "month | quarter",
+      "period_label": "",
+      "theme": "",
+      "focus_area": "",
+      "key_campaigns": [],
+      "content_priorities": [],
+      "channel_focus": [],
+      "notes": null
+    }
+  ],
+
+  "risk_register": [
+    {
+      "risk_id": "RISK_001",
+      "risk_category": "brand | market | operational | financial | reputational",
+      "risk_description": "",
+      "probability": null,
+      "impact": null,
+      "risk_score": null,
+      "mitigation_strategy": "",
+      "contingency_plan": "",
+      "owner": "Zero-Point | Client | Shared",
+      "status": "active",
+      "notes": null
+    }
+  ]
+}

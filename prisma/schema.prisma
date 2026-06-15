@@ -1,0 +1,327 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = []
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  TEAM
+  CLIENT
+}
+
+enum ProjectMode {
+  PROJECT
+  ONGOING
+}
+
+enum ProjectType {
+  WEBSITE
+  BRANDING
+  MARKETING
+  SOFTWARE_CRM
+  OTHER
+}
+
+enum StageStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  GATE_PENDING  // waiting on client approval
+  COMPLETE
+}
+
+enum Visibility {
+  INTERNAL
+  SHARED
+}
+
+enum ApprovalMethod {
+  PORTAL
+  EMAIL
+  VERBAL
+  OTHER
+}
+
+enum DocumentStatus {
+  DRAFT
+  SENT
+  APPROVED
+  REJECTED
+}
+
+enum TaskStatus {
+  PLANNING
+  NEEDS_APPROVAL
+  IN_PROGRESS
+  WAITING_FINAL_APPROVAL
+  DONE
+}
+
+enum TaskType {
+  DELIVERABLE
+  INTERNAL
+  FIX_UPDATE
+}
+
+enum TaskOwnerRole {
+  PROJECT_MANAGER
+  DEV_TEAM
+  DESIGN_TEAM
+  CLIENT
+}
+
+enum CycleStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum MaterialItemStatus {
+  pending
+  submitted
+  received
+  verified
+}
+
+enum EventType {
+  MEETING
+  DEADLINE
+  APPROVAL_GATE
+  APPOINTMENT
+  MILESTONE
+  TASK_DUE
+}
+
+// ─── Portal Tables ────────────────────────────────────────────────────────────
+
+// Maps 1:1 to auth.users — created by trigger on signup
+model Profile {
+  id        String   @id @db.Uuid  // matches auth.users.id
+  email     String   @unique
+  name      String?
+  role      UserRole
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  projectsAsClient Project[]    @relation("ClientProjects")
+  assignedTasks    Task[]       @relation("AssignedTasks")
+  approvals        Approval[]
+  gatedStages      ProjectStage[] @relation("GateApprover")
+  activityLogs     ActivityLog[]  @relation("ActivityActor")
+
+  @@map("profiles")
+}
+
+model Project {
+  id          String      @id @default(uuid()) @db.Uuid
+  name        String
+  clientId    String      @map("client_id") @db.Uuid
+  client      Profile     @relation("ClientProjects", fields: [clientId], references: [id])
+  type        ProjectType
+  mode        ProjectMode @default(PROJECT)
+  currentStage Int        @default(1) @map("current_stage") // 1–8
+  isArchived  Boolean     @default(false) @map("is_archived")
+  briefReviewedAt DateTime? @map("brief_reviewed_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  stages      ProjectStage[]
+  documents   Document[]
+  approvals   Approval[]
+  assets      ProjectAsset[]
+  materials   MaterialItem[]
+  cycles      Cycle[]
+  events      AppEvent[]
+  activityLog ActivityLog[]
+
+  // Client data (profile / verification queue / strategy) now lives in JSON
+  // Document rows (templateType client_profile / verification_queue / strategy),
+  // not relational tables. See lib/intake.
+
+  @@map("projects")
+}
+
+model ProjectStage {
+  id              String      @id @default(uuid()) @db.Uuid
+  projectId       String      @map("project_id") @db.Uuid
+  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stageNumber     Int         @map("stage_number") // 1–8
+  status          StageStatus @default(NOT_STARTED)
+  gateApproved    Boolean     @default(false) @map("gate_approved")
+  gateApprovedAt  DateTime?   @map("gate_approved_at")
+  gateApproverId  String?     @map("gate_approver_id") @db.Uuid
+  gateApprover    Profile?    @relation("GateApprover", fields: [gateApproverId], references: [id])
+  completedAt     DateTime?   @map("completed_at")
+  notes           String?
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@unique([projectId, stageNumber])
+  @@map("project_stages")
+}
+
+model Document {
+  id           String         @id @default(uuid()) @db.Uuid
+  projectId    String         @map("project_id") @db.Uuid
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stageNumber  Int            @map("stage_number")
+  templateType String         @map("template_type") // e.g. "intake_form", "scope_of_work"
+  title        String
+  content      Json           // JSONB — stores form field values
+  status       DocumentStatus @default(DRAFT)
+  sentAt       DateTime?      @map("sent_at")
+  completedAt  DateTime?      @map("completed_at")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  @@index([projectId])
+  @@map("documents")
+}
+
+model Approval {
+  id          String         @id @default(uuid()) @db.Uuid
+  projectId   String         @map("project_id") @db.Uuid
+  project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stageNumber Int?           @map("stage_number") // 3, 4, or 6 — null for task approvals
+  taskId      String?        @map("task_id") @db.Uuid  // set for retainer deliverable approvals
+  task        Task?          @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  approvedById String        @map("approved_by_id") @db.Uuid
+  approvedBy  Profile        @relation(fields: [approvedById], references: [id])
+  method      ApprovalMethod @default(PORTAL)
+  notes       String?
+  approvedAt  DateTime       @default(now()) @map("approved_at")
+  assetId     String?        @map("asset_id") @db.Uuid  // which asset/upload was approved
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  @@index([projectId])
+  @@index([taskId])
+  @@map("approvals")
+}
+
+model ProjectAsset {
+  id          String     @id @default(uuid()) @db.Uuid
+  projectId   String     @map("project_id") @db.Uuid
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stageNumber Int?       @map("stage_number")
+  storagePath String     @map("storage_path")
+  filename    String
+  mimeType    String?    @map("mime_type")
+  sizeBytes   Int?       @map("size_bytes")
+  visibility  Visibility @default(INTERNAL)
+  folder      String?    // copy | visuals — for client uploads
+  materialId  String?    @map("material_id") @db.Uuid
+  approvedAt  DateTime?  @map("approved_at")
+  approvedById String?   @map("approved_by_id") @db.Uuid
+  version     Int        @default(1)
+  uploadedBy  String     @map("uploaded_by") @db.Uuid
+  uploadedAt  DateTime   @default(now()) @map("uploaded_at")
+  notes       String?
+
+  @@index([projectId])
+  @@map("project_assets")
+}
+
+model MaterialItem {
+  id          String     @id @default(uuid()) @db.Uuid
+  projectId   String     @map("project_id") @db.Uuid
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  label       String
+  category    String     // copy | visuals | info | access | approval
+  status      MaterialItemStatus @default(pending)
+  fileRef     String?    @map("file_ref") // storage path if file uploaded
+  notes       String?
+  dueDate     DateTime?  @map("due_date")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  @@index([projectId])
+  @@map("material_items")
+}
+
+// Ongoing / retainer mode
+
+model Cycle {
+  id        String      @id @default(uuid()) @db.Uuid
+  projectId String      @map("project_id") @db.Uuid
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  focus     String?
+  startDate DateTime    @map("start_date")
+  endDate   DateTime?   @map("end_date")
+  status    CycleStatus @default(ACTIVE)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  tasks     Task[]
+
+  @@index([projectId])
+  @@map("cycles")
+}
+
+model Task {
+  id          String     @id @default(uuid()) @db.Uuid
+  cycleId     String     @map("cycle_id") @db.Uuid
+  cycle       Cycle      @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  name        String
+  type        TaskType   @default(DELIVERABLE)
+  status      TaskStatus @default(PLANNING)
+  description String?
+  assigneeId  String?    @map("assignee_id") @db.Uuid
+  assignee    Profile?   @relation("AssignedTasks", fields: [assigneeId], references: [id])
+  ownerRole   TaskOwnerRole? @map("owner_role")
+  isBlocker   Boolean    @default(false) @map("is_blocker")
+  blockerResolver TaskOwnerRole? @map("blocker_resolver")
+  unblockedAt DateTime?  @map("unblocked_at")
+  requiresClientApproval Boolean @default(false) @map("requires_client_approval")
+  dueDate     DateTime?  @map("due_date")
+  completedAt DateTime?  @map("completed_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  approvals   Approval[]
+
+  @@index([cycleId])
+  @@map("tasks")
+}
+
+// ─── Calendar & Activity ──────────────────────────────────────────────────────
+
+model AppEvent {
+  id          String    @id @default(uuid()) @db.Uuid
+  title       String
+  startAt     DateTime  @map("start_at")
+  endAt       DateTime? @map("end_at")
+  allDay      Boolean   @default(false) @map("all_day")
+  description String?
+  type        EventType @default(APPOINTMENT)
+  projectId   String?   @map("project_id") @db.Uuid
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  sourceType  String?   @map("source_type") // manual | task | material | stage
+  sourceId    String?   @map("source_id")
+  createdBy   String    @map("created_by") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([projectId])
+  @@map("app_events")
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String?  @map("project_id") @db.Uuid
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  actorId   String?  @map("actor_id") @db.Uuid
+  actor     Profile? @relation("ActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+  action    String
+  detail    String?
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([projectId])
+  @@map("activity_log")
+}

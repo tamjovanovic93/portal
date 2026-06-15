@@ -1,0 +1,243 @@
+{
+  "_meta": {
+    "client_id": "",
+    "company_name": "",
+    "brand_name": "",
+    "created_date": "",
+    "created_by": "",
+    "schema_version": "1.0",
+    "status": "draft"
+  },
+
+  "company": {
+    "company_id": "",
+    "company_name": "",
+    "brand_name": "",
+    "industry": "",
+    "sub_industry": "",
+    "founded_year": null,
+    "geographic_market": "",
+    "website_url": "",
+    "market_positioning": "",
+    "brand_essence": "",
+    "key_differentiators": [],
+    "current_challenge": "",
+    "business_type": "",
+    "verification_status": "pending"
+  },
+
+  "contacts": [
+    {
+      "contact_id": "CON_001",
+      "type": "address | phone | email | social | website",
+      "platform": "",
+      "value": "",
+      "is_primary": true,
+      "is_public": true,
+      "verified": "yes",
+      "notes": null
+    }
+  ],
+
+  "services": [
+    {
+      "service_id": "SVC_001",
+      "service_name": "",
+      "category": "",
+      "description": "",
+      "price_min": null,
+      "price_max": null,
+      "price_currency": "",
+      "is_most_popular": false,
+      "is_most_profitable": false,
+      "target_personas": [],
+      "funnel_stage": "awareness | consideration | decision | retention",
+      "notes": null,
+      "verification_status": "pending"
+    }
+  ],
+
+  "pricing_modifiers": [
+    {
+      "modifier_id": "MOD_001",
+      "type": "discount | surcharge | loyalty | bundle",
+      "name": "",
+      "description": "",
+      "value": null,
+      "value_type": "percentage | fixed_amount",
+      "conditions": "",
+      "active": true,
+      "verification_status": "pending"
+    }
+  ],
+
+  "budget": [
+    {
+      "budget_id": "BUD_001",
+      "channel": "",
+      "monthly_allocation": null,
+      "currency": "",
+      "percentage_of_total": null,
+      "priority_level": "high | medium | low",
+      "notes": null,
+      "verification_status": "pending"
+    }
+  ],
+
+  "goals": [
+    {
+      "goal_id": "GOAL_001",
+      "goal_level": "primary | sub | tactical",
+      "parent_goal_id": null,
+      "goal_description": "",
+      "timeframe": "",
+      "success_metric": "",
+      "current_status": "not started",
+      "priority": 1,
+      "notes": null
+    }
+  ],
+
+  "stats": [
+    {
+      "stat_id": "STAT_001",
+      "stat_name": "",
+      "stat_value": "",
+      "stat_unit": "",
+      "source": "",
+      "date_captured": "",
+      "verification_status": "pending",
+      "notes": null
+    }
+  ],
+
+  "competitors": [
+    {
+      "competitor_id": "COMP_001",
+      "name": "",
+      "website": "",
+      "market_positioning": "",
+      "price_range": "",
+      "why_audience_uses_them": "",
+      "their_strength": "",
+      "their_weakness": "",
+      "our_opportunity": "",
+      "verification_status": "pending"
+    }
+  ],
+
+  "personas": [
+    {
+      "group": {
+        "group_id": "PG_001",
+        "group_name": "",
+        "age_range": "",
+        "shared_characteristic": "",
+        "size_estimate": "small | medium | large",
+        "priority_level": "primary | secondary | tertiary",
+        "notes": null
+      },
+      "persona_id": "P001",
+      "persona_name": "",
+      "age_range": "",
+      "gender": "",
+      "location": "",
+      "occupation": "",
+      "income_level": "",
+      "core_values": [],
+      "psychographics": {
+        "intro_extrovert": null,
+        "practical_aspirational": null,
+        "price_quality": null,
+        "mainstream_niche": null,
+        "brand_loyalty": null
+      },
+      "typical_entry_stage": "awareness | consideration | decision",
+      "notes": null,
+      "pain_points": [
+        {
+          "pain_id": "PAIN_001",
+          "pain_description": "",
+          "severity": null,
+          "category": "product | price | trust | fit | experience",
+          "surfaces_at_stage": "awareness | consideration | decision | retention",
+          "strategic_implication": "",
+          "verification_status": "pending"
+        }
+      ],
+      "needs": [
+        {
+          "need_id": "NEED_001",
+          "need_description": "",
+          "priority": null,
+          "need_type": "functional | emotional | social | identity",
+          "priority_at_stage": "awareness | consideration | decision | retention",
+          "notes": null
+        }
+      ],
+      "objections": [
+        {
+          "objection_id": "OBJ_001",
+          "objection_text": "",
+          "objection_type": "price | trust | quality | fit | timing | availability",
+          "response_text": "",
+          "arises_at_stage": "awareness | consideration | decision",
+          "priority": null,
+          "notes": null
+        }
+      ]
+    }
+  ],
+
+  "benefits": [
+    {
+      "benefit_id": "BEN_001",
+      "service_id": "SVC_001",
+      "persona_id": "P001",
+      "benefit_description": "",
+      "proof_point": "",
+      "resonates_at_stage": "awareness | consideration | decision | retention",
+      "priority": null,
+      "notes": null
+    }
+  ],
+
+  "messaging": {
+    "brand_voice": [
+      {
+        "observation_id": "BV_001",
+        "type": "DO | DONT",
+        "observation": "",
+        "example": "",
+        "applies_to_channel": "all",
+        "rationale": "",
+        "priority": "high | medium | low",
+        "source": ""
+      }
+    ],
+    "key_messages": [
+      {
+        "message_id": "MSG_001",
+        "persona_id": "P001",
+        "message_text": "",
+        "message_type": "headline | hook | body | cta | caption",
+        "tone_notes": "",
+        "use_at_stage": "awareness | consideration | decision | retention",
+        "channel_suitability": [],
+        "approved": "pending",
+        "notes": null
+      }
+    ],
+    "slogans": [
+      {
+        "slogan_id": "SLG_001",
+        "slogan_text": "",
+        "type": "tagline | service_slogan | campaign | seasonal",
+        "persona_fit": [],
+        "best_for_stage": "awareness | consideration | decision | retention",
+        "approved": "pending",
+        "usage_notes": ""
+      }
+    ]
+  }
+}
