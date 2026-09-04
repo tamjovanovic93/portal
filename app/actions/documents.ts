@@ -126,3 +126,29 @@ export async function deleteDocument(documentId: string) {
 
   revalidatePath(`/projects/${doc.projectId}/stage/${doc.stageNumber}`);
 }
+
+// Team marks a client-submitted document as reviewed/handled — moves it out of
+// "Action Required" into completed/history.
+export async function markDocumentHandled(documentId: string) {
+  await getTeamUser();
+  const doc = await prisma.document.findUnique({ where: { id: documentId } });
+  if (!doc) throw new Error("Document not found");
+  await prisma.document.update({
+    where: { id: documentId },
+    data: { handledAt: new Date() },
+  });
+  revalidatePath(`/projects/${doc.projectId}`);
+  revalidatePath("/dashboard");
+}
+
+export async function unmarkDocumentHandled(documentId: string) {
+  await getTeamUser();
+  const doc = await prisma.document.findUnique({ where: { id: documentId } });
+  if (!doc) throw new Error("Document not found");
+  await prisma.document.update({
+    where: { id: documentId },
+    data: { handledAt: null },
+  });
+  revalidatePath(`/projects/${doc.projectId}`);
+  revalidatePath("/dashboard");
+}

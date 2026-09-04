@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AppSidebar from "@/components/team/AppSidebar";
 import Topbar from "@/components/team/Topbar";
+import NotificationsBell from "@/components/NotificationsBell";
 
 export default async function TeamLayout({
   children,
@@ -20,7 +21,7 @@ export default async function TeamLayout({
     <div className="theme-dark theme-root flex h-screen">
       <AppSidebar userEmail={user.email ?? ""} />
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-        <Topbar />
+        <Topbar notifications={<NotificationsBell />} />
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>

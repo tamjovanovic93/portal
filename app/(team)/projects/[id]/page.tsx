@@ -4,9 +4,16 @@ import { prisma } from "@/lib/prisma";
 import StageProgressBar from "@/components/team/project/StageProgressBar";
 import ClientLoginLink from "@/components/team/project/ClientLoginLink";
 import IntakePipeline from "@/components/team/project/IntakePipeline";
+import OnboardingPipeline from "@/components/team/project/OnboardingPipeline";
 import { getProfile, getStrategy } from "@/lib/intake/store";
+import { getBriefs } from "@/app/actions/project-brief";
+import BriefsSection from "@/components/team/brief/BriefsSection";
+import { getRoster } from "@/lib/team";
+import { listByTaskIds } from "@/lib/questions";
+import CycleBoard from "@/components/team/retainer/CycleBoard";
+import { createTaskGroup } from "@/app/actions/retainer";
 import ApprovalCard from "@/components/team/project/ApprovalCard";
-import AdvanceStageButton from "@/components/team/AdvanceStageButton";
+import MarkReviewedButton from "@/components/team/project/MarkReviewedButton";
 import MaterialRow from "@/components/team/MaterialRow";
 import AddMaterialForm from "@/components/team/AddMaterialForm";
 import RetainerView from "./RetainerView";
@@ -36,20 +43,6 @@ const TYPE_LABELS: Record<string, string> = {
   MARKETING: "Marketing",
   SOFTWARE_CRM: "Software / CRM",
   OTHER: "Other",
-};
-
-const STAGE_STATUS_LABEL: Record<string, string> = {
-  NOT_STARTED: "Not started",
-  IN_PROGRESS: "In progress",
-  GATE_PENDING: "Gate pending",
-  COMPLETE: "Complete",
-};
-
-const STAGE_STATUS_STYLE: Record<string, string> = {
-  NOT_STARTED: "text-neutral-600",
-  IN_PROGRESS: "text-blue-600",
-  GATE_PENDING: "text-amber-600",
-  COMPLETE: "text-neutral-900",
 };
 
 const MATERIAL_STATUS_LABEL: Record<string, string> = {
@@ -83,7 +76,6 @@ function formatBytes(bytes: number | null): string {
 }
 
 const TABS = [
-  { tabId: "stages", label: "Stages" },
   { tabId: "files", label: "Files" },
   { tabId: "approvals", label: "Approvals" },
 ];
@@ -97,7 +89,7 @@ export default async function ProjectPage({
 }) {
   const { id } = await params;
   const { tab: rawTab } = await searchParams;
-  const activeTab = rawTab ?? "stages";
+  const activeTab = rawTab ?? "files";
 
   // Retainers don't use the 8-stage path — render the cycle-based view instead.
   const modeRow = await prisma.project.findUnique({
@@ -124,14 +116,45 @@ export default async function ProjectPage({
         where: { status: "APPROVED" },
         orderBy: { completedAt: "desc" },
       },
+      cycles: {
+        orderBy: { createdAt: "desc" },
+        include: {
+          tasks: {
+            orderBy: { createdAt: "asc" },
+            include: { _count: { select: { approvals: true } } },
+          },
+        },
+      },
     },
   });
 
   if (!project) notFound();
 
+  // Onboarding docs (Initial Client Form, Offer, Intake) — any status.
+  const onboardingDocs = await prisma.document.findMany({
+    where: {
+      projectId: id,
+      templateType: { in: ["initial_client_form", "financial_offer", "intake_form"] },
+    },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, templateType: true, status: true },
+  });
+  const initialFormDoc =
+    onboardingDocs.find((d) => d.templateType === "initial_client_form") ?? null;
+  const offerDoc = onboardingDocs.find((d) => d.templateType === "financial_offer") ?? null;
+  const intakeDoc = onboardingDocs.find((d) => d.templateType === "intake_form") ?? null;
+
   // Client profile + strategy now live as JSON documents (the intake pipeline).
-  const [profile, strategy] = await Promise.all([getProfile(id), getStrategy(id)]);
+  const [profile, strategy, briefs, roster] = await Promise.all([getProfile(id), getStrategy(id), getBriefs(id), getRoster()]);
   const company = profile?.company ?? null;
+
+  // Data contacts offered as a convenience for the Brief's client-contact picker.
+  const dataContacts = ((profile?.contacts ?? []) as Record<string, unknown>[])
+    .filter((c) => c.value)
+    .map((c) => ({
+      label: `${String(c.type ?? c.platform ?? "contact")} · ${String(c.value)}`,
+      value: String(c.value),
+    }));
   const primaryGoals = (profile?.goals ?? [])
     .filter((g) => g.goal_level === "primary")
     .slice(0, 3);
@@ -177,6 +200,10 @@ export default async function ProjectPage({
   const designFeedbackDoc = project.documents.find(
     (d) => d.templateType === "design_feedback"
   );
+  // Feedback is an action item only until the team has reviewed (handled) it.
+  const wireframeFeedbackActive = !!wireframeFeedbackDoc && !wireframeFeedbackDoc.handledAt;
+  const designFeedbackActive = !!designFeedbackDoc && !designFeedbackDoc.handledAt;
+
   // Feedback docs have no fillable template page — they're surfaced as their own
   // action items linking to the stage, never to /documents/[id].
   const submittedDocs = project.documents.filter(
@@ -185,6 +212,9 @@ export default async function ProjectPage({
       d.templateType !== "design_feedback" &&
       !(d.templateType === "intake_form" && databaseGenerated)
   );
+  // Client-submitted forms awaiting review vs already reviewed (→ history).
+  const docsToReview = submittedDocs.filter((d) => !d.handledAt);
+  const docsHandled = submittedDocs.filter((d) => d.handledAt);
 
   const MESSAGE_TYPE_LABELS: Record<string, string> = {
     headline: "Headline", hook: "Hook", body: "Body copy",
@@ -209,18 +239,64 @@ export default async function ProjectPage({
   const clientApproved = buildApprovals("yes");
   const changesRequested = buildApprovals("no");
 
+  // Needs the team to act now.
   const hasActions =
-    gateStages.length > 0 ||
-    pendingMaterials.length > 0 ||
+    docsToReview.length > 0 ||
     submittedMaterials.length > 0 ||
-    submittedDocs.length > 0 ||
-    !!wireframeFeedbackDoc ||
-    !!designFeedbackDoc ||
-    pendingApprovals.length > 0 ||
-    clientApproved.length > 0 ||
     changesRequested.length > 0 ||
-    clientUploads.length > 0;
+    clientUploads.length > 0 ||
+    wireframeFeedbackActive ||
+    designFeedbackActive;
+  // Waiting on the client (in-flight — no team action needed).
+  const hasWaiting =
+    gateStages.length > 0 || pendingMaterials.length > 0 || pendingApprovals.length > 0;
+  // Recently completed items that used to be action items.
+  const hasCompleted = docsHandled.length > 0 || clientApproved.length > 0;
+
   const intakeSubmitted = project.documents.some((d) => d.templateType === "intake_form");
+  const intakeApproved = project.documents.some(
+    (d) => d.templateType === "intake_form" && d.status === "APPROVED"
+  );
+  // Onboarding + brief pipelines belong to the setup stage only.
+  const setupComplete = !!project.briefPublishedAt || project.currentStage >= 3;
+
+  // Tasks / to-do lists (reused Cycle+Task) — available from Strategy (stage 2).
+  const activeCycles = project.cycles.filter((c) => c.status === "ACTIVE");
+  const openTasks = activeCycles.reduce(
+    (n, c) => n + c.tasks.filter((t) => t.status !== "DONE").length,
+    0
+  );
+  const tasksAvailable = project.currentStage >= 2;
+  // Task-level questions (one grouped query for the whole project — no N+1).
+  const allTaskIds = project.cycles.flatMap((c) => c.tasks.map((t) => t.id));
+  const questionsByTask = await listByTaskIds(allTaskIds);
+  function toBoardCycle(c: (typeof activeCycles)[number]) {
+    return {
+      id: c.id,
+      name: c.name,
+      focus: c.focus,
+      startDate: c.startDate,
+      endDate: c.endDate,
+      status: c.status as "ACTIVE" | "CLOSED",
+      tasks: c.tasks.map((t) => ({
+        id: t.id,
+        name: t.name,
+        type: t.type,
+        status: t.status,
+        description: t.description,
+        dueDate: t.dueDate,
+        completedAt: t.completedAt,
+        ownerRole: t.ownerRole,
+        isBlocker: t.isBlocker,
+        blockerResolver: t.blockerResolver,
+        unblockedAt: t.unblockedAt,
+        requiresClientApproval: t.requiresClientApproval,
+        approvalCount: t._count.approvals,
+        assigneeId: t.assigneeId,
+        questions: questionsByTask.get(t.id) ?? [],
+      })),
+    };
+  }
 
   type ActivityItem = {
     type: "upload" | "approval" | "stage_complete";
@@ -259,13 +335,13 @@ export default async function ProjectPage({
   const receivedMaterials = project.materials.filter(
     (m) => m.status === "received" || m.status === "verified"
   ).length;
-  // Client-submitted things that need a team response.
+  // Client-submitted things that still need a team response (not yet handled).
   const openClientItems =
-    submittedDocs.length +
+    docsToReview.length +
     submittedMaterials.length +
     clientUploads.length +
-    (wireframeFeedbackDoc ? 1 : 0) +
-    (designFeedbackDoc ? 1 : 0);
+    (wireframeFeedbackActive ? 1 : 0) +
+    (designFeedbackActive ? 1 : 0);
 
   type Gate = "pending" | "approved" | "ahead" | "none";
   const gateStatus: Gate =
@@ -281,12 +357,12 @@ export default async function ProjectPage({
   const mostUrgent: { text: string; tone: "amber" | "violet" | "blue" | "green" | "neutral" } =
     gateStages.length > 0
       ? { text: `Gate pending — ${STAGE_LABELS[gateStages[0].stageNumber]}`, tone: "amber" }
-      : wireframeFeedbackDoc
+      : wireframeFeedbackActive
       ? { text: "Wireframe feedback received — review", tone: "violet" }
-      : designFeedbackDoc
+      : designFeedbackActive
       ? { text: "Design feedback received — review", tone: "violet" }
-      : submittedDocs.length > 0
-      ? { text: `${submittedDocs[0].title} submitted — review`, tone: "green" }
+      : docsToReview.length > 0
+      ? { text: `${docsToReview[0].title} submitted — review`, tone: "green" }
       : submittedMaterials.length > 0
       ? { text: `${submittedMaterials[0].label} submitted — review`, tone: "blue" }
       : clientUploads.length > 0
@@ -295,6 +371,8 @@ export default async function ProjectPage({
       ? { text: `${pendingApprovals[0].kind} — awaiting client approval`, tone: "amber" }
       : pendingMaterials.length > 0
       ? { text: `${pendingMaterials[0].label} — pending from client`, tone: "amber" }
+      : openTasks > 0
+      ? { text: `${openTasks} open task${openTasks !== 1 ? "s" : ""}`, tone: "blue" }
       : { text: currentInfo?.description ?? "Team working", tone: "neutral" };
 
   const URGENT_DOT: Record<typeof mostUrgent.tone, string> = {
@@ -363,6 +441,19 @@ export default async function ProjectPage({
         </div>
       </div>
 
+      {/* ── Briefs — multiple per project, compact by default ── */}
+      <div className="mb-6">
+        <BriefsSection
+          projectId={id}
+          projectName={project.name}
+          currentStageLabel={STAGE_LABELS[project.currentStage] ?? `Stage ${project.currentStage}`}
+          briefs={briefs}
+          roster={roster}
+          dataContacts={dataContacts}
+          clientDefault={{ name: project.client.name ?? undefined, email: project.client.email }}
+        />
+      </div>
+
       {/* ── Status summary card — everything at a glance, before the scroll ──── */}
       <div className="mb-6 bg-white border border-neutral-200 rounded-lg p-5">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -418,32 +509,76 @@ export default async function ProjectPage({
         </div>
       </div>
 
-      {/* ── Intake pipeline (Agent 1 → verify → Agent 2) ─────────────────────── */}
-      {intakeSubmitted && (
-        <div className="mb-6 bg-white border border-neutral-200 rounded-lg px-5 py-4 space-y-4">
-          <div className="flex items-start justify-between gap-3">
+      {/* ── Project setup: onboarding + brief pipelines (only while in setup) ─── */}
+      {setupComplete ? (
+        <div className="mb-6 bg-white border border-neutral-200 rounded-lg px-5 py-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="w-5 h-5 rounded-full bg-green-600 text-white text-[11px] font-semibold flex items-center justify-center">✓</span>
             <div>
-              <p className="text-sm font-semibold text-neutral-900">Intake pipeline</p>
+              <p className="text-sm font-semibold text-neutral-900">Project setup — completed</p>
               <p className="text-xs text-neutral-700 mt-0.5">
-                {company?.company_name ?? project.client.name ?? "Client"} · profile, verification queue, and strategy.
+                Onboarding, intake, and brief are done. The record stays available.
               </p>
             </div>
-            {databaseGenerated && (
-              <Link
-                href={`/projects/${id}/brief`}
-                className="text-sm text-neutral-900 font-medium border border-neutral-400 px-4 py-2 rounded-md hover:bg-neutral-50 transition-colors shrink-0"
-              >
-                Brief & data →
-              </Link>
-            )}
           </div>
-          <IntakePipeline
-            projectId={id}
-            hasApprovedIntake={intakeSubmitted}
-            profileStatus={profileStatus}
-            hasStrategy={hasStrategy}
-          />
+          {databaseGenerated && (
+            <Link
+              href={`/projects/${id}/brief`}
+              className="text-sm text-neutral-900 font-medium border border-neutral-400 px-4 py-2 rounded-md hover:bg-neutral-50 transition-colors shrink-0"
+            >
+              Data →
+            </Link>
+          )}
         </div>
+      ) : (
+        <>
+          {/* Onboarding (Initial Form → Offer → Intake) — hidden once intake is done */}
+          {initialFormDoc && !intakeApproved && (
+            <div className="mb-6 bg-white border border-neutral-200 rounded-lg px-5 py-4 space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-neutral-900">Onboarding</p>
+                <p className="text-xs text-neutral-700 mt-0.5">
+                  Initial form, offer, and intake — before the brief pipeline.
+                </p>
+              </div>
+              <OnboardingPipeline
+                projectId={id}
+                initialForm={initialFormDoc}
+                offer={offerDoc}
+                intake={intakeDoc}
+              />
+            </div>
+          )}
+
+          {/* Brief pipeline (Agent 1 → verify → Agent 2 → publish) */}
+          {intakeSubmitted && (
+            <div className="mb-6 bg-white border border-neutral-200 rounded-lg px-5 py-4 space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-neutral-900">Intake pipeline</p>
+                  <p className="text-xs text-neutral-700 mt-0.5">
+                    {company?.company_name ?? project.client.name ?? "Client"} · profile, verification queue, and strategy.
+                  </p>
+                </div>
+                {databaseGenerated && (
+                  <Link
+                    href={`/projects/${id}/brief`}
+                    className="text-sm text-neutral-900 font-medium border border-neutral-400 px-4 py-2 rounded-md hover:bg-neutral-50 transition-colors shrink-0"
+                  >
+                    Data →
+                  </Link>
+                )}
+              </div>
+              <IntakePipeline
+                projectId={id}
+                hasApprovedIntake={intakeSubmitted}
+                profileStatus={profileStatus}
+                hasStrategy={hasStrategy}
+                briefPublished={!!project.briefPublishedAt}
+              />
+            </div>
+          )}
+        </>
       )}
 
       {/* ── Stage progress bar ───────────────────────────────────────────────── */}
@@ -462,116 +597,189 @@ export default async function ProjectPage({
         />
       </div>
 
-      {/* ── Action items ─────────────────────────────────────────────────────── */}
+      {/* ── Tasks / to-do lists (reused Cycle+Task) ──────────────────────────── */}
+      <div className="mb-6">
+        <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-3">
+          Tasks
+        </p>
+        {!tasksAvailable ? (
+          <p className="text-sm text-neutral-600">
+            Task lists become available from the Strategy stage (stage 2).
+          </p>
+        ) : (
+          <div className="space-y-6">
+            <form
+              action={createTaskGroup.bind(null, id)}
+              className="flex items-center gap-2 bg-white border border-neutral-200 rounded-lg px-4 py-3"
+            >
+              <input
+                name="name"
+                required
+                placeholder="New to-do list (e.g. Design tasks)"
+                className="flex-1 text-sm rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-700 transition-colors"
+              >
+                + Add list
+              </button>
+            </form>
+            {activeCycles.length === 0 ? (
+              <p className="text-sm text-neutral-600">
+                No to-do lists yet. Create one above to start adding tasks.
+              </p>
+            ) : (
+              <div className="space-y-6">
+                {activeCycles.map((c) => (
+                  <CycleBoard key={c.id} cycle={toBoardCycle(c)} projectId={id} variant="tasks" roster={roster} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Needs your attention (team must act) ─────────────────────────────── */}
       {hasActions && (
         <div className="mb-6">
           <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
-            Action required
+            Needs your attention
           </p>
           <div className="space-y-2">
-            {submittedDocs.map((doc) => (
-              <Link
+            {docsToReview.map((doc) => (
+              <div
                 key={doc.id}
-                href={`/projects/${id}/stage/${doc.stageNumber}/documents/${doc.id}`}
-                className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-4 py-3 hover:border-green-400 transition-colors"
+                className="flex items-center justify-between gap-3 bg-green-50 border border-green-200 rounded-lg px-4 py-3"
               >
-                <div>
-                  <p className="text-sm font-medium text-green-900">
-                    {doc.title}
-                  </p>
+                <Link
+                  href={`/projects/${id}/stage/${doc.stageNumber}/documents/${doc.id}`}
+                  className="min-w-0 flex-1 group"
+                >
+                  <p className="text-sm font-medium text-green-900 group-hover:underline">{doc.title}</p>
                   <p className="text-xs text-green-700 mt-0.5">
                     Submitted by client
-                    {doc.completedAt && (
-                      <> · {new Date(doc.completedAt).toLocaleDateString()}</>
-                    )}
+                    {doc.completedAt && <> · {new Date(doc.completedAt).toLocaleDateString()}</>}
                     {" · "}Stage {doc.stageNumber} — {STAGE_LABELS[doc.stageNumber]}
                   </p>
+                </Link>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link
+                    href={`/projects/${id}/stage/${doc.stageNumber}/documents/${doc.id}`}
+                    className="text-xs px-2 py-0.5 rounded-full bg-green-200 text-green-800 font-medium"
+                  >
+                    Review →
+                  </Link>
+                  <MarkReviewedButton
+                    documentId={doc.id}
+                    className="text-xs px-2.5 py-1 rounded-full bg-white border border-green-300 text-green-800 font-medium hover:bg-green-100 transition-colors shrink-0"
+                  />
                 </div>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-green-200 text-green-800 font-medium shrink-0">
-                  Review →
-                </span>
-              </Link>
+              </div>
             ))}
-            {wireframeFeedbackDoc && (
-              <Link
-                href={`/projects/${id}/stage/3`}
-                className="flex items-center justify-between gap-3 bg-violet-50 border border-violet-300 border-l-4 border-l-violet-500 rounded-lg px-5 py-4 hover:border-violet-400 transition-colors"
-              >
-                <div className="flex items-center gap-3">
+            {wireframeFeedbackActive && wireframeFeedbackDoc && (
+              <div className="flex items-center justify-between gap-3 bg-violet-50 border border-violet-300 border-l-4 border-l-violet-500 rounded-lg px-5 py-4">
+                <Link href={`/projects/${id}/stage/3`} className="flex items-center gap-3 min-w-0 flex-1 group">
                   <span className="flex items-center justify-center w-8 h-8 rounded-full bg-violet-200 text-violet-800 shrink-0">
                     <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M14 8c0 2.8-2.7 5-6 5-.9 0-1.7-.2-2.5-.5L2 13l.8-2.8C2.3 9.5 2 8.8 2 8c0-2.8 2.7-5 6-5s6 2.2 6 5Z" /></svg>
                   </span>
                   <div>
-                    <p className="text-base font-semibold text-violet-900">
-                      Wireframe feedback received
-                    </p>
+                    <p className="text-base font-semibold text-violet-900 group-hover:underline">Wireframe feedback received</p>
                     <p className="text-xs text-violet-700 mt-0.5">
                       Client has reviewed the wireframes and left feedback
-                      {wireframeFeedbackDoc.completedAt && (
-                        <> · {new Date(wireframeFeedbackDoc.completedAt).toLocaleDateString()}</>
-                      )}
+                      {wireframeFeedbackDoc.completedAt && <> · {new Date(wireframeFeedbackDoc.completedAt).toLocaleDateString()}</>}
                     </p>
                   </div>
-                </div>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-violet-200 text-violet-800 font-medium shrink-0">
-                  View feedback →
-                </span>
-              </Link>
+                </Link>
+                <MarkReviewedButton documentId={wireframeFeedbackDoc.id} className="text-xs px-2.5 py-1 rounded-full bg-white border border-violet-300 text-violet-800 font-medium hover:bg-violet-100 transition-colors shrink-0" />
+              </div>
             )}
-            {designFeedbackDoc && (
-              <Link
-                href={`/projects/${id}/stage/4`}
-                className="flex items-center justify-between gap-3 bg-violet-50 border border-violet-300 border-l-4 border-l-violet-500 rounded-lg px-5 py-4 hover:border-violet-400 transition-colors"
-              >
-                <div className="flex items-center gap-3">
+            {designFeedbackActive && designFeedbackDoc && (
+              <div className="flex items-center justify-between gap-3 bg-violet-50 border border-violet-300 border-l-4 border-l-violet-500 rounded-lg px-5 py-4">
+                <Link href={`/projects/${id}/stage/4`} className="flex items-center gap-3 min-w-0 flex-1 group">
                   <span className="flex items-center justify-center w-8 h-8 rounded-full bg-violet-200 text-violet-800 shrink-0">
                     <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M14 8c0 2.8-2.7 5-6 5-.9 0-1.7-.2-2.5-.5L2 13l.8-2.8C2.3 9.5 2 8.8 2 8c0-2.8 2.7-5 6-5s6 2.2 6 5Z" /></svg>
                   </span>
                   <div>
-                    <p className="text-base font-semibold text-violet-900">
-                      Design feedback received
-                    </p>
+                    <p className="text-base font-semibold text-violet-900 group-hover:underline">Design feedback received</p>
                     <p className="text-xs text-violet-700 mt-0.5">
                       Client has reviewed the designs and left feedback
-                      {designFeedbackDoc.completedAt && (
-                        <> · {new Date(designFeedbackDoc.completedAt).toLocaleDateString()}</>
-                      )}
+                      {designFeedbackDoc.completedAt && <> · {new Date(designFeedbackDoc.completedAt).toLocaleDateString()}</>}
                     </p>
                   </div>
-                </div>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-violet-200 text-violet-800 font-medium shrink-0">
-                  View feedback →
-                </span>
-              </Link>
+                </Link>
+                <MarkReviewedButton documentId={designFeedbackDoc.id} className="text-xs px-2.5 py-1 rounded-full bg-white border border-violet-300 text-violet-800 font-medium hover:bg-violet-100 transition-colors shrink-0" />
+              </div>
             )}
+            {submittedMaterials.map((m) => (
+              <div key={m.id} className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-blue-900">{m.label}</p>
+                  <p className="text-xs text-blue-700 mt-0.5 capitalize">
+                    {m.category} · Submitted by client — needs review
+                  </p>
+                </div>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-200 text-blue-800 font-medium">Review</span>
+              </div>
+            ))}
+            {clientUploads.map((a) => (
+              <ClientUploadAction
+                key={a.id}
+                assetId={a.id}
+                filename={a.filename}
+                folder={a.folder}
+                uploadedAt={a.uploadedAt.toISOString()}
+              />
+            ))}
+            {changesRequested.map((item) => (
+              <ApprovalCard
+                key={item.id}
+                projectId={id}
+                id={item.id}
+                kind={item.itemKind}
+                variant="revise"
+                headline={`${item.kind} — client requested changes`}
+                text={item.text}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Waiting on client (in-flight, no team action) ────────────────────── */}
+      {hasWaiting && (
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
+            Waiting on client
+          </p>
+          <div className="space-y-2">
             {gateStages.map((s) => (
-              <div
-                key={s.id}
-                className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-300 border-l-4 border-l-amber-500 rounded-lg px-5 py-4"
-              >
+              <div key={s.id} className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-300 border-l-4 border-l-amber-500 rounded-lg px-5 py-4">
                 <div className="flex items-center gap-3">
                   <span className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-200 text-amber-800 shrink-0">
                     <svg className="w-4 h-4" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><rect x="2.5" y="5.5" width="7" height="5" rx="1" /><path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" /></svg>
                   </span>
                   <div>
-                    <p className="text-base font-semibold text-amber-900">
-                      Gate pending — {STAGE_LABELS[s.stageNumber]}
-                    </p>
-                    <p className="text-xs text-amber-700 mt-0.5">
-                      Waiting for client approval to advance
-                    </p>
+                    <p className="text-base font-semibold text-amber-900">Gate pending — {STAGE_LABELS[s.stageNumber]}</p>
+                    <p className="text-xs text-amber-700 mt-0.5">Waiting for client approval to advance</p>
                   </div>
                 </div>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-200 text-amber-800 font-medium shrink-0">
-                  Attention
-                </span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-200 text-amber-800 font-medium shrink-0">Waiting</span>
               </div>
             ))}
+            {pendingApprovals.map((item) => (
+              <ApprovalCard
+                key={item.id}
+                projectId={id}
+                id={item.id}
+                kind={item.itemKind}
+                variant="pending"
+                headline={`${item.kind} — awaiting client approval`}
+                text={item.text}
+              />
+            ))}
             {pendingMaterials.slice(0, 3).map((m) => (
-              <div
-                key={m.id}
-                className="flex items-center justify-between bg-white border border-neutral-200 rounded-lg px-4 py-2"
-              >
+              <div key={m.id} className="flex items-center justify-between bg-white border border-neutral-200 rounded-lg px-4 py-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
                   <p className="text-sm text-neutral-700 truncate">{m.label}</p>
@@ -589,41 +797,28 @@ export default async function ProjectPage({
                 {pendingMaterials.length - 3 !== 1 ? "s" : ""}
               </p>
             )}
-            {submittedMaterials.map((m) => (
-              <div
-                key={m.id}
-                className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-3"
-              >
-                <div>
-                  <p className="text-sm font-medium text-blue-900">{m.label}</p>
-                  <p className="text-xs text-blue-700 mt-0.5 capitalize">
-                    {m.category} · Submitted by client — needs review
+          </div>
+        </div>
+      )}
+
+      {/* ── Recently completed (history of former action items) ──────────────── */}
+      {hasCompleted && (
+        <details className="mb-6 group">
+          <summary className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2 cursor-pointer hover:text-neutral-900 select-none list-none">
+            Recently completed ({docsHandled.length + clientApproved.length})
+          </summary>
+          <div className="space-y-2 mt-2">
+            {docsHandled.map((doc) => (
+              <div key={doc.id} className="flex items-center justify-between gap-3 bg-white border border-neutral-200 rounded-lg px-4 py-3">
+                <Link href={`/projects/${id}/stage/${doc.stageNumber}/documents/${doc.id}`} className="min-w-0 flex-1 group">
+                  <p className="text-sm text-neutral-700 group-hover:underline">{doc.title}</p>
+                  <p className="text-xs text-neutral-500 mt-0.5">
+                    Reviewed{doc.handledAt && <> · {new Date(doc.handledAt).toLocaleDateString()}</>}
+                    {" · "}Stage {doc.stageNumber} — {STAGE_LABELS[doc.stageNumber]}
                   </p>
-                </div>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-200 text-blue-800 font-medium">
-                  Review
-                </span>
+                </Link>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-medium shrink-0">Reviewed ✓</span>
               </div>
-            ))}
-            {clientUploads.map((a) => (
-              <ClientUploadAction
-                key={a.id}
-                assetId={a.id}
-                filename={a.filename}
-                folder={a.folder}
-                uploadedAt={a.uploadedAt.toISOString()}
-              />
-            ))}
-            {pendingApprovals.map((item) => (
-              <ApprovalCard
-                key={item.id}
-                projectId={id}
-                id={item.id}
-                kind={item.itemKind}
-                variant="pending"
-                headline={`${item.kind} — awaiting client approval`}
-                text={item.text}
-              />
             ))}
             {clientApproved.map((item) => (
               <ApprovalCard
@@ -636,19 +831,8 @@ export default async function ProjectPage({
                 text={item.text}
               />
             ))}
-            {changesRequested.map((item) => (
-              <ApprovalCard
-                key={item.id}
-                projectId={id}
-                id={item.id}
-                kind={item.itemKind}
-                variant="revise"
-                headline={`${item.kind} — client requested changes`}
-                text={item.text}
-              />
-            ))}
           </div>
-        </div>
+        </details>
       )}
 
       {/* ── Materials checklist ──────────────────────────────────────────────── */}
@@ -799,7 +983,7 @@ export default async function ProjectPage({
           {/* Brief snapshot */}
           <div>
             <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-3">
-              Brief snapshot
+              Data snapshot
             </p>
             <div className="border border-neutral-200 rounded-lg bg-white p-4 space-y-2.5">
               {company ? (
@@ -847,7 +1031,7 @@ export default async function ProjectPage({
                   href={`/projects/${id}/brief`}
                   className="text-xs text-neutral-700 hover:text-neutral-800 transition-colors"
                 >
-                  Full brief & data →
+                  View all data →
                 </Link>
               </div>
             </div>
@@ -910,73 +1094,9 @@ export default async function ProjectPage({
             href={`/projects/${id}/brief`}
             className="px-4 py-2.5 text-sm font-medium text-neutral-700 hover:text-neutral-700 transition-colors border-b-2 border-transparent -mb-px"
           >
-            Brief & data ↗
+            Data ↗
           </Link>
         </nav>
-
-        {/* Stages tab */}
-        {activeTab === "stages" && (
-          <div className="space-y-2">
-            {project.stages.map((stage) => {
-              const info = STAGE_INFO[stage.stageNumber];
-              const isCurrent = stage.stageNumber === project.currentStage;
-              return (
-                <div
-                  key={stage.stageNumber}
-                  className={`rounded-lg border px-5 py-4 flex items-center justify-between bg-white ${
-                    isCurrent ? "border-neutral-900" : "border-neutral-200"
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <span
-                      className={`text-sm font-mono ${
-                        isCurrent ? "text-neutral-900 font-semibold" : "text-neutral-600"
-                      }`}
-                    >
-                      {String(stage.stageNumber).padStart(2, "0")}
-                    </span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p
-                          className={`text-sm font-medium ${
-                            isCurrent ? "text-neutral-900" : "text-neutral-600"
-                          }`}
-                        >
-                          {info.label}
-                        </p>
-                        {info.hasGate && (
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-700">
-                            gate
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-neutral-600 mt-0.5">{info.description}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-xs font-medium ${STAGE_STATUS_STYLE[stage.status]}`}>
-                      {STAGE_STATUS_LABEL[stage.status]}
-                    </span>
-                    <Link
-                      href={`/projects/${id}/stage/${stage.stageNumber}`}
-                      className="text-xs text-neutral-600 hover:text-neutral-700 transition-colors"
-                    >
-                      Docs →
-                    </Link>
-                    {isCurrent && stage.status !== "COMPLETE" && (
-                      <AdvanceStageButton
-                        projectId={id}
-                        currentStage={project.currentStage}
-                        hasGate={info.hasGate}
-                        gateApproved={stage.gateApproved}
-                      />
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
 
         {/* Files tab — folders */}
         {activeTab === "files" && (

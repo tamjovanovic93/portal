@@ -59,13 +59,27 @@ const intakeForm: Template = {
       title: "Your Customer",
       description: "Seeds your audience and persona database.",
       fields: [
-        { key: "bestCustomer", label: "Who is your best customer?", type: "textarea", required: true, rows: 3, placeholder: "Describe them in 2–3 sentences — who they are, what they do, what stage of life they're in." },
-        { key: "ageRange", label: "Age Range", type: "text", placeholder: "e.g. 25–45 primary, 45–60 secondary" },
-        { key: "gender", label: "Gender", type: "text", placeholder: "e.g. Primarily female / Mixed" },
-        { key: "location", label: "Location", type: "text", placeholder: "City, region, country — where are most of your customers?" },
-        { key: "problemYouSolve", label: "What problem do you solve for them?", type: "textarea", required: true, rows: 3, placeholder: "What pain or frustration brings them to you?" },
-        { key: "whyChooseYou", label: "Why do they choose you over competitors?", type: "textarea", rows: 2, placeholder: "In their own words if possible." },
-        { key: "brandsCustomerLoves", label: "3 Brands Your Customer Already Loves", type: "text", placeholder: "Not in your industry — brands whose aesthetic or values your customer admires." },
+        // First, branch on whether customers are consumers (B2C) or businesses (B2B).
+        { key: "customerType", label: "Who are your customers?", type: "radio", required: true, options: [
+          { value: "b2c", label: "B2C — I sell to consumers / individuals" },
+          { value: "b2b", label: "B2B — I sell to other businesses" },
+        ]},
+
+        // ── B2C questions ──
+        { key: "bestCustomer", label: "Who is your best customer?", type: "textarea", required: true, rows: 3, placeholder: "Describe them in 2–3 sentences — who they are, what they do, what stage of life they're in.", showIf: { field: "customerType", equals: "b2c" } },
+        { key: "ageRange", label: "Age Range", type: "text", placeholder: "e.g. 25–45 primary, 45–60 secondary", showIf: { field: "customerType", equals: "b2c" } },
+        { key: "gender", label: "Gender", type: "text", placeholder: "e.g. Primarily female / Mixed", showIf: { field: "customerType", equals: "b2c" } },
+        { key: "location", label: "Location", type: "text", placeholder: "City, region, country — where are most of your customers?", showIf: { field: "customerType", equals: "b2c" } },
+        { key: "problemYouSolve", label: "What problem do you solve for them?", type: "textarea", required: true, rows: 3, placeholder: "What pain or frustration brings them to you?", showIf: { field: "customerType", equals: "b2c" } },
+        { key: "whyChooseYou", label: "Why do they choose you over competitors?", type: "textarea", rows: 2, placeholder: "In their own words if possible.", showIf: { field: "customerType", equals: "b2c" } },
+        { key: "brandsCustomerLoves", label: "3 Brands Your Customer Already Loves", type: "text", placeholder: "Not in your industry — brands whose aesthetic or values your customer admires.", showIf: { field: "customerType", equals: "b2c" } },
+
+        // ── B2B questions (temporary set — will be refined later) ──
+        { key: "idealBusinessTypes", label: "What types of businesses are your ideal customers?", type: "textarea", rows: 3, placeholder: "e.g. Boutique hotels, mid-size law firms, DTC fashion brands…", showIf: { field: "customerType", equals: "b2b" } },
+        { key: "decisionMaker", label: "Who is usually the decision-maker when purchasing your product or service?", type: "textarea", rows: 2, placeholder: "e.g. Marketing director, founder, procurement lead…", showIf: { field: "customerType", equals: "b2b" } },
+        { key: "businessProblems", label: "What are the main business problems your customers are trying to solve?", type: "textarea", rows: 3, placeholder: "The business outcomes they're chasing or pains they're removing.", showIf: { field: "customerType", equals: "b2b" } },
+        { key: "salesProcessLength", label: "How long does the typical decision or sales process take?", type: "text", placeholder: "e.g. 2 weeks / 3–6 months", showIf: { field: "customerType", equals: "b2b" } },
+        { key: "whyChooseYouB2B", label: "What usually influences a business to choose you over another provider?", type: "textarea", rows: 2, placeholder: "Price, expertise, relationship, results…", showIf: { field: "customerType", equals: "b2b" } },
       ],
     },
     {
@@ -73,7 +87,7 @@ const intakeForm: Template = {
       title: "Brand Identity & Voice",
       description: "Seeds your messaging database — key messages, brand voice rules, tone guidelines.",
       fields: [
-        { key: "brandEssence", label: "Brand Essence", type: "textarea", required: true, rows: 2, placeholder: "We exist to help [WHO] feel/achieve/experience [OUTCOME] through [WHAT WE OFFER]." },
+        { key: "brandEssence", label: "Brand Voice — Guiding Sentence", type: "textarea", required: true, rows: 2, placeholder: "In one sentence, how should your brand sound when it speaks? e.g. 'We sound like a confident expert who explains things simply and never talks down to people.'" },
         { key: "brandPersonality", label: "Brand Personality in 3 Words", type: "text", placeholder: "e.g. Bold, Precise, Human" },
         { key: "overallTone", label: "Overall Tone", type: "text", placeholder: "e.g. Confident and understated / Warm and expert / Playful and direct" },
         { key: "neverSoundLike", label: "What you NEVER want to sound like", type: "textarea", rows: 2, placeholder: "Describe the tone, words, or style that would feel completely wrong." },
@@ -119,23 +133,8 @@ const intakeForm: Template = {
         { key: "anythingElse", label: "Anything else we should know?", type: "textarea", rows: 3, placeholder: "Seasonal patterns, upcoming launches, things that have not worked before…" },
       ],
     },
-    {
-      key: "contacts",
-      title: "Contacts & Digital Presence",
-      description: "Populates your contacts database.",
-      fields: [
-        { key: "businessAddress", label: "Business Address", type: "textarea", rows: 2, placeholder: "Full address including country" },
-        { key: "phoneNumbers", label: "Phone Number(s)", type: "text", placeholder: "Main line + WhatsApp if applicable" },
-        { key: "primaryEmail", label: "Primary Email", type: "text", required: true, placeholder: "The email customers contact you through" },
-        { key: "instagram", label: "Instagram", type: "text", placeholder: "@handle" },
-        { key: "tiktok", label: "TikTok", type: "text", placeholder: "@handle" },
-        { key: "facebook", label: "Facebook Page", type: "text", placeholder: "URL or page name" },
-        { key: "linkedin", label: "LinkedIn", type: "text", placeholder: "Company page URL" },
-        { key: "youtube", label: "YouTube Channel", type: "text", placeholder: "URL or channel name" },
-        { key: "googleBusiness", label: "Google Business Profile", type: "text", placeholder: "Confirmed / Not set up / URL" },
-        { key: "otherPlatforms", label: "Other Platforms", type: "text", placeholder: "e.g. Pinterest, Tripadvisor, Booking.com…" },
-      ],
-    },
+    // Contact & Digital Presence section removed — those details are now
+    // collected earlier in the Initial Client Form.
   ],
 };
 
@@ -939,9 +938,81 @@ const deliveryHandover: Template = {
   ],
 };
 
+// ─── Onboarding — Initial Client Form ────────────────────────────
+// Short first form the team can pre-fill before the client sees it. Contact
+// details collected here are intentionally removed from the full intake form.
+const initialClientForm: Template = {
+  id: "initial_client_form",
+  title: "Initial Client Form",
+  stage: 1,
+  audience: "client",
+  description:
+    "A few quick details to get your project started. Your team may have pre-filled some answers — approve them or change them as needed.",
+  sections: [
+    {
+      key: "contact",
+      title: "Basic Contact Information",
+      description: "How we reach you and where to find you online.",
+      fields: [
+        { key: "name", label: "Name", type: "text", required: true, placeholder: "Your full name" },
+        { key: "businessName", label: "Business Name", type: "text", required: true, placeholder: "Your company / brand name" },
+        { key: "businessAddress", label: "Business Address", type: "textarea", rows: 2, placeholder: "Full address including country" },
+        { key: "phoneNumbers", label: "Phone Number(s)", type: "text", placeholder: "Main line + WhatsApp if applicable" },
+        { key: "primaryEmail", label: "Primary Email", type: "text", required: true, placeholder: "The email customers contact you through" },
+        { key: "instagram", label: "Instagram", type: "text", placeholder: "@handle" },
+        { key: "tiktok", label: "TikTok", type: "text", placeholder: "@handle" },
+        { key: "facebook", label: "Facebook Page", type: "text", placeholder: "URL or page name" },
+        { key: "linkedin", label: "LinkedIn", type: "text", placeholder: "Company page URL" },
+        { key: "youtube", label: "YouTube Channel", type: "text", placeholder: "URL or channel name" },
+        { key: "googleBusiness", label: "Google Business Profile", type: "text", placeholder: "Confirmed / Not set up / URL" },
+        { key: "otherPlatforms", label: "Other Platforms", type: "text", placeholder: "e.g. Pinterest, Tripadvisor, Booking.com…" },
+      ],
+    },
+    {
+      key: "project_info",
+      title: "Project Information",
+      description: "Tell us what you're looking to build and why.",
+      fields: [
+        { key: "definitionOfProject", label: "Definition of project", type: "textarea", required: true, rows: 3, placeholder: "In your own words, what is this project?" },
+        { key: "mainGoal", label: "Main goal", type: "textarea", required: true, rows: 2, placeholder: "The single most important outcome you want from this project." },
+        { key: "keyFunctions", label: "Key functions", type: "textarea", rows: 3, placeholder: "The main things it needs to do." },
+        { key: "strategyOfGrowth", label: "Strategy of growth", type: "textarea", rows: 3, placeholder: "How do you see this helping the business grow?" },
+        { key: "timeFrame", label: "Time frame", type: "text", placeholder: "e.g. Launch before Q3 / 8–10 weeks" },
+        { key: "additionalInformation", label: "Additional information", type: "textarea", rows: 3, placeholder: "Anything else we should know at this stage." },
+      ],
+    },
+  ],
+};
+
+// ─── Onboarding — Project / Financial Offer ──────────────────────
+// Temporary offer template (team-authored, client approves the whole thing).
+const financialOffer: Template = {
+  id: "financial_offer",
+  title: "Project / Financial Offer",
+  stage: 1,
+  audience: "team",
+  description: "Our proposed scope, timeline, and price for your project.",
+  sections: [
+    {
+      key: "offer",
+      title: "Project / Financial Offer",
+      fields: [
+        { key: "project", label: "Project", type: "text", required: true, placeholder: "Project name" },
+        { key: "projectOverview", label: "Project Overview", type: "textarea", required: true, rows: 4, placeholder: "Short description" },
+        { key: "scope", label: "Scope", type: "textarea", required: true, rows: 4, placeholder: "Scope of work" },
+        { key: "timeFrame", label: "Time Frame", type: "text", placeholder: "Estimated time frame" },
+        { key: "price", label: "Price", type: "text", required: true, placeholder: "Price" },
+        { key: "additionalInformation", label: "Additional Information", type: "textarea", rows: 3, placeholder: "Additional information" },
+      ],
+    },
+  ],
+};
+
 // ─── Registry ─────────────────────────────────────────────────────
 export const TEMPLATES: Record<string, Template> = {
   intake_form: intakeForm,
+  initial_client_form: initialClientForm,
+  financial_offer: financialOffer,
   scope_of_work: scopeOfWork,
   internal_review: internalReview,
   sketch_feedback: sketchFeedback,
@@ -959,7 +1030,10 @@ export const STAGE_TEMPLATES: Record<
   { id: string; audience: "client" | "team"; label: string }[]
 > = {
   1: [{ id: "intake_form", audience: "client", label: "Client Intake Form" }],
-  2: [{ id: "scope_of_work", audience: "team", label: "Scope of Work" }],
+  // Scope of Work now lives inside the Brief (Brief → Scope → Tasks). The old
+  // standalone Stage-2 document is retired; existing scope_of_work docs are kept
+  // for history but no new ones are offered here.
+  2: [],
   3: [],
   4: [],
   5: [

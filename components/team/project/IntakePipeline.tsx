@@ -8,6 +8,7 @@ import {
   markProfileDraft,
   runStrategyAgent,
 } from "@/app/actions/intake";
+import { publishBrief, unpublishBrief } from "@/app/actions/onboarding";
 
 type ProfileStatus = "draft" | "verified" | null;
 
@@ -16,11 +17,13 @@ export default function IntakePipeline({
   hasApprovedIntake,
   profileStatus,
   hasStrategy,
+  briefPublished = false,
 }: {
   projectId: string;
   hasApprovedIntake: boolean;
   profileStatus: ProfileStatus;
   hasStrategy: boolean;
+  briefPublished?: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
   const [active, setActive] = useState<string | null>(null);
@@ -74,7 +77,7 @@ export default function IntakePipeline({
           n={2}
           title="Verify the profile"
           done={verified}
-          desc="Review and correct the profile in Brief & Data, then mark it verified to unlock strategy."
+          desc="Review and correct the profile in Data, then mark it verified to unlock strategy."
         >
           <span
             className={`text-xs px-2 py-1 rounded-full font-medium ${
@@ -133,6 +136,38 @@ export default function IntakePipeline({
           >
             {busy("strategy") ? "Generating…" : hasStrategy ? "Regenerate strategy" : "Generate strategy"}
           </button>
+        </Step>
+
+        {/* Step 4 — publish to client */}
+        <Step
+          n={4}
+          title="Publish to client"
+          done={briefPublished}
+          desc="Share the finished brief & strategy on the client's portal."
+        >
+          {briefPublished ? (
+            <>
+              <span className="text-xs px-2 py-1 rounded-full font-medium bg-green-100 text-green-800">
+                Published
+              </span>
+              <button
+                onClick={() => run("unpublish", () => unpublishBrief(projectId))}
+                disabled={isPending}
+                className="btn btn-sm btn-ghost"
+              >
+                {busy("unpublish") ? "…" : "Unpublish"}
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => run("publish", () => publishBrief(projectId))}
+              disabled={!hasStrategy || isPending}
+              className="btn btn-sm btn-primary"
+              title={!hasStrategy ? "Generate the strategy first" : undefined}
+            >
+              {busy("publish") ? "Publishing…" : "Publish to client"}
+            </button>
+          )}
         </Step>
       </ol>
 

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/app/actions/auth";
+import NotificationsBell from "@/components/NotificationsBell";
 
 export default async function ClientLayout({
   children,
@@ -28,9 +29,12 @@ export default async function ClientLayout({
             </div>
             <span className="tech" style={{ fontWeight: 700, fontSize: 14, letterSpacing: "0.04em" }}>ZER0&nbsp;P0INT</span>
           </div>
-          <form action={logout}>
-            <button type="submit" className="btn btn-sm btn-ghost">Sign out</button>
-          </form>
+          <div className="flex items-center gap-3">
+            <NotificationsBell />
+            <form action={logout}>
+              <button type="submit" className="btn btn-sm btn-ghost">Sign out</button>
+            </form>
+          </div>
         </div>
       </header>
       <main className="w-full">{children}</main>

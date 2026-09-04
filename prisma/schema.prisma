@@ -32,7 +32,7 @@ enum ProjectType {
 enum StageStatus {
   NOT_STARTED
   IN_PROGRESS
-  GATE_PENDING  // waiting on client approval
+  GATE_PENDING // waiting on client approval
   COMPLETE
 }
 
@@ -97,47 +97,94 @@ enum EventType {
   TASK_DUE
 }
 
+// ─── Questions / Requests / Communication ──────────────────────────────────────
+// A single generalized model for client/team questions across the portal. The
+// context it belongs to is polymorphic (contextType + contextId) so one model
+// serves verification items, tasks, briefs, and whole projects. See
+// lib/questions.ts / app/actions/questions.ts.
+
+enum QuestionContext {
+  PROJECT
+  TASK
+  BRIEF
+  VERIFICATION
+}
+
+enum QuestionKind {
+  ANSWER // open question — the recipient writes a free answer
+  CONFIRM // we propose an answer; the recipient confirms or requests a change
+}
+
+enum QuestionStatus {
+  OPEN
+  WAITING_CLIENT
+  WAITING_TEAM
+  WAITING_CONFIRMATION
+  ANSWERED
+  RESOLVED
+}
+
 // ─── Portal Tables ────────────────────────────────────────────────────────────
 
 // Maps 1:1 to auth.users — created by trigger on signup
 model Profile {
-  id        String   @id @db.Uuid  // matches auth.users.id
-  email     String   @unique
-  name      String?
-  role      UserRole
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id           String   @id @db.Uuid // matches auth.users.id (or a generated id for non-login team members)
+  email        String   @unique
+  name         String?
+  role         UserRole
+  // Team-member profile fields (single source of truth — replaces lib/team-static.ts).
+  // Null / empty for clients.
+  title        String?
+  skills       String[] @default([])
+  photoUrl     String?  @map("photo_url")
+  bio          String?
+  availability Json? // { tz, hours, note }
+  accent       String? // ui colour key (mint | blue | amber | rose | purple)
+  active       Boolean  @default(true)
+  sortOrder    Int?     @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  projectsAsClient Project[]    @relation("ClientProjects")
-  assignedTasks    Task[]       @relation("AssignedTasks")
-  approvals        Approval[]
-  gatedStages      ProjectStage[] @relation("GateApprover")
-  activityLogs     ActivityLog[]  @relation("ActivityActor")
+  projectsAsClient  Project[]      @relation("ClientProjects")
+  assignedTasks     Task[]         @relation("AssignedTasks")
+  approvals         Approval[]
+  gatedStages       ProjectStage[] @relation("GateApprover")
+  activityLogs      ActivityLog[]  @relation("ActivityActor")
+  notifications     Notification[] @relation("NotificationRecipient")
+  questionsAsked    Question[]     @relation("QuestionAsker")
+  questionsReceived Question[]     @relation("QuestionRecipient")
 
   @@map("profiles")
 }
 
 model Project {
-  id          String      @id @default(uuid()) @db.Uuid
-  name        String
-  clientId    String      @map("client_id") @db.Uuid
-  client      Profile     @relation("ClientProjects", fields: [clientId], references: [id])
-  type        ProjectType
-  mode        ProjectMode @default(PROJECT)
-  currentStage Int        @default(1) @map("current_stage") // 1–8
-  isArchived  Boolean     @default(false) @map("is_archived")
-  briefReviewedAt DateTime? @map("brief_reviewed_at")
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
+  id               String      @id @default(uuid()) @db.Uuid
+  name             String
+  clientId         String      @map("client_id") @db.Uuid
+  client           Profile     @relation("ClientProjects", fields: [clientId], references: [id])
+  type             ProjectType
+  mode             ProjectMode @default(PROJECT)
+  currentStage     Int         @default(1) @map("current_stage") // 1–8
+  isArchived       Boolean     @default(false) @map("is_archived")
+  briefReviewedAt  DateTime?   @map("brief_reviewed_at")
+  // Onboarding flow (new intake pipeline): tracks where the project is in the
+  // Initial Form → Offer → Intake → Brief sequence. See app/actions/onboarding.ts.
+  onboardingStep   String?     @map("onboarding_step")
+  // Set when the team publishes the finished Brief + Strategy to the client.
+  briefPublishedAt DateTime?   @map("brief_published_at")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
 
-  stages      ProjectStage[]
-  documents   Document[]
-  approvals   Approval[]
-  assets      ProjectAsset[]
-  materials   MaterialItem[]
-  cycles      Cycle[]
-  events      AppEvent[]
-  activityLog ActivityLog[]
+  stages        ProjectStage[]
+  documents     Document[]
+  approvals     Approval[]
+  assets        ProjectAsset[]
+  materials     MaterialItem[]
+  cycles        Cycle[]
+  events        AppEvent[]
+  activityLog   ActivityLog[]
+  notifications Notification[]
+  questions     Question[]
 
   // Client data (profile / verification queue / strategy) now lives in JSON
   // Document rows (templateType client_profile / verification_queue / strategy),
@@ -147,19 +194,19 @@ model Project {
 }
 
 model ProjectStage {
-  id              String      @id @default(uuid()) @db.Uuid
-  projectId       String      @map("project_id") @db.Uuid
-  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  stageNumber     Int         @map("stage_number") // 1–8
-  status          StageStatus @default(NOT_STARTED)
-  gateApproved    Boolean     @default(false) @map("gate_approved")
-  gateApprovedAt  DateTime?   @map("gate_approved_at")
-  gateApproverId  String?     @map("gate_approver_id") @db.Uuid
-  gateApprover    Profile?    @relation("GateApprover", fields: [gateApproverId], references: [id])
-  completedAt     DateTime?   @map("completed_at")
-  notes           String?
-  createdAt       DateTime    @default(now()) @map("created_at")
-  updatedAt       DateTime    @updatedAt @map("updated_at")
+  id             String      @id @default(uuid()) @db.Uuid
+  projectId      String      @map("project_id") @db.Uuid
+  project        Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stageNumber    Int         @map("stage_number") // 1–8
+  status         StageStatus @default(NOT_STARTED)
+  gateApproved   Boolean     @default(false) @map("gate_approved")
+  gateApprovedAt DateTime?   @map("gate_approved_at")
+  gateApproverId String?     @map("gate_approver_id") @db.Uuid
+  gateApprover   Profile?    @relation("GateApprover", fields: [gateApproverId], references: [id])
+  completedAt    DateTime?   @map("completed_at")
+  notes          String?
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
 
   @@unique([projectId, stageNumber])
   @@map("project_stages")
@@ -172,10 +219,13 @@ model Document {
   stageNumber  Int            @map("stage_number")
   templateType String         @map("template_type") // e.g. "intake_form", "scope_of_work"
   title        String
-  content      Json           // JSONB — stores form field values
+  content      Json // JSONB — stores form field values
   status       DocumentStatus @default(DRAFT)
   sentAt       DateTime?      @map("sent_at")
   completedAt  DateTime?      @map("completed_at")
+  // Set when the team has reviewed/handled a client-submitted document, so it
+  // moves out of "Action Required" into completed/history.
+  handledAt    DateTime?      @map("handled_at")
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
 
@@ -184,19 +234,19 @@ model Document {
 }
 
 model Approval {
-  id          String         @id @default(uuid()) @db.Uuid
-  projectId   String         @map("project_id") @db.Uuid
-  project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  stageNumber Int?           @map("stage_number") // 3, 4, or 6 — null for task approvals
-  taskId      String?        @map("task_id") @db.Uuid  // set for retainer deliverable approvals
-  task        Task?          @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  approvedById String        @map("approved_by_id") @db.Uuid
-  approvedBy  Profile        @relation(fields: [approvedById], references: [id])
-  method      ApprovalMethod @default(PORTAL)
-  notes       String?
-  approvedAt  DateTime       @default(now()) @map("approved_at")
-  assetId     String?        @map("asset_id") @db.Uuid  // which asset/upload was approved
-  createdAt   DateTime       @default(now()) @map("created_at")
+  id           String         @id @default(uuid()) @db.Uuid
+  projectId    String         @map("project_id") @db.Uuid
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stageNumber  Int?           @map("stage_number") // 3, 4, or 6 — null for task approvals
+  taskId       String?        @map("task_id") @db.Uuid // set for retainer deliverable approvals
+  task         Task?          @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  approvedById String         @map("approved_by_id") @db.Uuid
+  approvedBy   Profile        @relation(fields: [approvedById], references: [id])
+  method       ApprovalMethod @default(PORTAL)
+  notes        String?
+  approvedAt   DateTime       @default(now()) @map("approved_at")
+  assetId      String?        @map("asset_id") @db.Uuid // which asset/upload was approved
+  createdAt    DateTime       @default(now()) @map("created_at")
 
   @@index([projectId])
   @@index([taskId])
@@ -204,40 +254,44 @@ model Approval {
 }
 
 model ProjectAsset {
-  id          String     @id @default(uuid()) @db.Uuid
-  projectId   String     @map("project_id") @db.Uuid
-  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  stageNumber Int?       @map("stage_number")
-  storagePath String     @map("storage_path")
-  filename    String
-  mimeType    String?    @map("mime_type")
-  sizeBytes   Int?       @map("size_bytes")
-  visibility  Visibility @default(INTERNAL)
-  folder      String?    // copy | visuals — for client uploads
-  materialId  String?    @map("material_id") @db.Uuid
-  approvedAt  DateTime?  @map("approved_at")
-  approvedById String?   @map("approved_by_id") @db.Uuid
-  version     Int        @default(1)
-  uploadedBy  String     @map("uploaded_by") @db.Uuid
-  uploadedAt  DateTime   @default(now()) @map("uploaded_at")
-  notes       String?
+  id            String     @id @default(uuid()) @db.Uuid
+  projectId     String     @map("project_id") @db.Uuid
+  project       Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stageNumber   Int?       @map("stage_number")
+  storagePath   String     @map("storage_path")
+  filename      String
+  mimeType      String?    @map("mime_type")
+  sizeBytes     Int?       @map("size_bytes")
+  visibility    Visibility @default(INTERNAL)
+  folder        String? // copy | visuals | mockup | brand — for client uploads / brand kit
+  // Links a visual asset (wireframe / design / preview) to a brief sitemap node,
+  // so the sitemap page is the parent reference for that page's visual work.
+  sitemapPageId String?    @map("sitemap_page_id")
+  materialId    String?    @map("material_id") @db.Uuid
+  approvedAt    DateTime?  @map("approved_at")
+  approvedById  String?    @map("approved_by_id") @db.Uuid
+  version       Int        @default(1)
+  uploadedBy    String     @map("uploaded_by") @db.Uuid
+  uploadedAt    DateTime   @default(now()) @map("uploaded_at")
+  notes         String?
 
   @@index([projectId])
+  @@index([sitemapPageId])
   @@map("project_assets")
 }
 
 model MaterialItem {
-  id          String     @id @default(uuid()) @db.Uuid
-  projectId   String     @map("project_id") @db.Uuid
-  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  label       String
-  category    String     // copy | visuals | info | access | approval
-  status      MaterialItemStatus @default(pending)
-  fileRef     String?    @map("file_ref") // storage path if file uploaded
-  notes       String?
-  dueDate     DateTime?  @map("due_date")
-  createdAt   DateTime   @default(now()) @map("created_at")
-  updatedAt   DateTime   @updatedAt @map("updated_at")
+  id        String             @id @default(uuid()) @db.Uuid
+  projectId String             @map("project_id") @db.Uuid
+  project   Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  label     String
+  category  String // copy | visuals | info | access | approval
+  status    MaterialItemStatus @default(pending)
+  fileRef   String?            @map("file_ref") // storage path if file uploaded
+  notes     String?
+  dueDate   DateTime?          @map("due_date")
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
 
   @@index([projectId])
   @@map("material_items")
@@ -257,35 +311,43 @@ model Cycle {
   createdAt DateTime    @default(now()) @map("created_at")
   updatedAt DateTime    @updatedAt @map("updated_at")
 
-  tasks     Task[]
+  tasks Task[]
 
   @@index([projectId])
   @@map("cycles")
 }
 
 model Task {
-  id          String     @id @default(uuid()) @db.Uuid
-  cycleId     String     @map("cycle_id") @db.Uuid
-  cycle       Cycle      @relation(fields: [cycleId], references: [id], onDelete: Cascade)
-  name        String
-  type        TaskType   @default(DELIVERABLE)
-  status      TaskStatus @default(PLANNING)
-  description String?
-  assigneeId  String?    @map("assignee_id") @db.Uuid
-  assignee    Profile?   @relation("AssignedTasks", fields: [assigneeId], references: [id])
-  ownerRole   TaskOwnerRole? @map("owner_role")
-  isBlocker   Boolean    @default(false) @map("is_blocker")
-  blockerResolver TaskOwnerRole? @map("blocker_resolver")
-  unblockedAt DateTime?  @map("unblocked_at")
-  requiresClientApproval Boolean @default(false) @map("requires_client_approval")
-  dueDate     DateTime?  @map("due_date")
-  completedAt DateTime?  @map("completed_at")
-  createdAt   DateTime   @default(now()) @map("created_at")
-  updatedAt   DateTime   @updatedAt @map("updated_at")
+  id                     String         @id @default(uuid()) @db.Uuid
+  cycleId                String         @map("cycle_id") @db.Uuid
+  cycle                  Cycle          @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  name                   String
+  type                   TaskType       @default(DELIVERABLE)
+  status                 TaskStatus     @default(PLANNING)
+  description            String?
+  assigneeId             String?        @map("assignee_id") @db.Uuid
+  assignee               Profile?       @relation("AssignedTasks", fields: [assigneeId], references: [id])
+  ownerRole              TaskOwnerRole? @map("owner_role")
+  isBlocker              Boolean        @default(false) @map("is_blocker")
+  blockerResolver        TaskOwnerRole? @map("blocker_resolver")
+  unblockedAt            DateTime?      @map("unblocked_at")
+  requiresClientApproval Boolean        @default(false) @map("requires_client_approval")
+  startDate              DateTime?      @map("start_date")
+  dueDate                DateTime?      @map("due_date")
+  completedAt            DateTime?      @map("completed_at")
+  // Scope-of-Work linkage: tasks generated from a brief's Scope carry the brief
+  // Document id + the stable scope item id, so re-syncing updates rather than
+  // duplicates. Manual tasks leave these null. See app/actions/scope.ts.
+  sourceBriefId          String?        @map("source_brief_id") @db.Uuid
+  scopeItemId            String?        @map("scope_item_id")
+  createdAt              DateTime       @default(now()) @map("created_at")
+  updatedAt              DateTime       @updatedAt @map("updated_at")
 
-  approvals   Approval[]
+  approvals Approval[]
 
   @@index([cycleId])
+  @@index([assigneeId, status])
+  @@index([scopeItemId])
   @@map("tasks")
 }
 
@@ -324,4 +386,56 @@ model ActivityLog {
 
   @@index([projectId])
   @@map("activity_log")
+}
+
+// In-app notifications. A client notification targets a specific profile
+// (recipientId); a team notification targets everyone on the team
+// (recipientRole = TEAM, recipientId null). See lib/notifications.ts.
+model Notification {
+  id            String    @id @default(uuid()) @db.Uuid
+  projectId     String?   @map("project_id") @db.Uuid
+  project       Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  recipientId   String?   @map("recipient_id") @db.Uuid
+  recipient     Profile?  @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientRole UserRole? @map("recipient_role")
+  type          String
+  message       String
+  link          String?
+  readAt        DateTime? @map("read_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([recipientId])
+  @@index([recipientRole])
+  @@map("notifications")
+}
+
+// Generalized question / request / confirmation. Belongs polymorphically to a
+// project, task, brief, or verification item (contextType + contextId). A client
+// question targets the project's client (recipientId); a team question targets a
+// specific team member (recipientId) or the whole team (recipientRole = TEAM).
+model Question {
+  id             String          @id @default(uuid()) @db.Uuid
+  projectId      String?         @map("project_id") @db.Uuid
+  project        Project?        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  contextType    QuestionContext @map("context_type")
+  contextId      String?         @map("context_id") // task id / brief doc id / verification item id
+  kind           QuestionKind    @default(ANSWER)
+  askedById      String?         @map("asked_by_id") @db.Uuid
+  askedBy        Profile?        @relation("QuestionAsker", fields: [askedById], references: [id], onDelete: SetNull)
+  recipientId    String?         @map("recipient_id") @db.Uuid
+  recipient      Profile?        @relation("QuestionRecipient", fields: [recipientId], references: [id], onDelete: SetNull)
+  recipientRole  UserRole?       @map("recipient_role")
+  questionText   String          @map("question_text")
+  proposedAnswer String?         @map("proposed_answer") // CONFIRM kind only
+  answerText     String?         @map("answer_text")
+  status         QuestionStatus  @default(OPEN)
+  createdAt      DateTime        @default(now()) @map("created_at")
+  answeredAt     DateTime?       @map("answered_at")
+  resolvedAt     DateTime?       @map("resolved_at")
+
+  @@index([projectId, status])
+  @@index([recipientId, status])
+  @@index([contextType, contextId])
+  @@index([recipientRole, status])
+  @@map("questions")
 }

@@ -21,6 +21,24 @@ function revalidateProject(projectId: string) {
   revalidatePath("/dashboard");
 }
 
+// Create a lightweight task group / to-do list on any project (standard or
+// ongoing). Reuses the Cycle model as the task container — the retainer-only
+// fields (dates/focus) are auto-set and hidden in the "tasks" board variant.
+export async function createTaskGroup(projectId: string, formData: FormData) {
+  await requireTeam();
+  const name = formData.get("name");
+  if (typeof name !== "string" || !name.trim()) throw new Error("Name required");
+  await prisma.cycle.create({
+    data: {
+      projectId,
+      name: name.trim(),
+      startDate: new Date(),
+      status: "ACTIVE",
+    },
+  });
+  revalidateProject(projectId);
+}
+
 // ─── Cycles ──────────────────────────────────────────────────────────────────
 
 export async function createCycle(projectId: string, formData: FormData) {

@@ -15,9 +15,13 @@ import {
   deleteCycle,
   updateCycle,
   updateCycleFocus,
+  assignTask,
 } from "@/app/actions/retainer";
 import type { TaskStatus, TaskType, TaskOwnerRole } from "@prisma/client";
 import { OWNER_ROLES, OWNER_ROLE_LABEL } from "@/lib/retainer-labels";
+import { ACTIVE_STATUSES, type QuestionRow } from "@/lib/questions";
+import type { RosterMember } from "@/lib/team";
+import QuestionsPanel from "@/components/team/QuestionsPanel";
 
 type Task = {
   id: string;
@@ -33,6 +37,8 @@ type Task = {
   unblockedAt: Date | null;
   requiresClientApproval: boolean;
   approvalCount: number;
+  assigneeId?: string | null;
+  questions?: QuestionRow[];
 };
 
 type Cycle = {
@@ -88,11 +94,22 @@ function toDateInputValue(d: Date | null): string {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
 }
 
-function TaskCard({ task, projectId, isActive }: { task: Task; projectId: string; isActive: boolean }) {
+function TaskCard({ task, projectId, isActive, roster = [] }: { task: Task; projectId: string; isActive: boolean; roster?: RosterMember[] }) {
   const [isPending, startTransition] = useTransition();
   const [expanded, setExpanded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unblockDate, setUnblockDate] = useState(() => toDateInputValue(null));
+
+  // Open-question badges for this task.
+  const qs = task.questions ?? [];
+  const openClient = qs.filter((q) => q.status === "WAITING_CLIENT").length;
+  const openTeam = qs.filter((q) => q.status === "WAITING_TEAM" || q.status === "OPEN").length;
+  const openConfirm = qs.filter((q) => q.status === "WAITING_CONFIRMATION").length;
+  const assignee = task.assigneeId ? roster.find((m) => m.id === task.assigneeId) : undefined;
+
+  function changeAssignee(id: string) {
+    startTransition(async () => { await assignTask(task.id, projectId, id || null); });
+  }
 
   const order = orderFor(task);
   const idx = order.findIndex((s) => s.key === task.status);
@@ -193,8 +210,18 @@ function TaskCard({ task, projectId, isActive }: { task: Task; projectId: string
 
       <div className="flex items-center gap-1.5 flex-wrap">
         <span className="text-xs text-neutral-600">
-          {task.ownerRole ? OWNER_ROLE_LABEL[task.ownerRole] : "Unassigned"}
+          {assignee ? assignee.name : "Unassigned"}
+          {task.ownerRole ? <span className="text-neutral-400"> · {OWNER_ROLE_LABEL[task.ownerRole]}</span> : null}
         </span>
+        {openClient > 0 && (
+          <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">{openClient} client Q</span>
+        )}
+        {openConfirm > 0 && (
+          <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 font-medium">{openConfirm} to confirm</span>
+        )}
+        {openTeam > 0 && (
+          <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">{openTeam} team Q</span>
+        )}
         {isUnblocked && (
           <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-medium">
             Unblocked {new Date(task.unblockedAt!).toLocaleDateString()}
@@ -220,8 +247,25 @@ function TaskCard({ task, projectId, isActive }: { task: Task; projectId: string
 
           {isActive && (
             <>
+              {roster.length > 0 && (
+                <div>
+                  <label className="block text-xs text-neutral-600 mb-0.5">Assigned to</label>
+                  <select
+                    value={task.assigneeId ?? ""}
+                    onChange={(e) => changeAssignee(e.target.value)}
+                    disabled={isPending}
+                    className="w-full text-xs rounded border border-neutral-300 px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                  >
+                    <option value="">Unassigned</option>
+                    {roster.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}{m.title ? ` · ${m.title}` : ""}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div>
-                <label className="block text-xs text-neutral-600 mb-0.5">Owner</label>
+                <label className="block text-xs text-neutral-600 mb-0.5">Department</label>
                 <select
                   value={task.ownerRole ?? ""}
                   onChange={(e) => changeOwner(e.target.value)}
@@ -299,6 +343,13 @@ function TaskCard({ task, projectId, isActive }: { task: Task; projectId: string
                 </label>
               )}
             </>
+          )}
+
+          {roster.length > 0 && (
+            <div className="pt-2 border-t border-neutral-100">
+              <label className="block text-xs text-neutral-600 mb-1">Questions</label>
+              <QuestionsPanel projectId={projectId} contextType="TASK" contextId={task.id} questions={qs} roster={roster} />
+            </div>
           )}
         </div>
       )}
@@ -553,15 +604,22 @@ export default function CycleBoard({
   cycle,
   projectId,
   otherActiveCycles = [],
+  variant = "retainer",
+  roster = [],
 }: {
   cycle: Cycle;
   projectId: string;
   otherActiveCycles?: { id: string; name: string }[];
+  variant?: "retainer" | "tasks";
+  roster?: RosterMember[];
 }) {
   const [showAddTask, setShowAddTask] = useState(false);
   const [editing, setEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
   const isActive = cycle.status === "ACTIVE";
+  // "tasks" variant = a plain to-do list on any project: same task board, but
+  // without the retainer cycle chrome (dates, focus, close/reopen/carry-forward).
+  const tasks = variant === "tasks";
 
   const tasksByStatus = Object.fromEntries(
     STATUSES.map(({ key }) => [key, cycle.tasks.filter((t) => t.status === key)])
@@ -574,7 +632,8 @@ export default function CycleBoard({
     startTransition(async () => { await reopenCycle(cycle.id); });
   }
   function handleDelete() {
-    if (!confirm(`Delete cycle "${cycle.name}"? All tasks will be lost.`)) return;
+    const noun = tasks ? "list" : "cycle";
+    if (!confirm(`Delete ${noun} "${cycle.name}"? All tasks will be lost.`)) return;
     startTransition(async () => { await deleteCycle(cycle.id); });
   }
 
@@ -592,24 +651,35 @@ export default function CycleBoard({
                 {!isActive && <span className="text-xs px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500">Closed</span>}
               </div>
               <p className="text-xs mt-0.5 text-neutral-500">
-                {new Date(cycle.startDate).toLocaleDateString()}
-                {cycle.endDate && <> — {new Date(cycle.endDate).toLocaleDateString()}</>}
-                {totalCount > 0 && <> · {doneCount}/{totalCount} done</>}
+                {!tasks && (
+                  <>
+                    {new Date(cycle.startDate).toLocaleDateString()}
+                    {cycle.endDate && <> — {new Date(cycle.endDate).toLocaleDateString()}</>}
+                    {totalCount > 0 && " · "}
+                  </>
+                )}
+                {totalCount > 0 && <>{doneCount}/{totalCount} done</>}
               </p>
-              {isActive ? <CycleFocus cycle={cycle} /> : cycle.focus && (
+              {!tasks && (isActive ? <CycleFocus cycle={cycle} /> : cycle.focus && (
                 <p className="text-xs text-neutral-600 mt-1">Focus: {cycle.focus}</p>
-              )}
+              ))}
             </>
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {isActive ? (
             <>
-              <button type="button" onClick={() => setEditing((v) => !v)} disabled={isPending} className="text-xs px-3 py-1.5 rounded-md border border-neutral-600 text-neutral-300 hover:border-neutral-400 hover:text-white transition-colors">
-                {editing ? "Close" : "Edit"}
-              </button>
+              {!tasks && (
+                <button type="button" onClick={() => setEditing((v) => !v)} disabled={isPending} className="text-xs px-3 py-1.5 rounded-md border border-neutral-600 text-neutral-300 hover:border-neutral-400 hover:text-white transition-colors">
+                  {editing ? "Close" : "Edit"}
+                </button>
+              )}
               <button type="button" onClick={() => setShowAddTask((v) => !v)} disabled={isPending} className="text-xs px-3 py-1.5 rounded-md border border-neutral-600 text-neutral-300 hover:border-neutral-400 hover:text-white transition-colors">+ Task</button>
-              <CloseCycleControl cycle={cycle} otherActiveCycles={otherActiveCycles} />
+              {tasks ? (
+                <button type="button" onClick={handleDelete} disabled={isPending} className="text-xs px-3 py-1.5 rounded-md border border-neutral-600 text-neutral-300 hover:border-neutral-400 hover:text-white transition-colors">Delete list</button>
+              ) : (
+                <CloseCycleControl cycle={cycle} otherActiveCycles={otherActiveCycles} />
+              )}
             </>
           ) : (
             <>
@@ -646,7 +716,7 @@ export default function CycleBoard({
                     {col.length === 0 ? (
                       <div className="h-12 rounded-md border border-dashed border-neutral-200" />
                     ) : (
-                      col.map((task) => (<TaskCard key={task.id} task={task} projectId={projectId} isActive={isActive} />))
+                      col.map((task) => (<TaskCard key={task.id} task={task} projectId={projectId} isActive={isActive} roster={roster} />))
                     )}
                   </div>
                 </div>

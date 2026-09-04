@@ -5,6 +5,9 @@ import NewProjectButton from "@/components/team/NewProjectButton";
 import Icon from "@/components/ui/Icon";
 import { Eyebrow, Pill, StageBar, Health, Avatar, VAR, FILL, type Accent } from "@/components/ui/kit";
 import { getTeamData, capacityColor } from "@/lib/team";
+import { createClient } from "@/lib/supabase/server";
+import { WAITING_CLIENT_STATUSES } from "@/lib/questions";
+import MyWork, { type WorkTask, type WorkMember } from "@/components/team/MyWork";
 
 function healthAccent(h: number): Accent {
   return h > 0.75 ? "mint" : h > 0.5 ? "amber" : "rose";
@@ -193,6 +196,7 @@ export default async function DashboardPage() {
         status: "APPROVED",
         completedAt: { gte: sevenDaysAgo },
         templateType: { not: "wireframe_feedback" },
+        handledAt: null, // reviewed items move to project history, off the action feed
       },
       include: { project: { select: { id: true, name: true } } },
       orderBy: { completedAt: "desc" },
@@ -203,6 +207,7 @@ export default async function DashboardPage() {
         templateType: "wireframe_feedback",
         status: "APPROVED",
         completedAt: { gte: sevenDaysAgo },
+        handledAt: null,
       },
       include: { project: { select: { id: true, name: true } } },
       orderBy: { completedAt: "desc" },
@@ -226,6 +231,58 @@ export default async function DashboardPage() {
   ]);
 
   const team = await getTeamData();
+
+  // ── Current user (for "My tasks" default) ──
+  const supabase = await createClient();
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+  const currentUserId = authUser?.id ?? "";
+
+  // ── Connected PM data: tasks, blockers, waiting-on-client, meetings ──
+  const [workTasksRaw, blockerTasks, waitingQuestions, meetings] = await Promise.all([
+    // Tasks across active projects for the workload/My-Work view (bounded).
+    prisma.task.findMany({
+      where: { cycle: { project: { isArchived: false } } },
+      select: {
+        id: true, name: true, status: true, dueDate: true, isBlocker: true, assigneeId: true,
+        assignee: { select: { name: true, email: true } },
+        cycle: { select: { project: { select: { id: true, name: true } } } },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 500,
+    }),
+    prisma.task.findMany({
+      where: { isBlocker: true, unblockedAt: null, status: { not: "DONE" }, cycle: { project: { isArchived: false } } },
+      select: {
+        id: true, name: true, blockerResolver: true, dueDate: true,
+        cycle: { select: { project: { select: { id: true, name: true, client: { select: { name: true, email: true } } } } } },
+      },
+      orderBy: { dueDate: "asc" },
+    }),
+    prisma.question.findMany({
+      where: { status: { in: WAITING_CLIENT_STATUSES } },
+      select: {
+        id: true, questionText: true, kind: true, status: true, createdAt: true,
+        project: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: "asc" },
+      take: 30,
+    }),
+    prisma.appEvent.findMany({
+      where: { type: "MEETING", startAt: { gte: now } },
+      select: { id: true, title: true, startAt: true, project: { select: { id: true, name: true } } },
+      orderBy: { startAt: "asc" },
+      take: 8,
+    }),
+  ]);
+
+  const workTasks: WorkTask[] = workTasksRaw.map((t) => ({
+    id: t.id, name: t.name, status: t.status,
+    dueDate: t.dueDate ? t.dueDate.toISOString() : null,
+    isBlocker: t.isBlocker, assigneeId: t.assigneeId,
+    assigneeName: t.assignee ? (t.assignee.name ?? t.assignee.email) : null,
+    projectId: t.cycle.project.id, projectName: t.cycle.project.name,
+  }));
+  const workMembers: WorkMember[] = team.map((m) => ({ id: m.id, name: m.name, color: m.color }));
 
   // ── Derived data ──
   const gateProjects = projects.filter((p) => p.stages.some((s) => s.status === "GATE_PENDING"));
@@ -415,6 +472,12 @@ export default async function DashboardPage() {
         ))}
       </div>
 
+      {/* My Work — tasks for the logged-in member, filterable, with workload strip */}
+      <div className="fade-up">
+        <Eyebrow style={{ marginBottom: 14 }}>MY W0RK</Eyebrow>
+        <MyWork tasks={workTasks} members={workMembers} currentUserId={currentUserId} />
+      </div>
+
       {/* Main split */}
       <div className="grid gap-5 items-start" style={{ gridTemplateColumns: "minmax(0,1fr) 340px" }}>
         {/* Left — projects */}
@@ -536,6 +599,113 @@ export default async function DashboardPage() {
                     <span style={{ marginTop: 5, width: 7, height: 7, borderRadius: "50%", background: VAR[n.dot], flexShrink: 0 }} />
                     <span style={{ fontSize: 12.5, lineHeight: 1.4 }}>{n.label}</span>
                   </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Blockers */}
+          <div className="card card-pad">
+            <div className="flex items-center gap-2" style={{ marginBottom: 14 }}>
+              <Icon name="alert" size={15} style={{ color: "var(--amber)" }} />
+              <span style={{ fontWeight: 600, fontSize: 13.5 }}>Blockers</span>
+              {blockerTasks.length > 0 && <Pill color="amber" style={{ marginLeft: "auto" }}>{blockerTasks.length}</Pill>}
+            </div>
+            {blockerTasks.length === 0 ? (
+              <p className="faint" style={{ fontSize: 12.5 }}>No active blockers.</p>
+            ) : (
+              <div className="flex flex-col gap-2.5">
+                {blockerTasks.slice(0, 7).map((b) => (
+                  <Link key={b.id} href={`/projects/${b.cycle.project.id}`} className="flex items-start gap-2.5">
+                    <span style={{ marginTop: 5, width: 7, height: 7, borderRadius: "50%", background: VAR.amber, flexShrink: 0 }} />
+                    <div className="min-w-0">
+                      <p style={{ fontSize: 12.5, lineHeight: 1.35 }}>{b.name}</p>
+                      <p className="faint" style={{ fontSize: 11 }}>
+                        {b.cycle.project.client.name ?? b.cycle.project.client.email}
+                        {b.blockerResolver ? ` · waiting on ${b.blockerResolver.replace(/_/g, " ").toLowerCase()}` : ""}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Waiting on client */}
+          {(() => {
+            const items: { key: string; label: string; sub: string; href: string; dot: Accent }[] = [
+              ...waitingQuestions.map((q) => ({
+                key: `q-${q.id}`,
+                label: q.kind === "CONFIRM" ? "Confirmation requested" : "Question awaiting answer",
+                sub: `${q.project?.name ?? "—"} · ${q.questionText.slice(0, 40)}${q.questionText.length > 40 ? "…" : ""}`,
+                href: q.project ? `/projects/${q.project.id}` : "/dashboard",
+                dot: "amber" as Accent,
+              })),
+              ...gateProjects.map((p) => ({
+                key: `gate-${p.id}`,
+                label: "Client sign-off needed",
+                sub: clientName(p),
+                href: `/projects/${p.id}`,
+                dot: "rose" as Accent,
+              })),
+              ...overdueProjects.map((p) => ({
+                key: `mat-${p.id}`,
+                label: "Materials outstanding",
+                sub: clientName(p),
+                href: `/projects/${p.id}/materials`,
+                dot: "blue" as Accent,
+              })),
+            ];
+            return (
+              <div className="card card-pad">
+                <div className="flex items-center gap-2" style={{ marginBottom: 14 }}>
+                  <Icon name="clock" size={15} style={{ color: "var(--blue)" }} />
+                  <span style={{ fontWeight: 600, fontSize: 13.5 }}>Waiting on client</span>
+                  {items.length > 0 && <Pill color="blue" style={{ marginLeft: "auto" }}>{items.length}</Pill>}
+                </div>
+                {items.length === 0 ? (
+                  <p className="faint" style={{ fontSize: 12.5 }}>Nothing outstanding from clients.</p>
+                ) : (
+                  <div className="flex flex-col gap-2.5">
+                    {items.slice(0, 8).map((it) => (
+                      <Link key={it.key} href={it.href} className="flex items-start gap-2.5">
+                        <span style={{ marginTop: 5, width: 7, height: 7, borderRadius: "50%", background: VAR[it.dot], flexShrink: 0 }} />
+                        <div className="min-w-0">
+                          <p style={{ fontSize: 12.5, lineHeight: 1.35 }}>{it.label}</p>
+                          <p className="faint truncate" style={{ fontSize: 11 }}>{it.sub}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Meetings */}
+          <div className="card card-pad">
+            <div className="flex items-center gap-2" style={{ marginBottom: 14 }}>
+              <Icon name="calendar" size={15} style={{ color: "var(--purple)" }} />
+              <span style={{ fontWeight: 600, fontSize: 13.5 }}>Meetings</span>
+              <Link href="/calendar" className="faint" style={{ marginLeft: "auto", fontSize: 11.5 }}>Calendar →</Link>
+            </div>
+            {meetings.length === 0 ? (
+              <p className="faint" style={{ fontSize: 12.5 }}>No upcoming meetings.</p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {meetings.map((m) => (
+                  <div key={m.id} className="flex items-center gap-3">
+                    <span style={{ width: 2, alignSelf: "stretch", borderRadius: 2, background: VAR.purple, opacity: 0.7 }} />
+                    <div className="min-w-0 flex-1">
+                      <p style={{ fontSize: 12.5, fontWeight: 500, lineHeight: 1.35 }} className="truncate">{m.title}</p>
+                      {m.project && <p className="faint" style={{ fontSize: 11 }}>{m.project.name}</p>}
+                    </div>
+                    <span className="faint" style={{ fontSize: 11, flexShrink: 0 }}>
+                      {m.startAt.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
+                      {" · "}
+                      {m.startAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
                 ))}
               </div>
             )}

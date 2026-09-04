@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { createProject } from "@/app/actions/projects";
+import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { createProject, listClients } from "@/app/actions/projects";
+
+type ClientOption = { id: string; name: string | null; email: string };
 
 const PROJECT_TYPES = [
   { value: "WEBSITE", label: "Website" },
@@ -23,7 +26,20 @@ export default function NewProjectButton({
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [clientChoice, setClientChoice] = useState<"new" | "existing">("new");
+  const [clients, setClients] = useState<ClientOption[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
+
+  // Portal target is only available in the browser.
+  useEffect(() => setMounted(true), []);
+
+  // Load existing clients the first time the modal opens.
+  useEffect(() => {
+    if (open && clients.length === 0) {
+      listClients().then(setClients).catch(() => {});
+    }
+  }, [open, clients.length]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -43,8 +59,8 @@ export default function NewProjectButton({
         {label}
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      {open && mounted && createPortal(
+        <div className="theme-dark fixed inset-0 z-[100] flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
             <h2 className="text-base font-semibold text-neutral-900 mb-5">
               Create project
@@ -64,18 +80,51 @@ export default function NewProjectButton({
                 />
               </div>
 
+              {/* Client — existing or new */}
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  Client email
+                  Client
                 </label>
-                <input
-                  name="clientEmail"
-                  type="email"
-                  required
-                  defaultValue={prefillEmail ?? ""}
-                  placeholder="client@example.com"
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
-                />
+                <input type="hidden" name="clientChoice" value={clientChoice} />
+                <div className="flex gap-2 mb-2">
+                  {(["new", "existing"] as const).map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setClientChoice(c)}
+                      className={`flex-1 py-1.5 text-sm rounded-md border transition-colors ${
+                        clientChoice === c
+                          ? "border-neutral-900 bg-neutral-900 text-white"
+                          : "border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+                      }`}
+                    >
+                      {c === "new" ? "New client" : "Existing client"}
+                    </button>
+                  ))}
+                </div>
+                {clientChoice === "new" ? (
+                  <input
+                    name="clientEmail"
+                    type="email"
+                    required
+                    defaultValue={prefillEmail ?? ""}
+                    placeholder="client@example.com"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                  />
+                ) : (
+                  <select
+                    name="existingClientId"
+                    required
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-white"
+                  >
+                    <option value="">Select a client…</option>
+                    {clients.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name ? `${c.name} — ${c.email}` : c.email}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div>
@@ -132,7 +181,8 @@ export default function NewProjectButton({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

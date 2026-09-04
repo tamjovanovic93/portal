@@ -16,7 +16,7 @@ const LABELS: Record<string, string> = {
   brief: "Client brief",
 };
 
-export default function Topbar() {
+export default function Topbar({ notifications }: { notifications?: React.ReactNode }) {
   const pathname = usePathname();
   const segs = pathname.split("/").filter(Boolean);
   const crumbs = segs.slice(0, 2).map((s) => LABELS[s] ?? (s.length > 14 ? "Detail" : s));
@@ -58,13 +58,11 @@ export default function Topbar() {
           ⌘K
         </span>
       </button>
-      <button className="btn btn-icon btn-sm btn-ghost relative">
-        <Icon name="bell" size={17} />
-        <span
-          className="live-dot"
-          style={{ position: "absolute", top: 5, right: 6, width: 6, height: 6, borderRadius: "50%", background: "var(--mint)" }}
-        />
-      </button>
+      {notifications ?? (
+        <button className="btn btn-icon btn-sm btn-ghost relative">
+          <Icon name="bell" size={17} />
+        </button>
+      )}
     </header>
   );
 }

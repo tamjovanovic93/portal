@@ -12,6 +12,10 @@ export type FieldType =
 
 export type FieldOption = { value: string; label: string };
 
+// Conditional visibility: show the field/section only when another field's
+// value matches. `equals` may be a single value or a list (match any).
+export type ShowIf = { field: string; equals: string | string[] };
+
 export type Field = {
   key: string;
   label: string;
@@ -23,6 +27,7 @@ export type Field = {
   options?: FieldOption[];
   columns?: Field[];   // for "repeatable" type
   defaultRows?: number;
+  showIf?: ShowIf;     // conditional visibility (e.g. B2B / B2C branching)
 };
 
 export type Section = {
@@ -30,6 +35,7 @@ export type Section = {
   title: string;
   description?: string;
   teamOnly?: boolean;  // hidden from client view
+  showIf?: ShowIf;     // conditional visibility
   fields: Field[];
 };
 

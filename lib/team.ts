@@ -1,11 +1,17 @@
 import { prisma } from "@/lib/prisma";
 import { hashAccent, type Accent } from "@/components/ui/kit";
 
-// Phase 2 "derive + stub": team members are TEAM profiles; capacity and current
-// projects are derived from assigned retainer tasks; profile copy (title, skills,
-// availability, quote) is stubbed for editing in a later phase.
+// Team members are TEAM Profiles — the single source of truth (replaces the old
+// static roster). Profile copy (title, skills, bio, availability, accent, photo)
+// lives on the row; capacity and current projects are derived from assigned tasks.
 
 const CAPACITY_THRESHOLD = 6; // open assigned tasks that reads as "fully loaded"
+
+const ACCENTS: Accent[] = ["mint", "blue", "amber", "rose", "purple"];
+function toAccent(value: string | null, fallbackSeed: string): Accent {
+  if (value && (ACCENTS as string[]).includes(value)) return value as Accent;
+  return hashAccent(fallbackSeed);
+}
 
 export type MemberProject = {
   id: string;
@@ -19,6 +25,7 @@ export type TeamMember = {
   name: string;
   email: string;
   color: Accent;
+  photo?: string;
   title: string;
   skills: string[];
   overview: string;
@@ -29,23 +36,21 @@ export type TeamMember = {
   projects: MemberProject[];
 };
 
-const STUB = {
-  title: "Team member",
-  skills: ["Strategy", "Delivery", "Client comms"],
-  overview:
-    "Profile bio is a placeholder — add real overview, role, and focus areas in a later phase.",
-  quote: "",
-  availability: {
-    hours: "Mon–Fri · 9:00–18:00",
-    tz: "Local time",
-    note: "Availability is a placeholder — wire real working hours in a later phase.",
-  },
-};
+// Lightweight roster entry for assignment pickers (brief owner/team, task assignee).
+export type RosterMember = { id: string; name: string; photo?: string; title: string; accent: Accent };
+
+type Availability = { hours?: string; tz?: string; note?: string } | null;
+
+const DEFAULT_AVAILABILITY = { hours: "Mon–Fri · 9:00–18:00", tz: "Local time", note: "" };
+
+function memberName(p: { name: string | null; email: string }): string {
+  return p.name ?? p.email.split("@")[0];
+}
 
 export async function getTeamData(): Promise<TeamMember[]> {
   const profiles = await prisma.profile.findMany({
-    where: { role: "TEAM" },
-    orderBy: [{ name: "asc" }, { email: "asc" }],
+    where: { role: "TEAM", active: true },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }, { email: "asc" }],
   });
   if (profiles.length === 0) return [];
 
@@ -81,20 +86,45 @@ export async function getTeamData(): Promise<TeamMember[]> {
       }
     }
 
-    const name = p.name ?? p.email.split("@")[0];
+    const name = memberName(p);
+    const avail = (p.availability as Availability) ?? null;
     return {
       id: p.id,
       name,
       email: p.email,
-      color: hashAccent(name),
-      title: STUB.title,
-      skills: STUB.skills,
-      overview: STUB.overview,
-      quote: STUB.quote,
+      color: toAccent(p.accent, name),
+      photo: p.photoUrl ?? undefined,
+      title: p.title ?? "Team member",
+      skills: p.skills ?? [],
+      overview: p.bio ?? "",
+      quote: "",
       capacity: Math.min(1, open.length / CAPACITY_THRESHOLD),
       openTasks: open.length,
-      availability: STUB.availability,
+      availability: {
+        hours: avail?.hours ?? DEFAULT_AVAILABILITY.hours,
+        tz: avail?.tz ?? DEFAULT_AVAILABILITY.tz,
+        note: avail?.note ?? DEFAULT_AVAILABILITY.note,
+      },
       projects: [...projMap.values()],
+    };
+  });
+}
+
+// Roster for assignment pickers — the single selectable list of team members.
+export async function getRoster(): Promise<RosterMember[]> {
+  const profiles = await prisma.profile.findMany({
+    where: { role: "TEAM", active: true },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }, { email: "asc" }],
+    select: { id: true, name: true, email: true, photoUrl: true, title: true, accent: true },
+  });
+  return profiles.map((p) => {
+    const name = memberName(p);
+    return {
+      id: p.id,
+      name,
+      photo: p.photoUrl ?? undefined,
+      title: p.title ?? "Team member",
+      accent: toAccent(p.accent, name),
     };
   });
 }

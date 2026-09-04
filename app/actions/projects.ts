@@ -17,44 +17,51 @@ export async function createProject(formData: FormData) {
   }
 
   const name = (formData.get("name") as string)?.trim();
+  const clientChoice = (formData.get("clientChoice") as string) ?? "new";
+  const existingClientId = (formData.get("existingClientId") as string)?.trim();
   const clientEmail = (formData.get("clientEmail") as string)?.trim().toLowerCase();
   const type = formData.get("type") as ProjectType;
   const mode = (formData.get("mode") as ProjectMode) ?? "PROJECT";
 
-  if (!name || !clientEmail || !type) {
-    return { error: "Name, client email, and project type are required." };
+  if (!name || !type) {
+    return { error: "Project name and type are required." };
   }
 
-  // Find or create client profile
-  let clientProfile = await prisma.profile.findUnique({
-    where: { email: clientEmail },
-  });
+  // Resolve the client: an existing profile, or a newly-created one.
+  let clientProfile;
+  if (clientChoice === "existing") {
+    if (!existingClientId) return { error: "Select an existing client." };
+    clientProfile = await prisma.profile.findUnique({ where: { id: existingClientId } });
+    if (!clientProfile) return { error: "Selected client not found." };
+  } else {
+    if (!clientEmail) return { error: "Client email is required for a new client." };
+    clientProfile = await prisma.profile.findUnique({ where: { email: clientEmail } });
+    if (!clientProfile) {
+      // Create the client user via Supabase Auth admin API
+      const adminSupabase = createAdminClient();
+      const { data: userData, error: userError } =
+        await adminSupabase.auth.admin.createUser({
+          email: clientEmail,
+          email_confirm: true,
+          user_metadata: { role: "CLIENT" },
+        });
 
-  if (!clientProfile) {
-    // Create the client user via Supabase Auth admin API
-    const adminSupabase = createAdminClient();
-    const { data: userData, error: userError } =
-      await adminSupabase.auth.admin.createUser({
-        email: clientEmail,
-        email_confirm: true,
-        user_metadata: { role: "CLIENT" },
+      if (userError) {
+        console.error("Create user error:", JSON.stringify(userError));
+        return { error: userError.message };
+      }
+
+      // Create profile row directly (bypass trigger race conditions)
+      clientProfile = await prisma.profile.upsert({
+        where: { id: userData.user.id },
+        update: {},
+        create: {
+          id: userData.user.id,
+          email: clientEmail,
+          role: "CLIENT",
+        },
       });
-
-    if (userError) {
-      console.error("Create user error:", JSON.stringify(userError));
-      return { error: userError.message };
     }
-
-    // Create profile row directly (bypass trigger race conditions)
-    clientProfile = await prisma.profile.upsert({
-      where: { id: userData.user.id },
-      update: {},
-      create: {
-        id: userData.user.id,
-        email: clientEmail,
-        role: "CLIENT",
-      },
-    });
   }
 
   const project = await prisma.project.create({
@@ -64,6 +71,7 @@ export async function createProject(formData: FormData) {
       type,
       mode,
       currentStage: 1,
+      onboardingStep: "initial_form",
       // Both project and retainer engagements track the 8-stage progression.
       stages: {
         create: Array.from({ length: 8 }, (_, i) => ({
@@ -74,22 +82,31 @@ export async function createProject(formData: FormData) {
     },
   });
 
-  // Onboarding happens once regardless of mode — auto-send the intake form
-  // so the client sees it immediately on first login.
+  // New onboarding flow: create the Initial Client Form as a DRAFT so the team
+  // can pre-fill it and review before sending it to the client. The full intake
+  // form comes later, after the offer is approved.
   await prisma.document.create({
     data: {
       projectId: project.id,
       stageNumber: 1,
-      templateType: "intake_form",
-      title: "Client Intake Form",
+      templateType: "initial_client_form",
+      title: "Initial Client Form",
       content: {},
-      status: "SENT",
-      sentAt: new Date(),
+      status: "DRAFT",
     },
   });
 
   revalidatePath("/dashboard");
   redirect(`/projects/${project.id}`);
+}
+
+// Team members can create projects for existing clients — list them for the picker.
+export async function listClients() {
+  return prisma.profile.findMany({
+    where: { role: "CLIENT" },
+    select: { id: true, name: true, email: true },
+    orderBy: { email: "asc" },
+  });
 }
 
 export async function archiveProject(id: string) {

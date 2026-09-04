@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { TEMPLATES } from "@/lib/templates/registry";
 import type { Template } from "@/lib/templates/types";
+import { isVisible } from "@/lib/templates/visibility";
+import { applyConfig, getConfig } from "@/lib/templates/config";
 import {
   PROFILE_DOC,
   STRATEGY_DOC,
@@ -40,10 +42,16 @@ async function requireTeam() {
 
 function buildFormText(template: Template, content: Record<string, unknown>): string {
   const lines: string[] = [];
-  for (const section of template.sections) {
+  // Honor the team's builder config (removed/reordered sections & fields).
+  const configured = applyConfig(template, getConfig(content));
+  for (const section of configured.sections) {
     if (section.teamOnly) continue;
+    // Skip sections/fields hidden by unmet conditionals (e.g. the B2B branch
+    // when the client answered B2C) so the agent only sees real answers.
+    if (!isVisible(section.showIf, content)) continue;
     lines.push(`\n## ${section.title}`);
     for (const field of section.fields) {
+      if (!isVisible(field.showIf, content)) continue;
       const value = content[field.key];
       if (value === undefined || value === null || value === "") continue;
       if (field.type === "repeatable" && Array.isArray(value)) {

@@ -7,6 +7,22 @@ import MaterialItem from "@/components/client/MaterialItem";
 import BriefApprovalItem from "@/components/client/BriefApprovalItem";
 import { PROFILE_DOC, type ClientProfile } from "@/lib/intake/types";
 import DeliverableApproval from "@/components/client/DeliverableApproval";
+import { hasOpenClientItems, type FormContent } from "@/lib/forms/collab";
+import AnswerQuestions, { type ClientQuestion } from "@/components/client/AnswerQuestions";
+
+// Collaborative client forms (approve/change/step-through).
+const CLIENT_COLLAB_FORMS = new Set(["initial_client_form", "intake_form"]);
+
+// A document still needs the client's attention if it's been sent (fill/approve)
+// or it's an approved collab form with open team edits/questions. Everything
+// else (completed forms, approved offers) is history.
+function isDocActive(doc: { status: string; templateType: string; content: unknown }) {
+  if (doc.status === "SENT") return true;
+  if (doc.status === "APPROVED" && CLIENT_COLLAB_FORMS.has(doc.templateType)) {
+    return hasOpenClientItems((doc.content ?? {}) as FormContent);
+  }
+  return false;
+}
 
 // Plain-language stage descriptions — clients never see "Stage N"
 const CLIENT_STAGE_DESCRIPTION: Record<number, string> = {
@@ -81,6 +97,17 @@ export default async function ClientPortalPage() {
     });
   }
 
+  // Open questions addressed to this client (across their projects).
+  const questionRows = await prisma.question.findMany({
+    where: { recipientId: profile.id, status: { in: ["WAITING_CLIENT", "WAITING_CONFIRMATION"] } },
+    select: { id: true, kind: true, questionText: true, proposedAnswer: true, project: { select: { name: true } } },
+    orderBy: { createdAt: "asc" },
+  });
+  const clientQuestions: ClientQuestion[] = questionRows.map((q) => ({
+    id: q.id, kind: q.kind, questionText: q.questionText, proposedAnswer: q.proposedAnswer,
+    projectName: q.project?.name ?? "Your project",
+  }));
+
   if (projects.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-6 py-10 text-center">
@@ -93,6 +120,7 @@ export default async function ClientPortalPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10 space-y-10">
+      <AnswerQuestions questions={clientQuestions} />
       {projects.map((project) => {
         // ── Retainer (ONGOING) clients get a cycle/task view, not stages ──
         if (project.mode === "ONGOING") {
@@ -126,14 +154,14 @@ export default async function ClientPortalPage() {
                   : "Your ongoing work — your team will open the next cycle shortly."}
               </p>
 
-              {/* Forms & documents (onboarding intake, etc.) */}
-              {project.documents.length > 0 && (
+              {/* Forms & documents (onboarding intake, etc.) — active only */}
+              {project.documents.filter(isDocActive).length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
-                    Forms &amp; documents
+                    Needs your attention
                   </h3>
                   <div className="space-y-2">
-                    {project.documents.map((doc) => (
+                    {project.documents.filter(isDocActive).map((doc) => (
                       <Link
                         key={doc.id}
                         href={`/portal/documents/${doc.id}`}
@@ -142,14 +170,8 @@ export default async function ClientPortalPage() {
                         <span className="text-sm font-medium text-neutral-800 group-hover:underline">
                           {doc.title}
                         </span>
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ml-4 ${
-                            doc.status === "APPROVED"
-                              ? "bg-green-50 text-green-700"
-                              : "bg-amber-50 text-amber-700"
-                          }`}
-                        >
-                          {doc.status === "APPROVED" ? "Submitted" : "Action needed"}
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ml-4 bg-amber-50 text-amber-700">
+                          Action needed
                         </span>
                       </Link>
                     ))}
@@ -328,6 +350,16 @@ export default async function ClientPortalPage() {
         const stageDescription =
           CLIENT_STAGE_DESCRIPTION[project.currentStage] ?? "In progress.";
 
+        // Active vs completed forms.
+        const activeDocs = project.documents.filter(isDocActive);
+        const completedDocs = project.documents.filter((d) => !isDocActive(d));
+        // Intake finished but brief not yet shared → focus on what's next.
+        const intakeDoc = project.documents.find((d) => d.templateType === "intake_form");
+        const intakeComplete =
+          intakeDoc?.status === "APPROVED" &&
+          !hasOpenClientItems((intakeDoc.content ?? {}) as FormContent);
+        const showNextSteps = intakeComplete && !project.briefPublishedAt;
+
         return (
           <section key={project.id}>
             <div className="flex items-start justify-between mb-1">
@@ -336,6 +368,28 @@ export default async function ClientPortalPage() {
               </h2>
             </div>
             <p className="text-sm text-neutral-500 mb-6">{stageDescription}</p>
+
+            {/* Brief & strategy — once the team has published them */}
+            {project.briefPublishedAt && (
+              <div className="mb-6">
+                <Link
+                  href={`/portal/brief/${project.id}`}
+                  className="flex items-center justify-between bg-white border border-neutral-200 rounded-md px-4 py-3 hover:border-neutral-400 transition-colors group"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-neutral-800 group-hover:underline">
+                      Your Brief &amp; Strategy
+                    </p>
+                    <p className="text-xs text-neutral-600 mt-0.5">
+                      View the finished brief and strategy
+                    </p>
+                  </div>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-medium shrink-0 ml-4">
+                    View →
+                  </span>
+                </Link>
+              </div>
+            )}
 
             {/* Approval gate */}
             {needsApproval && (
@@ -460,14 +514,25 @@ export default async function ClientPortalPage() {
               </div>
             )}
 
-            {/* Documents to fill out */}
-            {project.documents.length > 0 && (
+            {/* What happens next — after intake is submitted, before the brief */}
+            {showNextSteps && (
+              <div className="mb-6 rounded-lg border border-neutral-200 bg-white px-5 py-4">
+                <p className="text-sm font-medium text-neutral-900">What happens next</p>
+                <p className="text-sm text-neutral-600 mt-1">
+                  Your team is reviewing your intake answers and preparing your Project Brief.
+                  We&apos;ll notify you here as soon as it&apos;s ready for you to review.
+                </p>
+              </div>
+            )}
+
+            {/* Forms & documents — only those needing action */}
+            {activeDocs.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
-                  Forms & documents
+                  Needs your attention
                 </h3>
                 <div className="space-y-2">
-                  {project.documents.map((doc) => (
+                  {activeDocs.map((doc) => (
                     <Link
                       key={doc.id}
                       href={`/portal/documents/${doc.id}`}
@@ -476,19 +541,36 @@ export default async function ClientPortalPage() {
                       <span className="text-sm font-medium text-neutral-800 group-hover:underline">
                         {doc.title}
                       </span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ml-4 ${
-                          doc.status === "APPROVED"
-                            ? "bg-green-50 text-green-700"
-                            : "bg-amber-50 text-amber-700"
-                        }`}
-                      >
-                        {doc.status === "APPROVED" ? "Submitted" : "Action needed"}
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ml-4 bg-amber-50 text-amber-700">
+                        Action needed
                       </span>
                     </Link>
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* Completed forms — tucked into history */}
+            {completedDocs.length > 0 && (
+              <details className="mb-6 group">
+                <summary className="text-xs font-semibold text-neutral-500 uppercase tracking-wider cursor-pointer hover:text-neutral-700 select-none list-none">
+                  Completed ({completedDocs.length})
+                </summary>
+                <div className="space-y-2 mt-3">
+                  {completedDocs.map((doc) => (
+                    <Link
+                      key={doc.id}
+                      href={`/portal/documents/${doc.id}`}
+                      className="flex items-center justify-between bg-white border border-neutral-200 rounded-md px-4 py-3 hover:border-neutral-400 transition-colors"
+                    >
+                      <span className="text-sm text-neutral-600">{doc.title}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ml-4 bg-green-50 text-green-700">
+                        {doc.templateType === "financial_offer" ? "Approved" : "Submitted"}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </details>
             )}
 
             {/* Shared assets (non-wireframe) */}
