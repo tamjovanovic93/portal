@@ -7,17 +7,21 @@ export default function DeleteDocumentButton({
   documentId,
   projectId,
   stageNumber,
+  clientId,
 }: {
   documentId: string;
-  projectId: string;
-  stageNumber: number;
+  projectId?: string;
+  stageNumber?: number;
+  clientId?: string;
 }) {
   const router = useRouter();
 
   async function handleDelete() {
     if (!confirm("Delete this document? This cannot be undone.")) return;
     await deleteDocument(documentId);
-    router.push(`/projects/${projectId}/stage/${stageNumber}`);
+    if (projectId) router.push(`/projects/${projectId}/stage/${stageNumber ?? 1}`);
+    else if (clientId) router.push(`/clients/${clientId}`);
+    else router.refresh();
   }
 
   return (

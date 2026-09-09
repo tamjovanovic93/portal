@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Eyebrow, Pill, Avatar } from "@/components/ui/kit";
+import NewClientButton from "@/components/team/NewClientButton";
 
 export default async function ClientsPage() {
-  // Every profile that owns at least one project, with a lightweight set of
-  // their engagements so we can show counts per client.
+  // All clients — including those still in onboarding with no projects yet.
   const clients = await prisma.profile.findMany({
-    where: { projectsAsClient: { some: {} } },
+    where: { role: "CLIENT" },
     include: {
       projectsAsClient: {
         select: { id: true, mode: true, isArchived: true, updatedAt: true },
@@ -35,17 +35,20 @@ export default async function ClientsPage() {
 
   return (
     <div style={{ padding: "28px 32px 60px", maxWidth: 1320, margin: "0 auto" }}>
-      <div className="fade-up" style={{ marginBottom: 24 }}>
-        <Eyebrow style={{ marginBottom: 10 }}>CLIENTS</Eyebrow>
-        <h1 className="page-title" style={{ fontSize: 32 }}>Clients</h1>
-        <p className="muted" style={{ margin: "8px 0 0", fontSize: 14.5 }}>
-          {rows.length} client{rows.length !== 1 ? "s" : ""} — each stream holds all their engagements.
-        </p>
+      <div className="fade-up flex items-start justify-between gap-4" style={{ marginBottom: 24 }}>
+        <div>
+          <Eyebrow style={{ marginBottom: 10 }}>CLIENTS</Eyebrow>
+          <h1 className="page-title" style={{ fontSize: 32 }}>Clients</h1>
+          <p className="muted" style={{ margin: "8px 0 0", fontSize: 14.5 }}>
+            {rows.length} client{rows.length !== 1 ? "s" : ""} — each stream holds all their engagements.
+          </p>
+        </div>
+        <NewClientButton />
       </div>
 
       {rows.length === 0 ? (
         <div className="card muted" style={{ padding: 40, textAlign: "center", fontSize: 13.5 }}>
-          No clients yet. They appear here once a project is created for them.
+          No clients yet. Create one to start onboarding and intake.
         </div>
       ) : (
         <div className="fade-up grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">

@@ -110,12 +110,48 @@ export default async function ClientPortalPage() {
     projectName: q.project?.name ?? "Your project",
   }));
 
+  // Client-level onboarding forms (no project yet) awaiting the client's action.
+  const clientDocs = await prisma.document.findMany({
+    where: { clientId: profile.id, projectId: null, status: { in: ["SENT", "APPROVED"] } },
+    orderBy: { sentAt: "desc" },
+    select: { id: true, title: true, status: true, templateType: true, content: true },
+  });
+  const clientActionDocs = clientDocs.filter(isDocActive);
+
+  const OnboardingForms = () =>
+    clientActionDocs.length > 0 ? (
+      <section>
+        <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
+          Needs your attention
+        </h3>
+        <div className="space-y-2">
+          {clientActionDocs.map((doc) => (
+            <Link
+              key={doc.id}
+              href={`/portal/documents/${doc.id}`}
+              className="flex items-center justify-between bg-white border border-neutral-200 rounded-md px-4 py-3 hover:border-neutral-400 transition-colors group"
+            >
+              <span className="text-sm font-medium text-neutral-800 group-hover:underline">{doc.title}</span>
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ml-4 bg-amber-50 text-amber-700">
+                Action needed
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
+    ) : null;
+
   if (projects.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-10 text-center">
-        <p className="text-neutral-500 text-sm">
-          Your project is being set up. Check back shortly.
-        </p>
+      <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
+        <AnswerQuestions questions={clientQuestions} />
+        {clientActionDocs.length > 0 ? (
+          <OnboardingForms />
+        ) : (
+          <p className="text-neutral-500 text-sm text-center">
+            Your onboarding is being set up. Check back shortly.
+          </p>
+        )}
       </div>
     );
   }
@@ -123,6 +159,7 @@ export default async function ClientPortalPage() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-10 space-y-10">
       <AnswerQuestions questions={clientQuestions} />
+      <OnboardingForms />
       {projects.map((project) => {
         // ── Retainer (ONGOING) clients get a cycle/task view, not stages ──
         if (project.mode === "ONGOING") {

@@ -7,6 +7,9 @@ import DeleteClientButton from "@/components/team/DeleteClientButton";
 import Icon from "@/components/ui/Icon";
 import { Eyebrow, Pill, Avatar, VAR, type Accent } from "@/components/ui/kit";
 import { STAGE_LABELS, STAGE_COUNT } from "@/lib/stages";
+import ClientOnboardingPipeline from "@/components/team/client/ClientOnboardingPipeline";
+import ClientIntakePipeline from "@/components/team/client/ClientIntakePipeline";
+import { getProfile, getStrategy } from "@/lib/intake/store";
 
 const TYPE_LABELS: Record<ProjectType, string> = {
   WEBSITE: "Website", BRANDING: "Branding", MARKETING: "Marketing",
@@ -69,6 +72,26 @@ export default async function ClientStreamPage({
 
   if (!client) notFound();
 
+  // Client-level onboarding + Client Data state (all client-scoped, no project).
+  const [onboardingDocs, profile, strategy] = await Promise.all([
+    prisma.document.findMany({
+      where: {
+        clientId: id,
+        templateType: { in: ["initial_client_form", "financial_offer", "intake_form"] },
+      },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, templateType: true, status: true },
+    }),
+    getProfile(id),
+    getStrategy(id),
+  ]);
+  const initialForm = onboardingDocs.find((d) => d.templateType === "initial_client_form") ?? null;
+  const offer = onboardingDocs.find((d) => d.templateType === "financial_offer") ?? null;
+  const intake = onboardingDocs.find((d) => d.templateType === "intake_form") ?? null;
+  const intakeApproved = intake?.status === "APPROVED";
+  const profileStatus = (profile?._meta?.status ?? null) as "draft" | "verified" | null;
+  const hasStrategy = !!strategy;
+
   const clientName = client.name ?? client.email;
   const all = client.projectsAsClient;
   const active = all.filter((p) => !p.isArchived);
@@ -126,6 +149,37 @@ export default async function ClientStreamPage({
           </div>
         ))}
       </div>
+
+      {/* Onboarding & Client Data pipeline — happens once at the client level */}
+      <section className="fade-up">
+        <Eyebrow style={{ marginBottom: 14 }}>ONBOARDING &amp; CLIENT DATA</Eyebrow>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+          <div className="card" style={{ padding: 18 }}>
+            <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Onboarding</p>
+            <p className="faint" style={{ fontSize: 12, marginBottom: 14 }}>
+              Initial form, offer and intake — collected once at the client level.
+            </p>
+            <ClientOnboardingPipeline
+              clientId={id}
+              initialForm={initialForm}
+              offer={offer}
+              intake={intake}
+            />
+          </div>
+          <div className="card" style={{ padding: 18 }}>
+            <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Client Data pipeline</p>
+            <p className="faint" style={{ fontSize: 12, marginBottom: 14 }}>
+              Agents build the profile, verification queue and strategy from the intake.
+            </p>
+            <ClientIntakePipeline
+              clientId={id}
+              hasApprovedIntake={intakeApproved}
+              profileStatus={profileStatus}
+              hasStrategy={hasStrategy}
+            />
+          </div>
+        </div>
+      </section>
 
       {/* Client Data — shared across all of this client's projects */}
       <section className="fade-up">

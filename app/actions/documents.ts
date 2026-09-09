@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
@@ -20,6 +19,32 @@ async function getAuthUser() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
   return user;
+}
+
+// A document is owned by a client either directly (clientId, client-scoped) or
+// through its project (legacy project-scoped). Revalidate whichever surface it
+// lives on.
+type OwnedDoc = {
+  id: string;
+  projectId: string | null;
+  clientId: string | null;
+  stageNumber: number;
+  project?: { clientId: string } | null;
+};
+
+function ownerClientId(doc: OwnedDoc): string | null {
+  return doc.clientId ?? doc.project?.clientId ?? null;
+}
+
+function revalidateDoc(doc: OwnedDoc) {
+  if (doc.projectId) {
+    revalidatePath(`/projects/${doc.projectId}/stage/${doc.stageNumber}`);
+  } else if (doc.clientId) {
+    revalidatePath(`/clients/${doc.clientId}`);
+    revalidatePath(`/clients/${doc.clientId}/documents/${doc.id}`);
+  }
+  revalidatePath(`/portal/documents/${doc.id}`);
+  revalidatePath(`/portal`);
 }
 
 export async function createDocument(
@@ -54,15 +79,15 @@ export async function saveDocument(
 
   const doc = await prisma.document.findUnique({
     where: { id: documentId },
-    include: { project: true },
+    include: { project: { select: { clientId: true } } },
   });
-  if (!doc || !doc.project) throw new Error("Document not found");
+  if (!doc) throw new Error("Document not found");
 
   const profile = await prisma.profile.findUnique({ where: { id: user.id } });
   if (!profile) throw new Error("Profile not found");
 
   const isTeam = profile.role === "TEAM";
-  const isOwner = doc.project.clientId === profile.id;
+  const isOwner = ownerClientId(doc) === profile.id;
   if (!isTeam && !isOwner) throw new Error("Unauthorized");
 
   await prisma.document.update({
@@ -70,8 +95,7 @@ export async function saveDocument(
     data: { content: content as Prisma.InputJsonValue, updatedAt: new Date() },
   });
 
-  revalidatePath(`/projects/${doc.projectId}/stage/${doc.stageNumber}`);
-  revalidatePath(`/portal/documents/${documentId}`);
+  revalidateDoc(doc);
 }
 
 export async function submitDocument(documentId: string) {
@@ -79,15 +103,15 @@ export async function submitDocument(documentId: string) {
 
   const doc = await prisma.document.findUnique({
     where: { id: documentId },
-    include: { project: true },
+    include: { project: { select: { clientId: true } } },
   });
-  if (!doc || !doc.project) throw new Error("Document not found");
+  if (!doc) throw new Error("Document not found");
 
   const profile = await prisma.profile.findUnique({ where: { id: user.id } });
   if (!profile) throw new Error("Profile not found");
 
   const isTeam = profile.role === "TEAM";
-  const isOwner = doc.project.clientId === profile.id;
+  const isOwner = ownerClientId(doc) === profile.id;
   if (!isTeam && !isOwner) throw new Error("Unauthorized");
 
   await prisma.document.update({
@@ -98,8 +122,7 @@ export async function submitDocument(documentId: string) {
     },
   });
 
-  revalidatePath(`/projects/${doc.projectId}/stage/${doc.stageNumber}`);
-  revalidatePath(`/portal`);
+  revalidateDoc(doc);
 }
 
 export async function sendDocumentToClient(documentId: string) {
@@ -113,7 +136,7 @@ export async function sendDocumentToClient(documentId: string) {
     data: { status: "SENT", sentAt: new Date() },
   });
 
-  revalidatePath(`/projects/${doc.projectId}/stage/${doc.stageNumber}`);
+  revalidateDoc(doc);
 }
 
 export async function deleteDocument(documentId: string) {
@@ -124,7 +147,7 @@ export async function deleteDocument(documentId: string) {
 
   await prisma.document.delete({ where: { id: documentId } });
 
-  revalidatePath(`/projects/${doc.projectId}/stage/${doc.stageNumber}`);
+  revalidateDoc(doc);
 }
 
 // Team marks a client-submitted document as reviewed/handled — moves it out of
@@ -137,7 +160,7 @@ export async function markDocumentHandled(documentId: string) {
     where: { id: documentId },
     data: { handledAt: new Date() },
   });
-  revalidatePath(`/projects/${doc.projectId}`);
+  revalidateDoc(doc);
   revalidatePath("/dashboard");
 }
 
@@ -149,6 +172,6 @@ export async function unmarkDocumentHandled(documentId: string) {
     where: { id: documentId },
     data: { handledAt: null },
   });
-  revalidatePath(`/projects/${doc.projectId}`);
+  revalidateDoc(doc);
   revalidatePath("/dashboard");
 }

@@ -30,11 +30,14 @@ export default async function ClientDocumentPage({
 
   const doc = await prisma.document.findUnique({
     where: { id },
-    include: { project: true },
+    include: { project: { select: { clientId: true } } },
   });
 
-  if (!doc || !doc.project) notFound();
-  if (doc.project.clientId !== profile.id) notFound();
+  if (!doc) notFound();
+  // A document belongs to the client directly (client-scoped onboarding) or via
+  // its project (legacy). Either way it must belong to the signed-in client.
+  const ownerId = doc.clientId ?? doc.project?.clientId ?? null;
+  if (ownerId !== profile.id) notFound();
 
   if (doc.status === "DRAFT") {
     return (

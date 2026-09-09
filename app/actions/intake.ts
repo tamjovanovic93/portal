@@ -15,7 +15,7 @@ import {
   type ClientProfile,
   type VerificationQueue,
 } from "@/lib/intake/types";
-import { getProfile, upsertIntakeDoc, mutateDoc, clientIdForProject } from "@/lib/intake/store";
+import { getProfile, upsertIntakeDoc, mutateDoc } from "@/lib/intake/store";
 
 import clientProfileTemplate from "@/lib/intake/templates/client_profile.template.json";
 import strategyTemplate from "@/lib/intake/templates/strategy.template.json";
@@ -158,7 +158,7 @@ type IntakeResult = {
 };
 
 export async function runIntakeAgent(
-  projectId: string
+  clientId: string
 ): Promise<{ success?: boolean; verificationCount?: number; error?: string }> {
   await requireTeam();
 
@@ -166,17 +166,19 @@ export async function runIntakeAgent(
     return { error: "ANTHROPIC_API_KEY is not set in environment variables." };
   }
 
+  // The approved intake form is now client-scoped (projectId null).
   const doc = await prisma.document.findFirst({
-    where: { projectId, templateType: "intake_form", status: "APPROVED" },
+    where: { clientId, templateType: "intake_form", status: "APPROVED" },
     orderBy: { completedAt: "desc" },
   });
-  if (!doc) return { error: "No approved intake form found for this project." };
+  if (!doc) return { error: "No approved intake form found for this client." };
 
-  const project = await prisma.project.findUnique({
-    where: { id: projectId },
-    select: { name: true },
+  const client = await prisma.profile.findUnique({
+    where: { id: clientId },
+    select: { name: true, email: true },
   });
-  if (!project) return { error: "Project not found." };
+  if (!client) return { error: "Client not found." };
+  const clientName = client.name ?? client.email;
 
   const template = TEMPLATES["intake_form"];
   if (!template) return { error: "Intake form template not found." };
@@ -185,7 +187,7 @@ export async function runIntakeAgent(
 
   let result: IntakeResult;
   try {
-    const text = await runWithFallback(buildIntakePrompt(project.name, formText));
+    const text = await runWithFallback(buildIntakePrompt(clientName, formText));
     result = extractJson<IntakeResult>(text);
   } catch (err) {
     return { error: `Intake agent failed: ${(err as Error).message}` };
@@ -198,8 +200,8 @@ export async function runIntakeAgent(
   // Stamp meta so it's authoritative regardless of what the model emitted.
   profile._meta = {
     ...profile._meta,
-    client_id: projectId,
-    company_name: profile.company?.company_name ?? project.name,
+    client_id: clientId,
+    company_name: profile.company?.company_name ?? clientName,
     brand_name: profile.company?.brand_name ?? "",
     created_date: now,
     created_by: "Agent 1 — Intake",
@@ -211,7 +213,7 @@ export async function runIntakeAgent(
   const pending = items.filter((i) => (i.status ?? "pending") === "pending").length;
   queue._meta = {
     ...queue?._meta,
-    client_id: projectId,
+    client_id: clientId,
     company_name: profile._meta.company_name,
     generated_date: now,
     generated_by: "Agent 1 — Intake",
@@ -221,11 +223,10 @@ export async function runIntakeAgent(
     resolved_count: items.length - pending,
   };
 
-  const clientId = (await clientIdForProject(projectId))!;
   await upsertIntakeDoc(clientId, PROFILE_DOC, profile);
   await upsertIntakeDoc(clientId, VERIFICATION_DOC, queue);
 
-  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/clients/${clientId}`);
   revalidatePath(`/clients/${clientId}/data`);
 
   return { success: true, verificationCount: items.length };
@@ -234,10 +235,9 @@ export async function runIntakeAgent(
 // ─── Verification gate ─────────────────────────────────────────────────────────
 
 export async function markProfileVerified(
-  projectId: string
+  clientId: string
 ): Promise<{ success?: boolean; error?: string }> {
   await requireTeam();
-  const clientId = (await clientIdForProject(projectId))!;
   try {
     await mutateDoc<ClientProfile>(clientId, PROFILE_DOC, (profile) => {
       profile._meta.status = "verified";
@@ -245,16 +245,15 @@ export async function markProfileVerified(
   } catch {
     return { error: "No client profile to verify. Run intake first." };
   }
-  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/clients/${clientId}`);
   revalidatePath(`/clients/${clientId}/data`);
   return { success: true };
 }
 
 export async function markProfileDraft(
-  projectId: string
+  clientId: string
 ): Promise<{ success?: boolean; error?: string }> {
   await requireTeam();
-  const clientId = (await clientIdForProject(projectId))!;
   try {
     await mutateDoc<ClientProfile>(clientId, PROFILE_DOC, (profile) => {
       profile._meta.status = "draft";
@@ -262,7 +261,7 @@ export async function markProfileDraft(
   } catch {
     return { error: "No client profile found." };
   }
-  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/clients/${clientId}`);
   revalidatePath(`/clients/${clientId}/data`);
   return { success: true };
 }
@@ -288,7 +287,7 @@ ${JSON.stringify(strategyTemplate)}`;
 }
 
 export async function runStrategyAgent(
-  projectId: string
+  clientId: string
 ): Promise<{ success?: boolean; error?: string }> {
   await requireTeam();
 
@@ -296,7 +295,6 @@ export async function runStrategyAgent(
     return { error: "ANTHROPIC_API_KEY is not set in environment variables." };
   }
 
-  const clientId = (await clientIdForProject(projectId))!;
   const profile = await getProfile(clientId);
   if (!profile) return { error: "No client profile found. Run intake first." };
 
@@ -316,7 +314,7 @@ export async function runStrategyAgent(
   const now = new Date().toISOString();
   strategy._meta = {
     ...(strategy._meta as Record<string, unknown>),
-    client_id: projectId,
+    client_id: clientId,
     company_name: profile._meta.company_name,
     brand_name: profile._meta.brand_name,
     created_date: now,
@@ -328,7 +326,7 @@ export async function runStrategyAgent(
 
   await upsertIntakeDoc(clientId, STRATEGY_DOC, strategy);
 
-  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/clients/${clientId}`);
   revalidatePath(`/clients/${clientId}/data`);
 
   return { success: true };

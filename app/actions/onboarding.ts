@@ -14,8 +14,9 @@ import {
 } from "@/lib/forms/collab";
 
 // Server actions for the staged onboarding flow: Initial Client Form → review
-// (change / ask-a-question) → Offer → (Phase 3 intake) → Brief. Built on the
-// existing Document rows + the collab field-state in lib/forms/collab.ts.
+// (change / ask-a-question) → Offer → Intake. Onboarding now happens at the
+// CLIENT level (documents scoped by clientId, projectId null) — a Project is not
+// required. Legacy project-scoped docs still resolve via their project's client.
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
@@ -34,19 +35,40 @@ async function requireUser() {
   return user;
 }
 
-// Onboarding docs are always project-scoped; narrow project + projectId to
-// non-null so callers don't have to guard the nullable Document relation.
+// Load a document and resolve its owning client — from the document's own
+// clientId (client-scoped) or, for legacy docs, via its project.
 async function loadDoc(documentId: string) {
   const doc = await prisma.document.findUnique({
     where: { id: documentId },
-    include: { project: { select: { id: true, clientId: true, name: true } } },
+    include: {
+      project: { select: { id: true, clientId: true, name: true } },
+      client: { select: { id: true, name: true, email: true } },
+    },
   });
-  if (!doc || !doc.project || !doc.projectId) throw new Error("Document not found");
-  return doc as typeof doc & { projectId: string; project: NonNullable<typeof doc.project> };
+  const clientId = doc?.clientId ?? doc?.project?.clientId ?? null;
+  if (!doc || !clientId) throw new Error("Document not found");
+  const clientLabel =
+    doc.client?.name ?? doc.client?.email ?? doc.project?.name ?? "Client";
+  return { ...doc, clientId, projectId: doc.projectId ?? null, clientLabel };
 }
 
-function teamLink(projectId: string, documentId: string) {
-  return `/projects/${projectId}/stage/1/documents/${documentId}`;
+// Where the team edits a document. Client-scoped docs live under the client;
+// legacy project-scoped docs keep their project route.
+function teamDocLink(doc: { id: string; projectId: string | null; clientId: string | null }) {
+  return doc.projectId
+    ? `/projects/${doc.projectId}/stage/1/documents/${doc.id}`
+    : `/clients/${doc.clientId}/documents/${doc.id}`;
+}
+
+// Revalidate the relevant team surface(s) for a document.
+function revalidateDoc(doc: { id: string; projectId: string | null; clientId: string | null }) {
+  if (doc.projectId) {
+    revalidatePath(`/projects/${doc.projectId}`);
+    revalidatePath(`/projects/${doc.projectId}/stage/1/documents/${doc.id}`);
+  } else {
+    revalidatePath(`/clients/${doc.clientId}`);
+    revalidatePath(`/clients/${doc.clientId}/documents/${doc.id}`);
+  }
 }
 
 async function persistContent(documentId: string, content: FormContent) {
@@ -54,6 +76,54 @@ async function persistContent(documentId: string, content: FormContent) {
     where: { id: documentId },
     data: { content: content as Prisma.InputJsonValue },
   });
+}
+
+// ─── Client-level onboarding document creation ───────────────────────────────
+
+export async function createClientIntakeForm(
+  clientId: string
+): Promise<{ id?: string; error?: string }> {
+  await requireTeam();
+  const existing = await prisma.document.findFirst({
+    where: { clientId, templateType: "intake_form" },
+    orderBy: { createdAt: "desc" },
+  });
+  if (existing) return { id: existing.id };
+  const doc = await prisma.document.create({
+    data: {
+      clientId,
+      stageNumber: 1,
+      templateType: "intake_form",
+      title: "Client Intake Form",
+      content: {} as Prisma.InputJsonValue,
+      status: "DRAFT",
+    },
+  });
+  revalidatePath(`/clients/${clientId}`);
+  return { id: doc.id };
+}
+
+export async function createClientOffer(
+  clientId: string
+): Promise<{ id?: string; error?: string }> {
+  await requireTeam();
+  const existing = await prisma.document.findFirst({
+    where: { clientId, templateType: "financial_offer" },
+    orderBy: { createdAt: "desc" },
+  });
+  if (existing) return { id: existing.id };
+  const doc = await prisma.document.create({
+    data: {
+      clientId,
+      stageNumber: 1,
+      templateType: "financial_offer",
+      title: "Project / Financial Offer",
+      content: {} as Prisma.InputJsonValue,
+      status: "DRAFT",
+    },
+  });
+  revalidatePath(`/clients/${clientId}`);
+  return { id: doc.id };
 }
 
 // ─── Send a form to the client (Initial Form / configured Intake) ────────────
@@ -65,13 +135,13 @@ export async function sendFormToClient(documentId: string) {
     where: { id: documentId },
     data: { status: "SENT", sentAt: new Date() },
   });
-  await notifyClient(doc.project.clientId, {
-    projectId: doc.projectId,
+  await notifyClient(doc.clientId, {
+    projectId: doc.projectId ?? undefined,
     type: "form_sent",
     message: `A new form is ready for you: ${doc.title}.`,
     link: `/portal/documents/${documentId}`,
   });
-  revalidatePath(`/projects/${doc.projectId}`);
+  revalidateDoc(doc);
   revalidatePath(`/portal`);
 }
 
@@ -79,18 +149,18 @@ export async function sendFormToClient(documentId: string) {
 export async function completeForm(documentId: string) {
   const user = await requireUser();
   const doc = await loadDoc(documentId);
-  if (doc.project.clientId !== user.id) throw new Error("Unauthorized");
+  if (doc.clientId !== user.id) throw new Error("Unauthorized");
   await prisma.document.update({
     where: { id: documentId },
     data: { status: "APPROVED", completedAt: new Date() },
   });
   await notifyTeam({
-    projectId: doc.projectId,
+    projectId: doc.projectId ?? undefined,
     type: "form_completed",
-    message: `${doc.project.name}: client completed "${doc.title}".`,
-    link: teamLink(doc.projectId, documentId),
+    message: `${doc.clientLabel}: completed "${doc.title}".`,
+    link: teamDocLink(doc),
   });
-  revalidatePath(`/projects/${doc.projectId}`);
+  revalidateDoc(doc);
   revalidatePath(`/portal`);
 }
 
@@ -101,13 +171,13 @@ export async function changeAnswer(documentId: string, fieldKey: string, value: 
   const doc = await loadDoc(documentId);
   const next = teamEdit((doc.content ?? {}) as FormContent, fieldKey, value);
   await persistContent(documentId, next);
-  await notifyClient(doc.project.clientId, {
-    projectId: doc.projectId,
+  await notifyClient(doc.clientId, {
+    projectId: doc.projectId ?? undefined,
     type: "answer_changed",
-    message: `${doc.project.name}: your team updated an answer and needs your approval.`,
+    message: `${doc.clientLabel}: your team updated an answer and needs your approval.`,
     link: `/portal/documents/${documentId}`,
   });
-  revalidatePath(`/projects/${doc.projectId}`);
+  revalidateDoc(doc);
   revalidatePath(`/portal/documents/${documentId}`);
   return { ok: true };
 }
@@ -117,13 +187,13 @@ export async function askQuestion(documentId: string, fieldKey: string, text: st
   const doc = await loadDoc(documentId);
   const next = teamAskQuestion((doc.content ?? {}) as FormContent, fieldKey, text);
   await persistContent(documentId, next);
-  await notifyClient(doc.project.clientId, {
-    projectId: doc.projectId,
+  await notifyClient(doc.clientId, {
+    projectId: doc.projectId ?? undefined,
     type: "question_asked",
-    message: `${doc.project.name}: your team asked a question about one of your answers.`,
+    message: `${doc.clientLabel}: your team asked a question about one of your answers.`,
     link: `/portal/documents/${documentId}`,
   });
-  revalidatePath(`/projects/${doc.projectId}`);
+  revalidateDoc(doc);
   revalidatePath(`/portal/documents/${documentId}`);
   return { ok: true };
 }
@@ -133,38 +203,120 @@ export async function askQuestion(documentId: string, fieldKey: string, text: st
 export async function approveEdit(documentId: string, fieldKey: string) {
   const user = await requireUser();
   const doc = await loadDoc(documentId);
-  if (doc.project.clientId !== user.id) throw new Error("Unauthorized");
+  if (doc.clientId !== user.id) throw new Error("Unauthorized");
   const next = clientApproveEdit((doc.content ?? {}) as FormContent, fieldKey);
   await persistContent(documentId, next);
   await notifyTeam({
-    projectId: doc.projectId,
+    projectId: doc.projectId ?? undefined,
     type: "edit_approved",
-    message: `${doc.project.name}: client approved your change.`,
-    link: teamLink(doc.projectId, documentId),
+    message: `${doc.clientLabel}: approved your change.`,
+    link: teamDocLink(doc),
   });
   revalidatePath(`/portal/documents/${documentId}`);
-  revalidatePath(`/projects/${doc.projectId}`);
+  revalidateDoc(doc);
   return { ok: true };
 }
 
 export async function answerQuestion(documentId: string, fieldKey: string, answer: string) {
   const user = await requireUser();
   const doc = await loadDoc(documentId);
-  if (doc.project.clientId !== user.id) throw new Error("Unauthorized");
+  if (doc.clientId !== user.id) throw new Error("Unauthorized");
   const next = clientAnswerQuestion((doc.content ?? {}) as FormContent, fieldKey, answer);
   await persistContent(documentId, next);
   await notifyTeam({
-    projectId: doc.projectId,
+    projectId: doc.projectId ?? undefined,
     type: "question_answered",
-    message: `${doc.project.name}: client answered your question.`,
-    link: teamLink(doc.projectId, documentId),
+    message: `${doc.clientLabel}: answered your question.`,
+    link: teamDocLink(doc),
   });
   revalidatePath(`/portal/documents/${documentId}`);
-  revalidatePath(`/projects/${doc.projectId}`);
+  revalidateDoc(doc);
   return { ok: true };
 }
 
-// ─── Publish Brief + Strategy to the client ──────────────────────────────────
+// ─── Project / Financial Offer send + approve ────────────────────────────────
+
+export async function sendOffer(documentId: string) {
+  await requireTeam();
+  const doc = await loadDoc(documentId);
+  await prisma.document.update({
+    where: { id: documentId },
+    data: { status: "SENT", sentAt: new Date() },
+  });
+  await notifyClient(doc.clientId, {
+    projectId: doc.projectId ?? undefined,
+    type: "offer_sent",
+    message: `${doc.clientLabel}: your project offer is ready and needs your approval.`,
+    link: `/portal/documents/${documentId}`,
+  });
+  revalidateDoc(doc);
+  revalidatePath(`/portal`);
+}
+
+export async function approveOffer(documentId: string) {
+  const user = await requireUser();
+  const doc = await loadDoc(documentId);
+  if (doc.clientId !== user.id) throw new Error("Unauthorized");
+  await prisma.document.update({
+    where: { id: documentId },
+    data: { status: "APPROVED", completedAt: new Date() },
+  });
+  await notifyTeam({
+    projectId: doc.projectId ?? undefined,
+    type: "offer_approved",
+    message: `${doc.clientLabel}: approved the offer.`,
+    link: teamDocLink(doc),
+  });
+  revalidatePath(`/portal`);
+  revalidateDoc(doc);
+  return { ok: true };
+}
+
+// ─── Legacy project-scoped helpers (still used by the project brief pipeline) ──
+
+export async function createIntakeForm(
+  projectId: string
+): Promise<{ id?: string; error?: string }> {
+  await requireTeam();
+  const existing = await prisma.document.findFirst({
+    where: { projectId, templateType: "intake_form" },
+    orderBy: { createdAt: "desc" },
+  });
+  if (existing) return { id: existing.id };
+  const doc = await prisma.document.create({
+    data: {
+      projectId,
+      stageNumber: 1,
+      templateType: "intake_form",
+      title: "Client Intake Form",
+      content: {} as Prisma.InputJsonValue,
+      status: "DRAFT",
+    },
+  });
+  revalidatePath(`/projects/${projectId}`);
+  return { id: doc.id };
+}
+
+export async function createOffer(projectId: string): Promise<{ id?: string; error?: string }> {
+  await requireTeam();
+  const existing = await prisma.document.findFirst({
+    where: { projectId, templateType: "financial_offer" },
+    orderBy: { createdAt: "desc" },
+  });
+  if (existing) return { id: existing.id };
+  const doc = await prisma.document.create({
+    data: {
+      projectId,
+      stageNumber: 1,
+      templateType: "financial_offer",
+      title: "Project / Financial Offer",
+      content: {} as Prisma.InputJsonValue,
+      status: "DRAFT",
+    },
+  });
+  revalidatePath(`/projects/${projectId}`);
+  return { id: doc.id };
+}
 
 export async function publishBrief(
   projectId: string
@@ -200,90 +352,5 @@ export async function unpublishBrief(
   });
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/portal`);
-  return { ok: true };
-}
-
-// ─── Full Intake Form ────────────────────────────────────────────────────────
-
-export async function createIntakeForm(
-  projectId: string
-): Promise<{ id?: string; error?: string }> {
-  await requireTeam();
-  const existing = await prisma.document.findFirst({
-    where: { projectId, templateType: "intake_form" },
-    orderBy: { createdAt: "desc" },
-  });
-  if (existing) return { id: existing.id };
-  const doc = await prisma.document.create({
-    data: {
-      projectId,
-      stageNumber: 1,
-      templateType: "intake_form",
-      title: "Client Intake Form",
-      content: {},
-      status: "DRAFT",
-    },
-  });
-  revalidatePath(`/projects/${projectId}`);
-  return { id: doc.id };
-}
-
-// ─── Project / Financial Offer ───────────────────────────────────────────────
-
-export async function createOffer(projectId: string): Promise<{ id?: string; error?: string }> {
-  await requireTeam();
-  // Reuse an existing draft offer if present.
-  const existing = await prisma.document.findFirst({
-    where: { projectId, templateType: "financial_offer" },
-    orderBy: { createdAt: "desc" },
-  });
-  if (existing) return { id: existing.id };
-  const doc = await prisma.document.create({
-    data: {
-      projectId,
-      stageNumber: 1,
-      templateType: "financial_offer",
-      title: "Project / Financial Offer",
-      content: {},
-      status: "DRAFT",
-    },
-  });
-  revalidatePath(`/projects/${projectId}`);
-  return { id: doc.id };
-}
-
-export async function sendOffer(documentId: string) {
-  await requireTeam();
-  const doc = await loadDoc(documentId);
-  await prisma.document.update({
-    where: { id: documentId },
-    data: { status: "SENT", sentAt: new Date() },
-  });
-  await notifyClient(doc.project.clientId, {
-    projectId: doc.projectId,
-    type: "offer_sent",
-    message: `${doc.project.name}: your project offer is ready and needs your approval.`,
-    link: `/portal/documents/${documentId}`,
-  });
-  revalidatePath(`/projects/${doc.projectId}`);
-  revalidatePath(`/portal`);
-}
-
-export async function approveOffer(documentId: string) {
-  const user = await requireUser();
-  const doc = await loadDoc(documentId);
-  if (doc.project.clientId !== user.id) throw new Error("Unauthorized");
-  await prisma.document.update({
-    where: { id: documentId },
-    data: { status: "APPROVED", completedAt: new Date() },
-  });
-  await notifyTeam({
-    projectId: doc.projectId,
-    type: "offer_approved",
-    message: `${doc.project.name}: client approved the offer.`,
-    link: `/projects/${doc.projectId}`,
-  });
-  revalidatePath(`/portal`);
-  revalidatePath(`/projects/${doc.projectId}`);
   return { ok: true };
 }
