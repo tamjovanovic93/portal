@@ -18,6 +18,7 @@ import {
 import { getProfile, getStrategy, getVerificationQueue } from "@/lib/intake/store";
 import { getBrandKit, getBrandLogos } from "@/app/actions/brand-kit";
 import BrandKitCard from "@/components/team/data/BrandKitCard";
+import SuggestedProjectsPanel from "@/components/team/data/SuggestedProjectsPanel";
 import { PROFILE_DOC, STRATEGY_DOC } from "@/lib/intake/types";
 import { addRow, deleteRow, upsertCompany, type SectionConfig } from "@/app/actions/brief";
 
@@ -33,6 +34,7 @@ const TABS = [
   { id: "strategy", label: "Strategy" },
   { id: "brand", label: "Brand Kit" },
   { id: "verify", label: "Verification" },
+  { id: "projects", label: "Projects" },
 ] as const;
 
 type Tab = (typeof TABS)[number]["id"];
@@ -87,6 +89,39 @@ export default async function ClientDataPage({
   const resolvedVerification = verificationItems.filter((i) => (i.status ?? "pending") !== "pending");
   const pendingVerification = activeVerification.length;
 
+  // Suggested Projects (Projects tab) — generated from Client Data.
+  const dataReady = !!strategy && profile?._meta?.status === "verified";
+  const notReadyReason = !profile
+    ? "Run the intake pipeline to generate Client Data first."
+    : profile._meta?.status !== "verified"
+    ? "Verify the client profile first."
+    : !strategy
+    ? "Generate the strategy first."
+    : null;
+  const suggestionRows = await prisma.suggestedProject.findMany({
+    where: { clientId },
+    orderBy: { createdAt: "asc" },
+  });
+  const suggestions = suggestionRows.map((s) => {
+    const b = (s.briefDraft as Record<string, unknown>) ?? {};
+    const list = (v: unknown, key: string) =>
+      Array.isArray(v) ? v.map((x) => String((x as Record<string, unknown>)[key] ?? "")).filter(Boolean) : [];
+    return {
+      id: s.id,
+      name: s.name,
+      projectType: s.projectType,
+      rationale: s.rationale,
+      status: s.status as "PENDING" | "APPROVED" | "REJECTED",
+      approvedProjectId: s.approvedProjectId,
+      brief: {
+        overview: String(b.overview ?? ""),
+        scope: list(b.scope, "text"),
+        keyFunctions: list(b.keyFunctions, "text"),
+        sitemap: list(b.sitemap, "name"),
+      },
+    };
+  });
+
   const add = (cfg: SectionConfig) => addRow.bind(null, cfg, clientId);
   const del = (cfg: SectionConfig) => deleteRow.bind(null, cfg, clientId);
 
@@ -130,6 +165,9 @@ export default async function ClientDataPage({
     brand: (brandKit.typography?.length ?? 0) + (brandKit.colors?.length ?? 0) + brandLogos.length
       ? String((brandKit.typography?.length ?? 0) + (brandKit.colors?.length ?? 0) + brandLogos.length) : "",
     verify: "",
+    projects: suggestions.filter((s) => s.status === "PENDING").length
+      ? String(suggestions.filter((s) => s.status === "PENDING").length)
+      : "",
   };
 
   // Business snapshot bits
@@ -920,6 +958,15 @@ export default async function ClientDataPage({
             </Disclosure>
           )}
         </div>
+      )}
+
+      {tab === "projects" && (
+        <SuggestedProjectsPanel
+          clientId={clientId}
+          dataReady={dataReady}
+          notReadyReason={notReadyReason}
+          suggestions={suggestions}
+        />
       )}
     </div>
   );

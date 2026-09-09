@@ -124,6 +124,12 @@ enum QuestionStatus {
   RESOLVED
 }
 
+enum SuggestionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // ─── Portal Tables ────────────────────────────────────────────────────────────
 
 // Maps 1:1 to auth.users — created by trigger on signup
@@ -154,6 +160,7 @@ model Profile {
   notifications     Notification[] @relation("NotificationRecipient")
   questionsAsked    Question[]     @relation("QuestionAsker")
   questionsReceived Question[]     @relation("QuestionRecipient")
+  suggestedProjects SuggestedProject[] @relation("ClientSuggestions")
 
   @@map("profiles")
 }
@@ -446,4 +453,25 @@ model Question {
   @@index([contextType, contextId])
   @@index([recipientRole, status])
   @@map("questions")
+}
+
+// Agent-generated project suggestions for a client, produced from Client Data.
+// A suggestion is a review/approval candidate — NOT a real Project. On approval
+// it creates a Project and copies briefDraft into that project's Brief.
+// briefDraft holds a ProjectBrief-shaped JSON (see lib/brief/types.ts).
+model SuggestedProject {
+  id                String           @id @default(uuid()) @db.Uuid
+  clientId          String           @map("client_id") @db.Uuid
+  client            Profile          @relation("ClientSuggestions", fields: [clientId], references: [id], onDelete: Cascade)
+  name              String
+  projectType       String?          @map("project_type")
+  briefDraft        Json             @map("brief_draft")
+  rationale         String?
+  status            SuggestionStatus @default(PENDING)
+  approvedProjectId String?          @map("approved_project_id") @db.Uuid
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  @@index([clientId, status])
+  @@map("suggested_projects")
 }
