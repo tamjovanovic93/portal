@@ -4,6 +4,8 @@ import { useState } from "react";
 import Icon from "@/components/ui/Icon";
 import { Avatar, Pill, Health, VAR, type Accent } from "@/components/ui/kit";
 import { capacityColor, capacityLabel, type TeamMember } from "@/lib/team";
+import TeamMemberModal from "@/components/team/TeamMemberModal";
+import DeactivateMemberButton from "@/components/team/DeactivateMemberButton";
 
 export default function TeamView({ members }: { members: TeamMember[] }) {
   const [sel, setSel] = useState<string>(members[0]?.id ?? "");
@@ -19,7 +21,10 @@ export default function TeamView({ members }: { members: TeamMember[] }) {
             Everyone who owns and delivers the work — capacity and current projects are live from assigned tasks.
           </p>
         </div>
-        <button className="btn btn-primary"><Icon name="plus" size={16} /> Invite member</button>
+        <TeamMemberModal
+          triggerClassName="btn btn-primary"
+          triggerChildren={<><Icon name="plus" size={16} /> Add member</>}
+        />
       </div>
 
       {members.length === 0 ? (
@@ -84,8 +89,26 @@ function MemberDetail({ m }: { m: TeamMember }) {
                 <h2 className="tech" style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: "0.14em" }}>{m.name.toUpperCase()}</h2>
                 <div className="eyebrow" style={{ color: VAR[m.color], marginTop: 6 }}>{m.title}</div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <SocialBtn name="link" /><SocialBtn name="send" /><SocialBtn name="mail" />
+                <TeamMemberModal
+                  triggerClassName="btn btn-sm btn-ghost"
+                  triggerChildren={<><Icon name="edit" size={14} /> Edit</>}
+                  member={{
+                    id: m.id,
+                    name: m.name,
+                    email: m.email,
+                    title: m.title,
+                    skills: m.skills,
+                    bio: m.overview,
+                    photo: m.photo,
+                    accent: m.color,
+                    availability: m.availability,
+                  }}
+                />
+                <DeactivateMemberButton memberId={m.id} memberName={m.name} className="btn btn-sm btn-ghost" style={{ color: "var(--rose)" }}>
+                  <Icon name="x" size={14} /> Remove
+                </DeactivateMemberButton>
               </div>
             </div>
             {m.overview && <p style={{ fontSize: 14.5, lineHeight: 1.6, margin: "16px 0 14px", maxWidth: 760 }}>{m.overview}</p>}
