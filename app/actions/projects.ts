@@ -161,6 +161,69 @@ export async function deleteProject(id: string) {
   revalidatePath("/dashboard");
 }
 
+// Permanently delete a Client (a Profile with role CLIENT) and everything that
+// cannot meaningfully exist without them. A client's Projects reference the
+// profile with ON DELETE RESTRICT, so the projects must be removed first; the
+// remaining project-scoped records (stages, documents, approvals, assets,
+// materials, cycles → tasks → approvals, notifications, questions) then cascade.
+// The client's shared Client Data documents and their notifications cascade when
+// the profile itself is deleted. Team-member profiles are never touched.
+export async function deleteClient(clientId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || user.user_metadata?.role?.toLowerCase() === "client") {
+    return { error: "Unauthorized" };
+  }
+
+  const client = await prisma.profile.findUnique({
+    where: { id: clientId },
+    select: { id: true, role: true },
+  });
+  if (!client) return { error: "Client not found." };
+  if (client.role !== "CLIENT") {
+    return { error: "Only clients can be deleted here." };
+  }
+
+  const projects = await prisma.project.findMany({
+    where: { clientId },
+    select: { id: true },
+  });
+  const projectIds = projects.map((p) => p.id);
+
+  // One transaction: any failure rolls back so the client is never left in a
+  // half-deleted state.
+  await prisma.$transaction(async (tx) => {
+    if (projectIds.length > 0) {
+      // app_events.project_id and activity_log.project_id are ON DELETE SET NULL,
+      // so deleting the projects would leave these rows orphaned. Remove the
+      // client's project-scoped ones explicitly first.
+      await tx.appEvent.deleteMany({ where: { projectId: { in: projectIds } } });
+      await tx.activityLog.deleteMany({ where: { projectId: { in: projectIds } } });
+      // Deleting the projects cascades stages, project documents, approvals,
+      // assets, materials, cycles → tasks → approvals, notifications and questions.
+      await tx.project.deleteMany({ where: { id: { in: projectIds } } });
+    }
+    // Cascades the shared Client Data documents (client_profile /
+    // verification_queue / strategy / brand_kit) and the client's notifications.
+    await tx.profile.delete({ where: { id: clientId } });
+  });
+
+  // Remove the client's Supabase Auth login so no orphaned auth user remains and
+  // the email can be reused. Best-effort — the data is already gone by here.
+  try {
+    const adminSupabase = createAdminClient();
+    await adminSupabase.auth.admin.deleteUser(clientId);
+  } catch (err) {
+    console.error("deleteClient: auth user cleanup failed", err);
+  }
+
+  revalidatePath("/clients");
+  revalidatePath("/dashboard");
+  redirect("/clients");
+}
+
 export async function generateClientAccess(
   projectId: string
 ): Promise<{ email?: string; password?: string; error?: string }> {

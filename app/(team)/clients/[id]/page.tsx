@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ProjectType, StageStatus } from "@prisma/client";
 import NewProjectButton from "@/components/team/NewProjectButton";
+import DeleteClientButton from "@/components/team/DeleteClientButton";
 import Icon from "@/components/ui/Icon";
 import { Eyebrow, Pill, Avatar, VAR, type Accent } from "@/components/ui/kit";
 
@@ -114,7 +115,10 @@ export default async function ClientStreamPage({
             <p className="muted mono" style={{ margin: "6px 0 0", fontSize: 12.5 }}>{client.email}</p>
           </div>
         </div>
-        <NewProjectButton prefillEmail={client.email} label="+ New engagement" />
+        <div className="flex items-center gap-2.5 flex-shrink-0">
+          <NewProjectButton prefillEmail={client.email} label="+ New engagement" />
+          <DeleteClientButton clientId={id} clientName={clientName} />
+        </div>
       </div>
 
       {/* Stat chips */}
