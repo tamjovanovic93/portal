@@ -165,9 +165,25 @@ export async function deleteProject(id: string) {
   if (!user || user.user_metadata?.role?.toLowerCase() === "client") {
     return { error: "Unauthorized" };
   }
-  await prisma.project.delete({ where: { id } });
+
+  const project = await prisma.project.findUnique({
+    where: { id },
+    select: { clientId: true },
+  });
+
+  // app_events.project_id and activity_log.project_id are ON DELETE SET NULL, so
+  // a plain delete would leave the project's calendar events and activity behind
+  // (still visible on the dashboard/calendar). Remove them first, in one tx.
+  await prisma.$transaction(async (tx) => {
+    await tx.appEvent.deleteMany({ where: { projectId: id } });
+    await tx.activityLog.deleteMany({ where: { projectId: id } });
+    await tx.project.delete({ where: { id } });
+  });
+
   revalidatePath("/projects");
   revalidatePath("/dashboard");
+  revalidatePath("/calendar");
+  if (project) revalidatePath(`/clients/${project.clientId}`);
 }
 
 // Permanently delete a Client (a Profile with role CLIENT) and everything that
@@ -230,6 +246,8 @@ export async function deleteClient(clientId: string) {
 
   revalidatePath("/clients");
   revalidatePath("/dashboard");
+  revalidatePath("/projects");
+  revalidatePath("/calendar");
   redirect("/clients");
 }
 
