@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
-import { ProjectMode, ProjectType } from "@prisma/client";
+import { ProjectMode, ProjectType, ProjectHealth } from "@prisma/client";
 import { STAGE_COUNT } from "@/lib/stages";
 
 export async function createProject(formData: FormData) {
@@ -136,6 +136,25 @@ export async function restoreProject(id: string) {
   await prisma.project.update({ where: { id }, data: { isArchived: false } });
   revalidatePath("/projects");
   revalidatePath("/dashboard");
+}
+
+export async function setProjectHealth(id: string, health: ProjectHealth) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || user.user_metadata?.role?.toLowerCase() === "client") {
+    return { error: "Unauthorized" };
+  }
+  const project = await prisma.project.update({
+    where: { id },
+    data: { health },
+    select: { clientId: true },
+  });
+  revalidatePath(`/clients/${project.clientId}`);
+  revalidatePath(`/projects/${id}`);
+  revalidatePath("/dashboard");
+  return { ok: true };
 }
 
 export async function deleteProject(id: string) {

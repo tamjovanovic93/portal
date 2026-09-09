@@ -130,6 +130,12 @@ enum SuggestionStatus {
   REJECTED
 }
 
+enum ProjectHealth {
+  ON_TRACK
+  NEEDS_ATTENTION
+  AT_RISK
+}
+
 // ─── Portal Tables ────────────────────────────────────────────────────────────
 
 // Maps 1:1 to auth.users — created by trigger on signup
@@ -172,8 +178,9 @@ model Project {
   client           Profile     @relation("ClientProjects", fields: [clientId], references: [id])
   type             ProjectType
   mode             ProjectMode @default(PROJECT)
-  currentStage     Int         @default(1) @map("current_stage") // 1–8
+  currentStage     Int         @default(1) @map("current_stage") // 1–7 (Strategy=1)
   isArchived       Boolean     @default(false) @map("is_archived")
+  health           ProjectHealth @default(ON_TRACK)
   briefReviewedAt  DateTime?   @map("brief_reviewed_at")
   // Onboarding flow (new intake pipeline): tracks where the project is in the
   // Initial Form → Offer → Intake → Brief sequence. See app/actions/onboarding.ts.
