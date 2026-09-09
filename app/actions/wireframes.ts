@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { WIREFRAME_STAGE, DESIGN_STAGE } from "@/lib/stages";
 
 async function getAuthUser() {
   const supabase = await createClient();
@@ -47,7 +48,7 @@ export async function submitWireframeFeedback(
 
   revalidatePath("/portal");
   revalidatePath(`/projects/${doc.projectId}`);
-  revalidatePath(`/projects/${doc.projectId}/stage/3`);
+  revalidatePath(`/projects/${doc.projectId}/stage/${WIREFRAME_STAGE}`);
   revalidatePath("/dashboard");
   redirect("/portal");
 }
@@ -74,19 +75,19 @@ export async function approveWireframesAndSubmit(
         completedAt: now,
       },
     }),
-    // Record formal gate approval for Stage 3
+    // Record formal gate approval for the Sketch stage
     prisma.approval.create({
       data: {
         projectId,
-        stageNumber: 3,
+        stageNumber: WIREFRAME_STAGE,
         approvedById: profile.id,
         method: "PORTAL",
-        notes: "Client approved wireframes via portal — authorised to proceed to Stage 4.",
+        notes: "Client approved wireframes via portal — authorised to proceed to the design stage.",
       },
     }),
-    // Unlock the Stage 3 gate
+    // Unlock the Sketch-stage gate
     prisma.projectStage.update({
-      where: { projectId_stageNumber: { projectId, stageNumber: 3 } },
+      where: { projectId_stageNumber: { projectId, stageNumber: WIREFRAME_STAGE } },
       data: {
         gateApproved: true,
         gateApprovedAt: now,
@@ -97,7 +98,7 @@ export async function approveWireframesAndSubmit(
 
   revalidatePath("/portal");
   revalidatePath(`/projects/${projectId}`);
-  revalidatePath(`/projects/${projectId}/stage/3`);
+  revalidatePath(`/projects/${projectId}/stage/${WIREFRAME_STAGE}`);
   revalidatePath("/dashboard");
   redirect("/portal");
 }

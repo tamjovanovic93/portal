@@ -7,12 +7,7 @@ import { createDocument, sendDocumentToClient } from "@/app/actions/documents";
 import WireframeSection from "@/components/team/WireframeSection";
 import MockupSection from "@/components/team/MockupSection";
 import RevisionTracker from "@/components/team/RevisionTracker";
-
-const STAGE_NAMES: Record<number, string> = {
-  1: "Onboarding", 2: "Strategy", 3: "Sketch",
-  4: "Make", 5: "Build", 6: "Client Review",
-  7: "Launch", 8: "Complete",
-};
+import { STAGE_COUNT, WIREFRAME_STAGE, DESIGN_STAGE, stageLabel } from "@/lib/stages";
 
 const OVERALL_LABELS: Record<string, string> = {
   love_it: "Love it — let's go",
@@ -115,7 +110,7 @@ export default async function StagePage({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  if (isNaN(stageNumber) || stageNumber < 1 || stageNumber > 8) redirect("/dashboard");
+  if (isNaN(stageNumber) || stageNumber < 1 || stageNumber > STAGE_COUNT) redirect("/dashboard");
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
@@ -144,14 +139,14 @@ export default async function StagePage({
     finalNotes?: string;
   } = { status: "none" };
 
-  if (stageNumber === 3) {
+  if (stageNumber === WIREFRAME_STAGE) {
     const [rawAssets, feedbackDoc] = await Promise.all([
       prisma.projectAsset.findMany({
-        where: { projectId, stageNumber: 3, folder: "wireframes" },
+        where: { projectId, stageNumber: WIREFRAME_STAGE, folder: "wireframes" },
         orderBy: { uploadedAt: "asc" },
       }),
       prisma.document.findFirst({
-        where: { projectId, stageNumber: 3, templateType: "wireframe_feedback" },
+        where: { projectId, stageNumber: WIREFRAME_STAGE, templateType: "wireframe_feedback" },
       }),
     ]);
 
@@ -195,14 +190,14 @@ export default async function StagePage({
   let mockupAssets: MockupAssetRow[] = [];
   let designFeedback: DesignFeedback = { status: "none" };
 
-  if (stageNumber === 4) {
+  if (stageNumber === DESIGN_STAGE) {
     const [rawMockups, designFeedbackDoc] = await Promise.all([
       prisma.projectAsset.findMany({
-        where: { projectId, stageNumber: 4, folder: "mockup" },
+        where: { projectId, stageNumber: DESIGN_STAGE, folder: "mockup" },
         orderBy: { uploadedAt: "asc" },
       }),
       prisma.document.findFirst({
-        where: { projectId, stageNumber: 4, templateType: "design_feedback" },
+        where: { projectId, stageNumber: DESIGN_STAGE, templateType: "design_feedback" },
       }),
     ]);
 
@@ -248,14 +243,14 @@ export default async function StagePage({
         </Link>
         <span>›</span>
         <span className="text-neutral-600">
-          Stage {stageNumber} — {STAGE_NAMES[stageNumber]}
+          Stage {stageNumber} — {stageLabel(stageNumber)}
         </span>
       </nav>
 
       {/* Stage header */}
       <div>
         <h1 className="text-xl font-semibold text-neutral-900">
-          Stage {String(stageNumber).padStart(2, "0")} — {STAGE_NAMES[stageNumber]}
+          Stage {String(stageNumber).padStart(2, "0")} — {stageLabel(stageNumber)}
         </h1>
         {stageRow && (
           <p className="text-sm text-neutral-500 mt-1 capitalize">
@@ -264,8 +259,8 @@ export default async function StagePage({
         )}
       </div>
 
-      {/* Stage 3 — Wireframe uploads */}
-      {stageNumber === 3 && (
+      {/* Sketch stage — Wireframe uploads */}
+      {stageNumber === WIREFRAME_STAGE && (
         <>
           <div>
             <div className="mb-3">
@@ -358,8 +353,8 @@ export default async function StagePage({
         </>
       )}
 
-      {/* Stage 4 — Design mockup */}
-      {stageNumber === 4 && (
+      {/* Make stage — Design mockup */}
+      {stageNumber === DESIGN_STAGE && (
         <>
           <div>
             <div className="mb-3">

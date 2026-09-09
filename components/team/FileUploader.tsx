@@ -2,12 +2,12 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { STAGE_LABELS as STAGE_NAMES, STAGE_COUNT } from "@/lib/stages";
 
-const STAGE_LABELS: Record<number, string> = {
-  1: "01 Onboarding", 2: "02 Strategy", 3: "03 Sketch",
-  4: "04 Make", 5: "05 Build", 6: "06 Client Review",
-  7: "07 Launch", 8: "08 Complete",
-};
+// Numbered stage tags for the upload picker (e.g. "01 Strategy").
+const STAGE_LABELS: Record<number, string> = Object.fromEntries(
+  Object.entries(STAGE_NAMES).map(([n, l]) => [Number(n), `${String(n).padStart(2, "0")} ${l}`])
+);
 
 export default function FileUploader({
   projectId,
@@ -69,7 +69,7 @@ export default function FileUploader({
             className="px-2 py-1.5 border border-neutral-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
           >
             <option value="">None</option>
-            {Array.from({ length: 8 }, (_, i) => i + 1).map((n) => (
+            {Array.from({ length: STAGE_COUNT }, (_, i) => i + 1).map((n) => (
               <option key={n} value={String(n)}>{STAGE_LABELS[n]}</option>
             ))}
           </select>

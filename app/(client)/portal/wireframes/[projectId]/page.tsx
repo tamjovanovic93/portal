@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import WireframeFeedbackForm from "@/components/client/WireframeFeedbackForm";
 import { Prisma } from "@prisma/client";
+import { WIREFRAME_STAGE } from "@/lib/stages";
 
 export default async function WireframeReviewPage({
   params,
@@ -25,7 +26,7 @@ export default async function WireframeReviewPage({
     where: { id: projectId, clientId: profile.id },
     include: {
       assets: {
-        where: { stageNumber: 3, folder: "wireframes" },
+        where: { stageNumber: WIREFRAME_STAGE, folder: "wireframes" },
         orderBy: { uploadedAt: "asc" },
       },
     },
@@ -51,14 +52,14 @@ export default async function WireframeReviewPage({
 
   // Find or create the wireframe feedback document
   let feedbackDoc = await prisma.document.findFirst({
-    where: { projectId, stageNumber: 3, templateType: "wireframe_feedback" },
+    where: { projectId, stageNumber: WIREFRAME_STAGE, templateType: "wireframe_feedback" },
   });
 
   if (!feedbackDoc) {
     feedbackDoc = await prisma.document.create({
       data: {
         projectId,
-        stageNumber: 3,
+        stageNumber: WIREFRAME_STAGE,
         templateType: "wireframe_feedback",
         title: "Wireframe Feedback",
         content: {} as Prisma.InputJsonValue,

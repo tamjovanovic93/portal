@@ -6,11 +6,7 @@ import NewProjectButton from "@/components/team/NewProjectButton";
 import DeleteClientButton from "@/components/team/DeleteClientButton";
 import Icon from "@/components/ui/Icon";
 import { Eyebrow, Pill, Avatar, VAR, type Accent } from "@/components/ui/kit";
-
-const STAGE_LABELS: Record<number, string> = {
-  1: "Onboarding", 2: "Strategy", 3: "Sketch", 4: "Make",
-  5: "Build", 6: "Client Review", 7: "Launch", 8: "Complete",
-};
+import { STAGE_LABELS, STAGE_COUNT } from "@/lib/stages";
 
 const TYPE_LABELS: Record<ProjectType, string> = {
   WEBSITE: "Website", BRANDING: "Branding", MARKETING: "Marketing",
@@ -24,7 +20,7 @@ function StagePips({ currentStage, stageStatuses }: {
   const statusMap = Object.fromEntries(stageStatuses.map((s) => [s.stageNumber, s.status]));
   return (
     <div className="flex items-center gap-1 mt-3">
-      {Array.from({ length: 8 }, (_, i) => i + 1).map((n) => {
+      {Array.from({ length: STAGE_COUNT }, (_, i) => i + 1).map((n) => {
         const status = statusMap[n];
         const isCurrent = n === currentStage;
         let bg = "var(--surface-3)";

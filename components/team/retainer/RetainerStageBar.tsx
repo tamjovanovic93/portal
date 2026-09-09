@@ -2,28 +2,11 @@
 
 import { useTransition } from "react";
 import { setRetainerStage } from "@/app/actions/retainer";
+import { STAGE_LABELS, STAGE_INFO, STAGE_COUNT } from "@/lib/stages";
 
-const STAGE_LABELS: Record<number, string> = {
-  1: "Onboarding",
-  2: "Strategy",
-  3: "Sketch",
-  4: "Make",
-  5: "Build",
-  6: "Client Review",
-  7: "Launch",
-  8: "Complete",
-};
-
-const STAGE_DESCRIPTIONS: Record<number, string> = {
-  1: "Intake form, client database, brief.",
-  2: "Research, strategy and scope.",
-  3: "Wireframes / first structural direction.",
-  4: "Full design / creative output.",
-  5: "Build, QA, development.",
-  6: "Client review and sign-off.",
-  7: "Launch / delivery.",
-  8: "Complete.",
-};
+const STAGE_DESCRIPTIONS: Record<number, string> = Object.fromEntries(
+  Object.entries(STAGE_INFO).map(([n, i]) => [Number(n), i.description])
+);
 
 export default function RetainerStageBar({
   projectId,
@@ -54,7 +37,7 @@ export default function RetainerStageBar({
 
       {/* Clickable pips */}
       <div className="flex items-center gap-1.5">
-        {Array.from({ length: 8 }, (_, i) => i + 1).map((n) => {
+        {Array.from({ length: STAGE_COUNT }, (_, i) => i + 1).map((n) => {
           const done = n < currentStage;
           const current = n === currentStage;
           let bg = "bg-neutral-200 hover:bg-neutral-300";

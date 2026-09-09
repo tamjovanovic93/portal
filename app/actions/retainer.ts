@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import type { TaskStatus, TaskOwnerRole } from "@prisma/client";
+import { STAGE_COUNT } from "@/lib/stages";
 
 const OWNER_ROLES: TaskOwnerRole[] = ["PROJECT_MANAGER", "DEV_TEAM", "DESIGN_TEAM", "CLIENT"];
 
@@ -140,7 +141,7 @@ export async function deleteCycle(cycleId: string) {
 
 export async function setRetainerStage(projectId: string, stageNumber: number) {
   await requireTeam();
-  if (stageNumber < 1 || stageNumber > 8) return;
+  if (stageNumber < 1 || stageNumber > STAGE_COUNT) return;
 
   const stages = await prisma.projectStage.findMany({
     where: { projectId },

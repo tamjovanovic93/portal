@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toggleAssetVisibility, deleteAsset } from "@/app/actions/assets";
+import { STAGE_LABELS } from "@/lib/stages";
 
 type Asset = {
   id: string;
@@ -12,12 +13,6 @@ type Asset = {
   stageNumber: number | null;
   notes: string | null;
   uploadedAt: string;
-};
-
-const STAGE_LABELS: Record<number, string> = {
-  1: "Onboarding", 2: "Strategy", 3: "Sketch",
-  4: "Make", 5: "Build", 6: "Client Review",
-  7: "Launch", 8: "Complete",
 };
 
 function formatBytes(bytes: number | null): string {

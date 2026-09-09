@@ -1029,20 +1029,21 @@ export const STAGE_TEMPLATES: Record<
   number,
   { id: string; audience: "client" | "team"; label: string }[]
 > = {
-  1: [{ id: "intake_form", audience: "client", label: "Client Intake Form" }],
-  // Scope of Work now lives inside the Brief (Brief → Scope → Tasks). The old
-  // standalone Stage-2 document is retired; existing scope_of_work docs are kept
-  // for history but no new ones are offered here.
-  2: [],
-  3: [],
-  4: [],
-  5: [
+  // Client intake now happens at the CLIENT level (before a project exists), so
+  // it is no longer a numbered project stage.
+  // Scope of Work lives inside the Brief (Brief → Scope → Tasks); the old
+  // standalone Strategy-stage document is retired (existing docs kept for history).
+  1: [], // Strategy
+  2: [], // Sketch
+  3: [], // Make
+  4: [
     { id: "qa_checklist", audience: "team", label: "QA Checklist" },
     { id: "dev_handoff", audience: "team", label: "Dev Handoff" },
-  ],
-  6: [{ id: "review_signoff", audience: "client", label: "Review & Sign-off" }],
-  7: [
+  ], // Build
+  5: [{ id: "review_signoff", audience: "client", label: "Review & Sign-off" }], // Client Review
+  6: [
     { id: "launch_checklist", audience: "team", label: "Launch Checklist" },
     { id: "delivery_handover", audience: "team", label: "Delivery Handover" },
-  ],
+  ], // Launch / Delivery
+  7: [], // Complete
 };

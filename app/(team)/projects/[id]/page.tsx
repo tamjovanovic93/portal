@@ -20,22 +20,7 @@ import RetainerView from "./RetainerView";
 import NewProjectButton from "@/components/team/NewProjectButton";
 import ProjectFiles from "@/components/team/ProjectFiles";
 import ClientUploadAction from "@/components/team/ClientUploadAction";
-
-const STAGE_LABELS: Record<number, string> = {
-  1: "Onboarding", 2: "Strategy", 3: "Sketch", 4: "Make",
-  5: "Build", 6: "Client Review", 7: "Launch", 8: "Complete",
-};
-
-const STAGE_INFO: Record<number, { label: string; description: string; hasGate: boolean }> = {
-  1: { label: "Onboarding", description: "Intake form, client database, brief", hasGate: false },
-  2: { label: "Strategy", description: "Research, scope of work, materials checklist", hasGate: false },
-  3: { label: "Sketch", description: "Wireframes / first direction", hasGate: true },
-  4: { label: "Make", description: "Full design / creative output", hasGate: true },
-  5: { label: "Build", description: "Build, QA, dev handoff", hasGate: false },
-  6: { label: "Client Review", description: "Final review and sign-off", hasGate: true },
-  7: { label: "Launch / Delivery", description: "Go live, delivery checklist, handover", hasGate: false },
-  8: { label: "Complete", description: "Archived — project record retained", hasGate: false },
-};
+import { STAGE_LABELS, STAGE_INFO, STAGE_COUNT, WIREFRAME_STAGE, DESIGN_STAGE } from "@/lib/stages";
 
 const TYPE_LABELS: Record<string, string> = {
   WEBSITE: "Website",
@@ -266,16 +251,17 @@ export default async function ProjectPage({
   const intakeApproved = project.documents.some(
     (d) => d.templateType === "intake_form" && d.status === "APPROVED"
   );
-  // Onboarding + brief pipelines belong to the setup stage only.
-  const setupComplete = !!project.briefPublishedAt || project.currentStage >= 3;
+  // Onboarding + brief pipelines belong to the setup stage only. Setup is done
+  // once the brief is published or the project has moved past Strategy (stage 1).
+  const setupComplete = !!project.briefPublishedAt || project.currentStage >= 2;
 
-  // Tasks / to-do lists (reused Cycle+Task) — available from Strategy (stage 2).
+  // Tasks / to-do lists (reused Cycle+Task) — available from Strategy (stage 1).
   const activeCycles = project.cycles.filter((c) => c.status === "ACTIVE");
   const openTasks = activeCycles.reduce(
     (n, c) => n + c.tasks.filter((t) => t.status !== "DONE").length,
     0
   );
-  const tasksAvailable = project.currentStage >= 2;
+  const tasksAvailable = project.currentStage >= 1;
   // Task-level questions (one grouped query for the whole project — no N+1).
   const allTaskIds = project.cycles.flatMap((c) => c.tasks.map((t) => t.id));
   const questionsByTask = await listByTaskIds(allTaskIds);
@@ -472,7 +458,7 @@ export default async function ProjectPage({
             <p className="text-base font-semibold text-neutral-900 leading-tight">
               {STAGE_LABELS[project.currentStage]}
             </p>
-            <p className="text-xs text-neutral-700 mt-0.5">Stage {project.currentStage} of 8</p>
+            <p className="text-xs text-neutral-700 mt-0.5">Stage {project.currentStage} of {STAGE_COUNT}</p>
           </div>
           {/* Gate status */}
           <div>
@@ -613,7 +599,7 @@ export default async function ProjectPage({
         </p>
         {!tasksAvailable ? (
           <p className="text-sm text-neutral-600">
-            Task lists become available from the Strategy stage (stage 2).
+            Task lists become available from the Strategy stage (stage 1).
           </p>
         ) : (
           <div className="space-y-6">
@@ -688,7 +674,7 @@ export default async function ProjectPage({
             ))}
             {wireframeFeedbackActive && wireframeFeedbackDoc && (
               <div className="flex items-center justify-between gap-3 bg-violet-50 border border-violet-300 border-l-4 border-l-violet-500 rounded-lg px-5 py-4">
-                <Link href={`/projects/${id}/stage/3`} className="flex items-center gap-3 min-w-0 flex-1 group">
+                <Link href={`/projects/${id}/stage/${WIREFRAME_STAGE}`} className="flex items-center gap-3 min-w-0 flex-1 group">
                   <span className="flex items-center justify-center w-8 h-8 rounded-full bg-violet-200 text-violet-800 shrink-0">
                     <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M14 8c0 2.8-2.7 5-6 5-.9 0-1.7-.2-2.5-.5L2 13l.8-2.8C2.3 9.5 2 8.8 2 8c0-2.8 2.7-5 6-5s6 2.2 6 5Z" /></svg>
                   </span>
@@ -705,7 +691,7 @@ export default async function ProjectPage({
             )}
             {designFeedbackActive && designFeedbackDoc && (
               <div className="flex items-center justify-between gap-3 bg-violet-50 border border-violet-300 border-l-4 border-l-violet-500 rounded-lg px-5 py-4">
-                <Link href={`/projects/${id}/stage/4`} className="flex items-center gap-3 min-w-0 flex-1 group">
+                <Link href={`/projects/${id}/stage/${DESIGN_STAGE}`} className="flex items-center gap-3 min-w-0 flex-1 group">
                   <span className="flex items-center justify-center w-8 h-8 rounded-full bg-violet-200 text-violet-800 shrink-0">
                     <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M14 8c0 2.8-2.7 5-6 5-.9 0-1.7-.2-2.5-.5L2 13l.8-2.8C2.3 9.5 2 8.8 2 8c0-2.8 2.7-5 6-5s6 2.2 6 5Z" /></svg>
                   </span>

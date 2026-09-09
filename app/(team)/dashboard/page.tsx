@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { WAITING_CLIENT_STATUSES } from "@/lib/questions";
 import MyWork, { type WorkTask, type WorkMember } from "@/components/team/MyWork";
 import StatTiles, { type StatTile } from "@/components/team/StatTiles";
+import { STAGE_LABELS, STAGE_INFO, STAGE_COUNT, FINAL_STAGE, GATED_STAGES } from "@/lib/stages";
 
 function healthAccent(h: number): Accent {
   return h > 0.75 ? "mint" : h > 0.5 ? "amber" : "rose";
@@ -16,22 +17,11 @@ function healthAccent(h: number): Accent {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STAGE_LABELS: Record<number, string> = {
-  1: "Onboarding", 2: "Strategy", 3: "Sketch", 4: "Make",
-  5: "Build", 6: "Client Review", 7: "Launch", 8: "Complete",
-};
 const STAGE_LIST = Object.values(STAGE_LABELS);
 
-const STAGE_DESCRIPTIONS: Record<number, string> = {
-  1: "Intake, client database, brief",
-  2: "Research, scope, materials checklist",
-  3: "Wireframes / first direction",
-  4: "Full design / creative output",
-  5: "Build, QA, dev handoff",
-  6: "Final review and sign-off",
-  7: "Go live, delivery, handover",
-  8: "Archived — record retained",
-};
+const STAGE_DESCRIPTIONS: Record<number, string> = Object.fromEntries(
+  Object.entries(STAGE_INFO).map(([n, i]) => [Number(n), i.description])
+);
 
 const TYPE_LABELS: Record<ProjectType, string> = {
   WEBSITE: "Website", BRANDING: "Branding", MARKETING: "Marketing",
@@ -298,7 +288,7 @@ export default async function DashboardPage() {
       p.mode !== "ONGOING" &&
       !p.stages.some((s) => s.status === "GATE_PENDING") &&
       p.updatedAt < fiveDaysAgo &&
-      p.currentStage < 8
+      p.currentStage < FINAL_STAGE
   );
   const overdueProjects = projects.filter((p) =>
     p.materials.some((m) => m.dueDate && m.dueDate < now && ["pending", "submitted"].includes(m.status))
@@ -395,7 +385,6 @@ export default async function DashboardPage() {
   const retainerOverdue = retainerStats.filter((r) => r.overdueCount > 0);
   const retainerAwaiting = retainerStats.filter((r) => r.awaitingClientCount > 0);
 
-  const GATED_STAGES = [3, 4, 6];
   const advancableProjects = projects.filter((p) => {
     if (!GATED_STAGES.includes(p.currentStage)) return false;
     const row = p.stages.find((s) => s.stageNumber === p.currentStage);
@@ -547,7 +536,7 @@ export default async function DashboardPage() {
                       <StageBar stages={STAGE_LIST} current={project.currentStage - 1} compact />
                       <div className="flex items-center justify-between" style={{ marginTop: 8 }}>
                         <span className="tech" style={{ fontSize: 10, letterSpacing: "0.06em", color: "var(--text-3)", textTransform: "uppercase" }}>
-                          STAGE {project.currentStage}/8 · {STAGE_LABELS[project.currentStage]}
+                          STAGE {project.currentStage}/{STAGE_COUNT} · {STAGE_LABELS[project.currentStage]}
                         </span>
                         {(() => {
                           const h = healthById.get(project.id) ?? 1;

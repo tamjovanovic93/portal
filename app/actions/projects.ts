@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { ProjectMode, ProjectType } from "@prisma/client";
+import { STAGE_COUNT } from "@/lib/stages";
 
 export async function createProject(formData: FormData) {
   const supabase = await createClient();
@@ -72,9 +73,10 @@ export async function createProject(formData: FormData) {
       mode,
       currentStage: 1,
       onboardingStep: "initial_form",
-      // Both project and retainer engagements track the 8-stage progression.
+      // Projects begin at Strategy (stage 1). Client intake / discovery happens
+      // at the client level before the project exists — see lib/stages.ts.
       stages: {
-        create: Array.from({ length: 8 }, (_, i) => ({
+        create: Array.from({ length: STAGE_COUNT }, (_, i) => ({
           stageNumber: i + 1,
           status: i === 0 ? "IN_PROGRESS" : "NOT_STARTED",
         })),
