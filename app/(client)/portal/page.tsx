@@ -9,6 +9,7 @@ import { PROFILE_DOC, type ClientProfile } from "@/lib/intake/types";
 import DeliverableApproval from "@/components/client/DeliverableApproval";
 import { hasOpenClientItems, type FormContent } from "@/lib/forms/collab";
 import AnswerQuestions, { type ClientQuestion } from "@/components/client/AnswerQuestions";
+import { WIREFRAME_STAGE, DESIGN_STAGE, GATED_STAGES } from "@/lib/stages";
 
 // Collaborative client forms (approve/change/step-through).
 const CLIENT_COLLAB_FORMS = new Set(["initial_client_form", "intake_form"]);
@@ -26,18 +27,17 @@ function isDocActive(doc: { status: string; templateType: string; content: unkno
 
 // Plain-language stage descriptions — clients never see "Stage N"
 const CLIENT_STAGE_DESCRIPTION: Record<number, string> = {
-  1: "We're getting your project set up.",
-  2: "We're working on your strategy and scope.",
-  3: "We're putting together the first structural direction.",
-  4: "We're working on the full design.",
-  5: "We're building everything.",
-  6: "Your project is ready for your final review.",
-  7: "We're preparing to launch or deliver.",
-  8: "Your project is complete.",
+  1: "We're working on your strategy and scope.",
+  2: "We're putting together the first structural direction.",
+  3: "We're working on the full design.",
+  4: "We're building everything.",
+  5: "Your project is ready for your final review.",
+  6: "We're preparing to launch or deliver.",
+  7: "Your project is complete.",
 };
 
-// Gated stages that require client action
-const GATE_STAGES = new Set([3, 4, 6]);
+// Gated stages that require client action (see lib/stages.ts).
+const GATE_STAGES = new Set(GATED_STAGES);
 
 export default async function ClientPortalPage() {
   const supabase = await createClient();
@@ -326,8 +326,8 @@ export default async function ClientPortalPage() {
           (a) => a.folder !== "wireframes" && a.folder !== "mockup"
         );
 
-        const stage3Approved = project.stages.find((s) => s.stageNumber === 3)?.gateApproved ?? false;
-        const stage4Approved = project.stages.find((s) => s.stageNumber === 4)?.gateApproved ?? false;
+        const stage3Approved = project.stages.find((s) => s.stageNumber === WIREFRAME_STAGE)?.gateApproved ?? false;
+        const stage4Approved = project.stages.find((s) => s.stageNumber === DESIGN_STAGE)?.gateApproved ?? false;
 
         // Wireframe feedback: hide CTA once submitted, unless newer wireframes were uploaded after
         const wireframeFeedbackDoc = project.documents.find(

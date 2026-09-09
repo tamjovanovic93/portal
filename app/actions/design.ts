@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createClient as createAdmin } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { DESIGN_STAGE } from "@/lib/stages";
 
 async function getTeamUser() {
   const supabase = await createClient();
@@ -26,7 +27,7 @@ export async function saveDesignLink(projectId: string, label: string, url: stri
   await prisma.projectAsset.create({
     data: {
       projectId,
-      stageNumber: 4,
+      stageNumber: DESIGN_STAGE,
       storagePath: url.trim(),
       filename: label.trim() || url.trim(),
       mimeType: "text/uri-list",
@@ -35,7 +36,7 @@ export async function saveDesignLink(projectId: string, label: string, url: stri
       uploadedBy: user.id,
     },
   });
-  revalidatePath(`/projects/${projectId}/stage/4`);
+  revalidatePath(`/projects/${projectId}/stage/${DESIGN_STAGE}`);
 }
 
 export async function deleteDesignAsset(assetId: string, projectId: string) {
@@ -53,7 +54,7 @@ export async function deleteDesignAsset(assetId: string, projectId: string) {
   }
 
   await prisma.projectAsset.delete({ where: { id: assetId } });
-  revalidatePath(`/projects/${projectId}/stage/4`);
+  revalidatePath(`/projects/${projectId}/stage/${DESIGN_STAGE}`);
 }
 
 export async function saveDesignFeedback(documentId: string, content: Record<string, unknown>) {
@@ -84,7 +85,7 @@ export async function submitDesignFeedback(documentId: string, content: Record<s
 
   revalidatePath("/portal");
   revalidatePath(`/projects/${doc.projectId}`);
-  revalidatePath(`/projects/${doc.projectId}/stage/4`);
+  revalidatePath(`/projects/${doc.projectId}/stage/${DESIGN_STAGE}`);
   revalidatePath("/dashboard");
   redirect("/portal");
 }
@@ -118,7 +119,7 @@ export async function updateRevisionStatus(
     },
   });
 
-  revalidatePath(`/projects/${doc.projectId}/stage/4`);
+  revalidatePath(`/projects/${doc.projectId}/stage/${DESIGN_STAGE}`);
 }
 
 export async function approveDesignAndSubmit(
@@ -149,14 +150,14 @@ export async function approveDesignAndSubmit(
     prisma.approval.create({
       data: {
         projectId,
-        stageNumber: 4,
+        stageNumber: DESIGN_STAGE,
         approvedById: profile.id,
         method: "PORTAL",
         notes: approvalNote,
       },
     }),
     prisma.projectStage.update({
-      where: { projectId_stageNumber: { projectId, stageNumber: 4 } },
+      where: { projectId_stageNumber: { projectId, stageNumber: DESIGN_STAGE } },
       data: {
         gateApproved: true,
         gateApprovedAt: now,
@@ -167,7 +168,7 @@ export async function approveDesignAndSubmit(
 
   revalidatePath("/portal");
   revalidatePath(`/projects/${projectId}`);
-  revalidatePath(`/projects/${projectId}/stage/4`);
+  revalidatePath(`/projects/${projectId}/stage/${DESIGN_STAGE}`);
   revalidatePath("/dashboard");
   redirect("/portal");
 }

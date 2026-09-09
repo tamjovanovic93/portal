@@ -8,6 +8,7 @@ import { OWNER_ROLE_LABEL } from "@/lib/retainer-labels";
 import ClientLoginLink from "@/components/team/project/ClientLoginLink";
 import IntakePipeline from "@/components/team/project/IntakePipeline";
 import { getProfile, getStrategy } from "@/lib/intake/store";
+import { STAGE_COUNT } from "@/lib/stages";
 import ProjectFiles from "@/components/team/ProjectFiles";
 import MaterialRow from "@/components/team/MaterialRow";
 import AddMaterialForm from "@/components/team/AddMaterialForm";
@@ -101,7 +102,7 @@ export default async function RetainerView({ projectId }: { projectId: string })
   // Backfill stages for retainers created before stages were tracked.
   if (project.stages.length === 0) {
     await prisma.projectStage.createMany({
-      data: Array.from({ length: 8 }, (_, i) => ({
+      data: Array.from({ length: STAGE_COUNT }, (_, i) => ({
         projectId,
         stageNumber: i + 1,
         status: i === 0 ? ("IN_PROGRESS" as const) : ("NOT_STARTED" as const),

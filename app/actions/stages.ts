@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
+import { FINAL_STAGE, GATED_STAGES } from "@/lib/stages";
 
 export async function advanceStage(projectId: string) {
   const supabase = await createClient();
@@ -19,14 +20,13 @@ export async function advanceStage(projectId: string) {
   });
 
   if (!project) return { error: "Project not found" };
-  if (project.currentStage >= 8) return { error: "Already at final stage" };
+  if (project.currentStage >= FINAL_STAGE) return { error: "Already at final stage" };
 
   const currentStageRow = project.stages.find(
     (s) => s.stageNumber === project.currentStage
   );
 
-  // Stages 3, 4, 6 require gate approval before advancing
-  const GATED_STAGES = [3, 4, 6];
+  // Gated stages require client approval before advancing (see lib/stages.ts).
   if (
     GATED_STAGES.includes(project.currentStage) &&
     !currentStageRow?.gateApproved

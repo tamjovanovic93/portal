@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import DesignFeedbackForm from "@/components/client/DesignFeedbackForm";
 import { Prisma } from "@prisma/client";
+import { DESIGN_STAGE } from "@/lib/stages";
 
 export default async function DesignReviewPage({
   params,
@@ -23,7 +24,7 @@ export default async function DesignReviewPage({
     where: { id: projectId, clientId: profile.id },
     include: {
       assets: {
-        where: { stageNumber: 4, folder: "mockup" },
+        where: { stageNumber: DESIGN_STAGE, folder: "mockup" },
         orderBy: { uploadedAt: "asc" },
       },
     },
@@ -49,14 +50,14 @@ export default async function DesignReviewPage({
 
   // Find or create the design feedback document
   let feedbackDoc = await prisma.document.findFirst({
-    where: { projectId, stageNumber: 4, templateType: "design_feedback" },
+    where: { projectId, stageNumber: DESIGN_STAGE, templateType: "design_feedback" },
   });
 
   if (!feedbackDoc) {
     feedbackDoc = await prisma.document.create({
       data: {
         projectId,
-        stageNumber: 4,
+        stageNumber: DESIGN_STAGE,
         templateType: "design_feedback",
         title: "Design Feedback",
         content: {} as Prisma.InputJsonValue,

@@ -9,15 +9,10 @@ import OfferEditor from "@/components/team/project/OfferEditor";
 import IntakeBuilder from "@/components/team/project/IntakeBuilder";
 import { applyConfig, getConfig } from "@/lib/templates/config";
 import type { FormContent } from "@/lib/forms/collab";
+import { stageLabel } from "@/lib/stages";
 
 // Onboarding forms use the collaborative prefill → review flow.
 const COLLAB_FORMS = new Set(["initial_client_form", "intake_form"]);
-
-const STAGE_NAMES: Record<number, string> = {
-  1: "Onboarding", 2: "Strategy", 3: "Sketch",
-  4: "Make", 5: "Build", 6: "Client Review",
-  7: "Launch", 8: "Complete",
-};
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT: "Draft",
@@ -92,7 +87,7 @@ export default async function DocumentPage({
           href={`/projects/${projectId}/stage/${stageNumber}`}
           className="hover:text-neutral-700"
         >
-          Stage {stageNumber} — {STAGE_NAMES[stageNumber]}
+          Stage {stageNumber} — {stageLabel(stageNumber)}
         </Link>
         <span>›</span>
         <span className="text-neutral-600">{doc.title}</span>

@@ -3,27 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import AdvanceStageButton from "@/components/team/AdvanceStageButton";
-
-const STAGE_LABELS: Record<number, string> = {
-  1: "Onboarding", 2: "Strategy", 3: "Sketch", 4: "Make",
-  5: "Build", 6: "Client Review", 7: "Launch", 8: "Complete",
-};
-
-const STAGE_DESCRIPTIONS: Record<number, string> = {
-  1: "Intake form, client database, brief",
-  2: "Research, scope of work, materials checklist",
-  3: "Wireframes / first direction",
-  4: "Full design / creative output",
-  5: "Build, QA, dev handoff",
-  6: "Final review and sign-off",
-  7: "Go live, delivery checklist, handover",
-  8: "Archived — project record retained",
-};
-
-const STAGE_HAS_GATE: Record<number, boolean> = {
-  1: false, 2: false, 3: true, 4: true,
-  5: false, 6: true, 7: false, 8: false,
-};
+import { STAGE_LABELS, STAGE_INFO, STAGE_COUNT, isGatedStage } from "@/lib/stages";
 
 const STATUS_LABEL: Record<string, string> = {
   NOT_STARTED: "Not started",
@@ -75,20 +55,20 @@ export default function StageProgressBar({
   const statusMap = Object.fromEntries(stages.map((s) => [s.stageNumber, s]));
 
   const currentStatus = statusMap[currentStage]?.status;
-  const currentHasGate = STAGE_HAS_GATE[currentStage];
+  const currentHasGate = isGatedStage(currentStage);
   const currentGateApproved = statusMap[currentStage]?.gateApproved ?? false;
   const gateLocked = currentHasGate && !currentGateApproved && currentStatus !== "COMPLETE";
 
   return (
     <div>
       <div className="flex gap-1">
-        {Array.from({ length: 8 }, (_, i) => i + 1).map((n) => {
+        {Array.from({ length: STAGE_COUNT }, (_, i) => i + 1).map((n) => {
           const stage = statusMap[n];
           const isCurrent = n === currentStage;
           const isDone = stage?.status === "COMPLETE";
           const isGate = stage?.status === "GATE_PENDING";
           const isExpanded = expanded === n;
-          const hasGate = STAGE_HAS_GATE[n];
+          const hasGate = isGatedStage(n);
           // Gate stages show a lock until the client signs off; once passed, a check.
           const gateUnresolved = hasGate && !stage?.gateApproved && stage?.status !== "COMPLETE";
           const gatePassed = hasGate && (stage?.gateApproved || stage?.status === "COMPLETE");
@@ -163,14 +143,14 @@ export default function StageProgressBar({
                 <h3 className="text-sm font-semibold text-neutral-900">
                   {STAGE_LABELS[expanded]}
                 </h3>
-                {STAGE_HAS_GATE[expanded] && (
+                {isGatedStage(expanded) && (
                   <span className="text-xs px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-700">
                     gate
                   </span>
                 )}
               </div>
               <p className="text-xs text-neutral-700 mt-0.5">
-                {STAGE_DESCRIPTIONS[expanded]}
+                {STAGE_INFO[expanded]?.description}
               </p>
               {statusMap[expanded] && (
                 <p
@@ -194,7 +174,7 @@ export default function StageProgressBar({
                   <AdvanceStageButton
                     projectId={projectId}
                     currentStage={currentStage}
-                    hasGate={STAGE_HAS_GATE[expanded]}
+                    hasGate={isGatedStage(expanded)}
                     gateApproved={statusMap[expanded]?.gateApproved ?? false}
                   />
                 )}
