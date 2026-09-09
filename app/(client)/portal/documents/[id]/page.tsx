@@ -33,7 +33,7 @@ export default async function ClientDocumentPage({
     include: { project: true },
   });
 
-  if (!doc) notFound();
+  if (!doc || !doc.project) notFound();
   if (doc.project.clientId !== profile.id) notFound();
 
   if (doc.status === "DRAFT") {

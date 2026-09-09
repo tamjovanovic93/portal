@@ -13,6 +13,8 @@ import MaterialRow from "@/components/team/MaterialRow";
 import AddMaterialForm from "@/components/team/AddMaterialForm";
 import NewProjectButton from "@/components/team/NewProjectButton";
 import { createCycle } from "@/app/actions/retainer";
+import { getRoster } from "@/lib/team";
+import { listByTaskIds } from "@/lib/questions";
 
 const MATERIAL_CATEGORIES = ["copy", "visuals", "info", "access", "approval"] as const;
 const MATERIAL_STATUS_LABEL: Record<string, string> = {
@@ -118,7 +120,15 @@ export default async function RetainerView({ projectId }: { projectId: string })
 
   const intakeDoc = project.documents.find((d) => d.templateType === "intake_form");
   const intakeSubmitted = intakeDoc?.status === "APPROVED";
-  const [profile, strategy] = await Promise.all([getProfile(projectId), getStrategy(projectId)]);
+  // Team roster (for person-based assignment + questions) and task-level
+  // questions (one grouped query for the whole project — no N+1).
+  const allTaskIds = cycles.flatMap((c) => c.tasks.map((t) => t.id));
+  const [profile, strategy, roster, questionsByTask] = await Promise.all([
+    getProfile(project.clientId),
+    getStrategy(project.clientId),
+    getRoster(),
+    listByTaskIds(allTaskIds),
+  ]);
   const databaseGenerated = !!profile;
   const profileStatus = profile?._meta?.status ?? null;
   const hasStrategy = !!strategy;
@@ -145,6 +155,8 @@ export default async function RetainerView({ projectId }: { projectId: string })
         unblockedAt: t.unblockedAt,
         requiresClientApproval: t.requiresClientApproval,
         approvalCount: t._count.approvals,
+        assigneeId: t.assigneeId,
+        questions: questionsByTask.get(t.id) ?? [],
       })),
     };
   }
@@ -369,6 +381,7 @@ export default async function RetainerView({ projectId }: { projectId: string })
               cycle={toBoardCycle(c)}
               projectId={projectId}
               otherActiveCycles={activeCycleSummaries.filter((s) => s.id !== c.id)}
+              roster={roster}
             />
           ))}
         </div>
@@ -385,7 +398,7 @@ export default async function RetainerView({ projectId }: { projectId: string })
         <div className="space-y-4">
           <h2 className="text-xs font-semibold text-neutral-700 uppercase tracking-wider">Closed cycles</h2>
           {closedCycles.map((c) => (
-            <CycleBoard key={c.id} cycle={toBoardCycle(c)} projectId={projectId} />
+            <CycleBoard key={c.id} cycle={toBoardCycle(c)} projectId={projectId} roster={roster} />
           ))}
         </div>
       )}

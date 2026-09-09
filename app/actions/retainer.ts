@@ -176,7 +176,7 @@ export async function addTask(
   cycleId: string,
   projectId: string,
   formData: FormData
-) {
+): Promise<{ id: string }> {
   await requireTeam();
   const name = formData.get("name");
   if (typeof name !== "string" || !name.trim()) throw new Error("Name required");
@@ -185,6 +185,7 @@ export async function addTask(
   const description = formData.get("description");
   const dueDate = formData.get("dueDate");
   const ownerRoleRaw = formData.get("ownerRole");
+  const assigneeRaw = formData.get("assigneeId");
   const statusRaw = formData.get("status");
   const resolverRaw = formData.get("blockerResolver");
   const requiresClientApproval = formData.get("requiresClientApproval") === "on";
@@ -218,7 +219,11 @@ export async function addTask(
       ? (statusRaw as TaskStatus)
       : "PLANNING";
 
-  await prisma.task.create({
+  // Assignee is a specific team member (TEAM Profile). Empty = unassigned.
+  const assigneeId =
+    typeof assigneeRaw === "string" && assigneeRaw.trim() ? assigneeRaw.trim() : null;
+
+  const task = await prisma.task.create({
     data: {
       cycleId,
       name: name.trim(),
@@ -227,14 +232,17 @@ export async function addTask(
       completedAt: status === "DONE" ? new Date() : null,
       description: typeof description === "string" && description.trim() ? description.trim() : null,
       dueDate: dueDate && typeof dueDate === "string" && dueDate ? new Date(dueDate) : null,
+      assigneeId,
       ownerRole,
       isBlocker,
       blockerResolver,
       // Only deliverables can require client approval.
       requiresClientApproval: taskType === "DELIVERABLE" ? requiresClientApproval : false,
     },
+    select: { id: true },
   });
   revalidateProject(projectId);
+  return { id: task.id };
 }
 
 export async function setOwnerRole(

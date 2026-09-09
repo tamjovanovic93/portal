@@ -88,7 +88,7 @@ export async function syncScopeTasks(
     where: { id: briefDocId },
     include: { project: { select: { id: true, type: true } } },
   });
-  if (!doc) return { error: "Brief not found." };
+  if (!doc?.project) return { error: "Brief not found." };
   const projectId = doc.project.id;
   const content = (doc.content as ProjectBrief) ?? {};
   const scope = (content.scope ?? []) as ScopeItem[];

@@ -36,6 +36,14 @@ const STATUS_COLOR: Record<string, "amber" | "blue" | "mint" | "rose" | "purple"
   WAITING_CONFIRMATION: "purple", ANSWERED: "mint", RESOLVED: "mint",
 };
 
+// Full, unambiguous timestamp (e.g. "8 Sep 2026, 14:32") for the who/when detail.
+function formatWhen(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString(undefined, {
+    day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+  });
+}
+
 export default function QuestionsPanel({ projectId, contextType, contextId, questions, roster }: Props) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -132,53 +140,89 @@ export default function QuestionsPanel({ projectId, contextType, contextId, ques
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function QuestionCard({ q, router, canTeamAnswer }: { q: QuestionRow; router: any; canTeamAnswer: boolean }) {
   const [pending, start] = useTransition();
+  const [expanded, setExpanded] = useState(false);
   const [answering, setAnswering] = useState(false);
   const [answer, setAnswer] = useState("");
   const resolved = q.status === "RESOLVED";
   const answered = q.status === "ANSWERED";
 
+  const recipientLabel = q.recipientRole === "CLIENT" ? "Client" : q.recipientName ?? "Team";
+
   return (
-    <div className="card card-pad space-y-2" style={{ opacity: resolved ? 0.7 : 1 }}>
-      <div className="flex items-center gap-2 flex-wrap">
+    <div className="card" style={{ opacity: resolved ? 0.75 : 1, overflow: "hidden" }}>
+      {/* Collapsed summary row — click to expand. Visible to the whole team. */}
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex items-center gap-2 w-full text-left qp-row"
+        style={{ padding: "8px 10px", cursor: "pointer" }}
+        title={expanded ? "Collapse" : "Click to view who asked, when, and the full question"}
+      >
+        <span className="faint" style={{ fontSize: 10, width: 10, flexShrink: 0, transform: expanded ? "rotate(90deg)" : "none", transition: "transform .15s" }}>▶</span>
         <Pill color={STATUS_COLOR[q.status]}>{STATUS_LABEL[q.status]}</Pill>
         {q.kind === "CONFIRM" && <Pill color="purple">Confirm</Pill>}
-        <span className="faint" style={{ fontSize: 11 }}>
-          {q.recipientRole === "CLIENT" ? "to client" : `to ${q.recipientName ?? "team"}`}
-          {q.askedByName ? ` · from ${q.askedByName}` : ""}
+        <span style={{ fontSize: 12.5, fontWeight: 500, flexShrink: 0 }}>{recipientLabel}</span>
+        <span className="faint" style={{ fontSize: 12.5, flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {q.questionText}
         </span>
-      </div>
-      <p style={{ fontSize: 13.5 }}>{q.questionText}</p>
-      {q.proposedAnswer && <p className="faint" style={{ fontSize: 12.5 }}>Proposed: <span style={{ color: "var(--text-2)" }}>{q.proposedAnswer}</span></p>}
-      {q.answerText && (
-        <p style={{ fontSize: 13, padding: "6px 10px", background: "var(--surface-2)", borderRadius: "var(--r-sm)" }}>
-          <span className="faint">Answer: </span>{q.answerText}
-        </p>
-      )}
+        <span className="faint" style={{ fontSize: 11, flexShrink: 0 }} suppressHydrationWarning>{formatWhen(q.createdAt)}</span>
+      </button>
 
-      {/* Team member answering their own inbound question */}
-      {canTeamAnswer && !answered && !resolved && (
-        answering ? (
-          <div className="space-y-2">
-            <textarea className="zp-textarea" rows={2} value={answer} placeholder="Your answer…" onChange={(e) => setAnswer(e.target.value)} />
-            <div className="flex items-center gap-2">
-              <button type="button" disabled={pending || !answer.trim()} className="btn btn-sm btn-primary"
-                onClick={() => start(async () => { await answerQuestion(q.id, answer); setAnswering(false); router.refresh(); })}>Submit answer</button>
-              <button type="button" onClick={() => setAnswering(false)} className="btn btn-sm btn-ghost">Cancel</button>
-            </div>
+      {/* Expanded detail — who asked, when, the full question, answer, actions. */}
+      {expanded && (
+        <div className="space-y-2" style={{ padding: "0 10px 10px 10px", borderTop: "1px solid var(--border)" }}>
+          <div className="faint" style={{ fontSize: 11.5, paddingTop: 8 }} suppressHydrationWarning>
+            Asked by <span style={{ color: "var(--text-2)", fontWeight: 500 }}>{q.askedByName ?? "—"}</span>
+            {" · "}{formatWhen(q.createdAt)}
+            {" · to "}<span style={{ color: "var(--text-2)" }}>{recipientLabel}</span>
           </div>
-        ) : (
-          <button type="button" onClick={() => setAnswering(true)} className="btn btn-sm">Answer</button>
-        )
-      )}
 
-      <div className="flex items-center gap-2">
-        {!resolved && <button type="button" disabled={pending} className="btn btn-sm btn-ghost"
-          onClick={() => start(async () => { await resolveQuestion(q.id); router.refresh(); })}>Mark resolved</button>}
-        {resolved && <button type="button" disabled={pending} className="btn btn-sm btn-ghost"
-          onClick={() => start(async () => { await reopenQuestion(q.id); router.refresh(); })}>Reopen</button>}
-        <button type="button" disabled={pending} className="faint" style={{ fontSize: 12 }}
-          onClick={() => { if (confirm("Delete this question?")) start(async () => { await deleteQuestion(q.id); router.refresh(); }); }}>Delete</button>
-      </div>
+          <div>
+            <p className="faint" style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 2 }}>Question</p>
+            <p style={{ fontSize: 13.5, whiteSpace: "pre-wrap" }}>{q.questionText}</p>
+          </div>
+
+          {q.proposedAnswer && (
+            <p className="faint" style={{ fontSize: 12.5 }}>Proposed: <span style={{ color: "var(--text-2)" }}>{q.proposedAnswer}</span></p>
+          )}
+
+          {q.answerText && (
+            <div style={{ fontSize: 13, padding: "6px 10px", background: "var(--surface-2)", borderRadius: "var(--r-sm)" }}>
+              <span className="faint">Answer: </span>{q.answerText}
+              {q.answeredAt && <span className="faint" style={{ fontSize: 11, display: "block", marginTop: 2 }} suppressHydrationWarning>Answered {formatWhen(q.answeredAt)}</span>}
+            </div>
+          )}
+
+          {resolved && q.resolvedAt && (
+            <p className="faint" style={{ fontSize: 11 }} suppressHydrationWarning>Resolved {formatWhen(q.resolvedAt)}</p>
+          )}
+
+          {/* Team member answering their own inbound question */}
+          {canTeamAnswer && !answered && !resolved && (
+            answering ? (
+              <div className="space-y-2">
+                <textarea className="zp-textarea" rows={2} value={answer} placeholder="Your answer…" onChange={(e) => setAnswer(e.target.value)} />
+                <div className="flex items-center gap-2">
+                  <button type="button" disabled={pending || !answer.trim()} className="btn btn-sm btn-primary"
+                    onClick={() => start(async () => { await answerQuestion(q.id, answer); setAnswering(false); router.refresh(); })}>Submit answer</button>
+                  <button type="button" onClick={() => setAnswering(false)} className="btn btn-sm btn-ghost">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <button type="button" onClick={() => setAnswering(true)} className="btn btn-sm">Answer</button>
+            )
+          )}
+
+          <div className="flex items-center gap-2">
+            {!resolved && <button type="button" disabled={pending} className="btn btn-sm btn-ghost"
+              onClick={() => start(async () => { await resolveQuestion(q.id); router.refresh(); })}>Mark resolved</button>}
+            {resolved && <button type="button" disabled={pending} className="btn btn-sm btn-ghost"
+              onClick={() => start(async () => { await reopenQuestion(q.id); router.refresh(); })}>Reopen</button>}
+            <button type="button" disabled={pending} className="faint" style={{ fontSize: 12 }}
+              onClick={() => { if (confirm("Delete this question?")) start(async () => { await deleteQuestion(q.id); router.refresh(); }); }}>Delete</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

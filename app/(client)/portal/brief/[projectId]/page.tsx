@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { getProfile, getStrategy } from "@/lib/intake/store";
+import { getProfile, getStrategy, clientIdForProject } from "@/lib/intake/store";
 import { getRoster } from "@/lib/team";
 import {
   BRIEF_DOC,
@@ -184,7 +184,10 @@ function BriefSectionView({ kind, label, brief, text, rosterName }: {
 
 // ── Brief & Strategy data block (unchanged content, from intake docs) ──
 async function StrategyData({ projectId }: { projectId: string }) {
-  const [profile, strategy] = await Promise.all([getProfile(projectId), getStrategy(projectId)]);
+  const clientId = await clientIdForProject(projectId);
+  const [profile, strategy] = clientId
+    ? await Promise.all([getProfile(clientId), getStrategy(clientId)])
+    : [null, null];
   const company = (profile?.company ?? {}) as Row;
   const goals = (profile?.goals ?? []) as Row[];
   const personas = (profile?.personas ?? []) as Row[];

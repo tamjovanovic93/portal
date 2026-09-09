@@ -16,7 +16,6 @@ import {
   publishBrief,
   unpublishBrief,
   renameBrief,
-  deleteBrief,
 } from "@/app/actions/project-brief";
 import { syncScopeTasks } from "@/app/actions/scope";
 import {
@@ -103,11 +102,6 @@ export default function ProjectBriefCard(props: Props) {
     }
   }
 
-  function removeBrief() {
-    if (!confirm(`Delete brief "${name}"? This cannot be undone.`)) return;
-    startBusy(async () => { await deleteBrief(id); router.refresh(); });
-  }
-
   return (
     <div className="card" style={{ overflow: "hidden" }}>
       {/* Compact header */}
@@ -164,7 +158,6 @@ export default function ProjectBriefCard(props: Props) {
             {genPending ? "Generating…" : "Generate draft (AI)"}
           </button>
           <div className="flex-1" />
-          <button type="button" onClick={removeBrief} disabled={busy} className="faint" style={{ fontSize: 12 }}>Delete brief</button>
           {genError && <span style={{ fontSize: 12, color: "var(--rose)" }}>{genError}</span>}
         </div>
       </div>

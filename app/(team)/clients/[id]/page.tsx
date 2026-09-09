@@ -127,6 +127,25 @@ export default async function ClientStreamPage({
         ))}
       </div>
 
+      {/* Client Data — shared across all of this client's projects */}
+      <section className="fade-up">
+        <Eyebrow style={{ marginBottom: 14 }}>CLIENT DATA</Eyebrow>
+        <Link href={`/clients/${id}/data`} className="card block" style={{ padding: 18 }}>
+          <div className="flex items-center gap-3">
+            <div style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0, background: "var(--surface-2)", color: "var(--mint)" }} className="flex items-center justify-center">
+              <Icon name="folder" size={19} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p style={{ fontSize: 15, fontWeight: 600 }}>Client Data</p>
+              <p className="faint" style={{ fontSize: 12, marginTop: 2 }}>
+                Business, audience, messaging, strategy &amp; brand — shared by every project
+              </p>
+            </div>
+            <Icon name="chevR" size={16} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+          </div>
+        </Link>
+      </section>
+
       {/* Ongoing retainers */}
       {retainers.length > 0 && (
         <section className="fade-up">

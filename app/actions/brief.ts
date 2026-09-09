@@ -33,9 +33,9 @@ async function requireTeam() {
   if (user.user_metadata?.role?.toLowerCase() === "client") throw new Error("Unauthorized");
 }
 
-function revalidate(projectId: string) {
-  revalidatePath(`/projects/${projectId}/brief`);
-  revalidatePath(`/projects/${projectId}`);
+function revalidate(clientId: string) {
+  revalidatePath(`/clients/${clientId}/data`);
+  revalidatePath(`/clients/${clientId}`);
 }
 
 // Resolve a dotted path to the parent object + final key.
@@ -82,9 +82,9 @@ function coerce(value: string): unknown {
   return value;
 }
 
-export async function addRow(cfg: SectionConfig, projectId: string, formData: FormData) {
+export async function addRow(cfg: SectionConfig, clientId: string, formData: FormData) {
   await requireTeam();
-  await mutateDoc<Row>(projectId, cfg.doc, (content) => {
+  await mutateDoc<Row>(clientId, cfg.doc, (content) => {
     const arrays = targetArrays(content, cfg.path);
     const target = arrays[0];
     if (!target) return; // aggregate path with no parent element — nothing to add to
@@ -95,12 +95,12 @@ export async function addRow(cfg: SectionConfig, projectId: string, formData: Fo
     }
     target.push(row);
   });
-  revalidate(projectId);
+  revalidate(clientId);
 }
 
-export async function deleteRow(cfg: SectionConfig, projectId: string, id: string) {
+export async function deleteRow(cfg: SectionConfig, clientId: string, id: string) {
   await requireTeam();
-  await mutateDoc<Row>(projectId, cfg.doc, (content) => {
+  await mutateDoc<Row>(clientId, cfg.doc, (content) => {
     for (const arr of targetArrays(content, cfg.path)) {
       const idx = arr.findIndex((r) => r[cfg.idField] === id);
       if (idx !== -1) {
@@ -109,7 +109,7 @@ export async function deleteRow(cfg: SectionConfig, projectId: string, id: strin
       }
     }
   });
-  revalidate(projectId);
+  revalidate(clientId);
 }
 
 // Company is a single object (not an array). The CompanyCard form uses camelCase
@@ -132,13 +132,13 @@ const COMPANY_FIELD_MAP: Record<string, string> = {
 // Mark a verification-queue item confirmed / rejected (or back to pending), and
 // keep the queue meta counts in sync.
 export async function resolveVerificationItem(
-  projectId: string,
+  clientId: string,
   itemId: string,
   status: "pending" | "confirmed" | "rejected",
   resolvedValue?: string
 ) {
   await requireTeam();
-  await mutateDoc<VerificationQueue>(projectId, VERIFICATION_DOC, (queue) => {
+  await mutateDoc<VerificationQueue>(clientId, VERIFICATION_DOC, (queue) => {
     const item = queue.items?.find((i) => i.item_id === itemId);
     if (!item) return;
     item.status = status;
@@ -154,12 +154,12 @@ export async function resolveVerificationItem(
       resolved_count: items.length - pending,
     };
   });
-  revalidate(projectId);
+  revalidate(clientId);
 }
 
-export async function upsertCompany(projectId: string, formData: FormData) {
+export async function upsertCompany(clientId: string, formData: FormData) {
   await requireTeam();
-  await mutateDoc<ClientProfile>(projectId, PROFILE_DOC, (content) => {
+  await mutateDoc<ClientProfile>(clientId, PROFILE_DOC, (content) => {
     const company = (content.company ??= {});
     for (const [formKey, jsonKey] of Object.entries(COMPANY_FIELD_MAP)) {
       const value = formData.get(formKey);
@@ -180,11 +180,12 @@ export async function upsertCompany(projectId: string, formData: FormData) {
     }
   });
 
-  // Keep the project name in sync with the company name.
+  // Company name lives on the client. Keep the client's display name in sync,
+  // but never touch project names (a project is a distinct engagement).
   const name = (formData.get("companyName") as string)?.trim();
   if (name) {
-    await prisma.project.update({ where: { id: projectId }, data: { name } }).catch(() => {});
+    await prisma.profile.update({ where: { id: clientId }, data: { name } }).catch(() => {});
   }
 
-  revalidate(projectId);
+  revalidate(clientId);
 }

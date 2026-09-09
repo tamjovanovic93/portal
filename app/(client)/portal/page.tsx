@@ -80,21 +80,23 @@ export default async function ClientPortalPage() {
     orderBy: { updatedAt: "desc" },
   });
 
-  // Pending message/slogan approvals now live in each project's client_profile JSON.
-  const profileRows = await prisma.document.findMany({
-    where: { projectId: { in: projects.map((p) => p.id) }, templateType: PROFILE_DOC },
-    select: { projectId: true, content: true },
+  // Pending message/slogan approvals live in the client's single client_profile
+  // JSON (client-level). They're shared, so surface them under each project.
+  const clientProfileDoc = await prisma.document.findFirst({
+    where: { clientId: profile.id, templateType: PROFILE_DOC },
+    select: { content: true },
   });
   const pendingApprovalsByProject = new Map<
     string,
     { messages: ClientProfile["messaging"]["key_messages"]; slogans: ClientProfile["messaging"]["slogans"] }
   >();
-  for (const row of profileRows) {
-    const content = row.content as ClientProfile;
-    pendingApprovalsByProject.set(row.projectId, {
+  if (clientProfileDoc) {
+    const content = clientProfileDoc.content as ClientProfile;
+    const approvals = {
       messages: (content.messaging?.key_messages ?? []).filter((m) => (m.approved ?? "pending") === "pending"),
       slogans: (content.messaging?.slogans ?? []).filter((s) => (s.approved ?? "pending") === "pending"),
-    });
+    };
+    for (const p of projects) pendingApprovalsByProject.set(p.id, approvals);
   }
 
   // Open questions addressed to this client (across their projects).

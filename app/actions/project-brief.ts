@@ -30,7 +30,7 @@ async function requireTeam() {
   return user;
 }
 
-// ─── Multiple briefs per project (each is a project_brief Document) ───────────
+// ─── Exactly one brief per project (the project_brief Document) ───────────────
 
 export type BriefSummary = {
   id: string;
@@ -40,43 +40,45 @@ export type BriefSummary = {
   updatedAt: string;
 };
 
-export async function getBriefs(projectId: string): Promise<BriefSummary[]> {
-  const docs = await prisma.document.findMany({
+function toSummary(d: { id: string; title: string; content: unknown; updatedAt: Date }): BriefSummary {
+  const content = (d.content as ProjectBrief) ?? {};
+  return {
+    id: d.id,
+    name: content.name || d.title || "Project Brief",
+    content,
+    publishedAt: content.publishedAt ?? null,
+    updatedAt: d.updatedAt.toISOString(),
+  };
+}
+
+// The single brief for a project (oldest wins if legacy data has more than one).
+export async function getProjectBrief(projectId: string): Promise<BriefSummary | null> {
+  const doc = await prisma.document.findFirst({
     where: { projectId, templateType: BRIEF_DOC },
     orderBy: { createdAt: "asc" },
   });
-  return docs.map((d) => {
-    const content = (d.content as ProjectBrief) ?? {};
-    return {
-      id: d.id,
-      name: content.name || d.title || "Untitled Brief",
-      content,
-      publishedAt: content.publishedAt ?? null,
-      updatedAt: d.updatedAt.toISOString(),
-    };
-  });
+  return doc ? toSummary(doc) : null;
 }
 
-// Single brief by its Document id.
-export async function getBrief(briefDocId: string): Promise<ProjectBrief> {
-  const doc = await prisma.document.findUnique({ where: { id: briefDocId } });
-  return (doc?.content as ProjectBrief) ?? {};
-}
-
-export async function createBrief(
+// Find-or-create the project's single brief. Called at project creation and as
+// a safety net; never creates a second one.
+export async function ensureProjectBrief(
   projectId: string,
-  name?: string
-): Promise<{ id?: string; error?: string }> {
-  await requireTeam();
-  const count = await prisma.document.count({ where: { projectId, templateType: BRIEF_DOC } });
-  const title = (name && name.trim()) || (count === 0 ? "Project Brief" : `Brief ${count + 1}`);
+  name = "Project Brief"
+): Promise<{ id: string }> {
+  const existing = await prisma.document.findFirst({
+    where: { projectId, templateType: BRIEF_DOC },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  if (existing) return { id: existing.id };
   const doc = await prisma.document.create({
     data: {
       projectId,
       stageNumber: 1,
       templateType: BRIEF_DOC,
-      title,
-      content: { name: title } as unknown as Prisma.InputJsonValue,
+      title: name,
+      content: { name } as unknown as Prisma.InputJsonValue,
       status: "DRAFT",
     },
   });
@@ -93,14 +95,6 @@ export async function renameBrief(briefDocId: string, name: string) {
   return { ok: true };
 }
 
-export async function deleteBrief(briefDocId: string) {
-  await requireTeam();
-  const doc = await prisma.document.findUnique({ where: { id: briefDocId }, select: { projectId: true } });
-  await prisma.document.delete({ where: { id: briefDocId } });
-  if (doc) revalidatePath(`/projects/${doc.projectId}`);
-  return { ok: true };
-}
-
 // ─── Mutation core (by brief Document id) ─────────────────────────────────────
 
 async function mutateBrief(briefDocId: string, fn: (b: ProjectBrief) => ProjectBrief) {
@@ -112,9 +106,10 @@ async function mutateBrief(briefDocId: string, fn: (b: ProjectBrief) => ProjectB
     where: { id: briefDocId },
     data: { content: next as unknown as Prisma.InputJsonValue },
   });
-  revalidatePath(`/projects/${existing.projectId}`);
-  revalidatePath(`/projects/${existing.projectId}/brief`);
-  revalidatePath(`/portal/brief/${existing.projectId}`);
+  if (existing.projectId) {
+    revalidatePath(`/projects/${existing.projectId}`);
+    revalidatePath(`/portal/brief/${existing.projectId}`);
+  }
   return existing.projectId;
 }
 
@@ -179,7 +174,7 @@ export async function publishBrief(briefDocId: string): Promise<{ ok?: boolean; 
     where: { id: briefDocId },
     include: { project: { select: { id: true, clientId: true, name: true } } },
   });
-  if (!doc) return { error: "Brief not found." };
+  if (!doc?.project) return { error: "Brief not found." };
   const content = (doc.content as ProjectBrief) ?? {};
   const name = content.name || doc.title || "Brief";
   await mutateBrief(briefDocId, (b) => ({ ...b, publishedAt: new Date().toISOString() }));
@@ -222,20 +217,21 @@ export async function generateBriefDraft(
   if (!process.env.ANTHROPIC_API_KEY) return { error: "ANTHROPIC_API_KEY is not set." };
 
   const briefDocRow = await prisma.document.findUnique({ where: { id: briefDocId }, select: { projectId: true } });
-  if (!briefDocRow) return { error: "Brief not found." };
+  if (!briefDocRow?.projectId) return { error: "Brief not found." };
   const projectId = briefDocRow.projectId;
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
-    select: { name: true, type: true },
+    select: { name: true, type: true, clientId: true },
   });
   if (!project) return { error: "Project not found." };
 
-  // Approved source docs + Data profile — read-only inputs for the draft.
+  // Approved project intake forms + shared client-level profile — read-only
+  // inputs for the draft.
   const [intakeDoc, initialDoc, profileDoc] = await Promise.all([
     prisma.document.findFirst({ where: { projectId, templateType: "intake_form", status: "APPROVED" }, orderBy: { completedAt: "desc" } }),
     prisma.document.findFirst({ where: { projectId, templateType: "initial_client_form", status: "APPROVED" }, orderBy: { completedAt: "desc" } }),
-    prisma.document.findFirst({ where: { projectId, templateType: "client_profile" } }),
+    prisma.document.findFirst({ where: { clientId: project.clientId, templateType: "client_profile" } }),
   ]);
 
   const sources = {

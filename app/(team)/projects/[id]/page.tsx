@@ -6,7 +6,7 @@ import ClientLoginLink from "@/components/team/project/ClientLoginLink";
 import IntakePipeline from "@/components/team/project/IntakePipeline";
 import OnboardingPipeline from "@/components/team/project/OnboardingPipeline";
 import { getProfile, getStrategy } from "@/lib/intake/store";
-import { getBriefs } from "@/app/actions/project-brief";
+import { getProjectBrief, ensureProjectBrief } from "@/app/actions/project-brief";
 import BriefsSection from "@/components/team/brief/BriefsSection";
 import { getRoster } from "@/lib/team";
 import { listByTaskIds } from "@/lib/questions";
@@ -144,8 +144,17 @@ export default async function ProjectPage({
   const offerDoc = onboardingDocs.find((d) => d.templateType === "financial_offer") ?? null;
   const intakeDoc = onboardingDocs.find((d) => d.templateType === "intake_form") ?? null;
 
-  // Client profile + strategy now live as JSON documents (the intake pipeline).
-  const [profile, strategy, briefs, roster] = await Promise.all([getProfile(id), getStrategy(id), getBriefs(id), getRoster()]);
+  // Client Data (profile + strategy) is shared at the CLIENT level; the Brief
+  // is the project's single brief (guaranteed to exist).
+  const clientId = project.clientId;
+  const [profile, strategy, roster] = await Promise.all([
+    getProfile(clientId), getStrategy(clientId), getRoster(),
+  ]);
+  let brief = await getProjectBrief(id);
+  if (!brief) {
+    await ensureProjectBrief(id);
+    brief = await getProjectBrief(id);
+  }
   const company = profile?.company ?? null;
 
   // Data contacts offered as a convenience for the Brief's client-contact picker.
@@ -447,7 +456,7 @@ export default async function ProjectPage({
           projectId={id}
           projectName={project.name}
           currentStageLabel={STAGE_LABELS[project.currentStage] ?? `Stage ${project.currentStage}`}
-          briefs={briefs}
+          brief={brief}
           roster={roster}
           dataContacts={dataContacts}
           clientDefault={{ name: project.client.name ?? undefined, email: project.client.email }}
@@ -523,7 +532,7 @@ export default async function ProjectPage({
           </div>
           {databaseGenerated && (
             <Link
-              href={`/projects/${id}/brief`}
+              href={`/clients/${project.clientId}/data`}
               className="text-sm text-neutral-900 font-medium border border-neutral-400 px-4 py-2 rounded-md hover:bg-neutral-50 transition-colors shrink-0"
             >
               Data →
@@ -562,7 +571,7 @@ export default async function ProjectPage({
                 </div>
                 {databaseGenerated && (
                   <Link
-                    href={`/projects/${id}/brief`}
+                    href={`/clients/${project.clientId}/data`}
                     className="text-sm text-neutral-900 font-medium border border-neutral-400 px-4 py-2 rounded-md hover:bg-neutral-50 transition-colors shrink-0"
                   >
                     Data →
@@ -1028,7 +1037,7 @@ export default async function ProjectPage({
               )}
               <div className="pt-1.5 border-t border-neutral-100">
                 <Link
-                  href={`/projects/${id}/brief`}
+                  href={`/clients/${project.clientId}/data`}
                   className="text-xs text-neutral-700 hover:text-neutral-800 transition-colors"
                 >
                   View all data →
@@ -1091,7 +1100,7 @@ export default async function ProjectPage({
             </Link>
           ))}
           <Link
-            href={`/projects/${id}/brief`}
+            href={`/clients/${project.clientId}/data`}
             className="px-4 py-2.5 text-sm font-medium text-neutral-700 hover:text-neutral-700 transition-colors border-b-2 border-transparent -mb-px"
           >
             Data ↗

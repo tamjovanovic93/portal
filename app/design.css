@@ -241,6 +241,14 @@
 .zp-select { appearance: none; background-color: var(--surface-2); }
 .zp-label { display: block; font-size: 11px; font-weight: 600; color: var(--text-2); margin-bottom: 5px; }
 
+/* Expandable question summary row (QuestionsPanel) — hover cue that it's clickable. */
+.qp-row { background: transparent; border: 0; transition: background .12s; }
+.qp-row:hover { background: var(--surface-2); }
+
+/* Clickable list rows in expansion panels (StatTiles). */
+.hover-row { transition: background .12s; border-radius: var(--r-md); }
+.hover-row:hover { background: var(--surface-2); }
+
 .zp-table { width: 100%; font-size: 13px; border-collapse: collapse; }
 .zp-table th {
   text-align: left; padding: 10px 14px;

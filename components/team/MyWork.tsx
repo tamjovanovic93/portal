@@ -49,10 +49,15 @@ export default function MyWork({
   members: WorkMember[];
   currentUserId: string;
 }) {
-  const meHasTasks = tasks.some((t) => t.assigneeId === currentUserId);
-  const [who, setWho] = useState<string>(meHasTasks ? currentUserId : "all");
-  const [status, setStatus] = useState<StatusFilter>("active");
+  // Nothing selected by default: show only the member bubbles. The task list
+  // appears once a person is chosen (bubble / dropdown) or a category is picked.
+  const [who, setWho] = useState<string>("");
+  const [status, setStatus] = useState<StatusFilter | "">("");
   const now = Date.now();
+
+  const showList = who !== "" || status !== "";
+  const effectiveWho = who === "" ? "all" : who;
+  const effectiveStatus: StatusFilter = status === "" ? "active" : status;
 
   // Per-member workload counts (from the same task set — one source of truth).
   const workload = useMemo(() => {
@@ -71,10 +76,11 @@ export default function MyWork({
   }, [tasks, members, now]);
 
   const filtered = useMemo(() => {
+    if (!showList) return [];
     return tasks.filter((t) => {
-      if (who === "me" ? t.assigneeId !== currentUserId : who !== "all" && t.assigneeId !== who) return false;
+      if (effectiveWho !== "all" && t.assigneeId !== effectiveWho) return false;
       const k = classify(t, now);
-      switch (status) {
+      switch (effectiveStatus) {
         case "active": return !k.done;
         case "due_soon": return k.dueSoon;
         case "overdue": return k.overdue;
@@ -87,7 +93,7 @@ export default function MyWork({
       const db = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
       return da - db;
     });
-  }, [tasks, who, status, currentUserId, now]);
+  }, [tasks, showList, effectiveWho, effectiveStatus, now]);
 
   return (
     <div className="card card-pad space-y-4">
@@ -95,13 +101,20 @@ export default function MyWork({
         <span style={{ fontWeight: 600, fontSize: 14 }}>Tasks</span>
         <div className="flex-1" />
         <select className="zp-select" style={{ width: "auto", fontSize: 12 }} value={who} onChange={(e) => setWho(e.target.value)}>
+          <option value="">Who…</option>
           <option value={currentUserId}>My tasks</option>
           <option value="all">Everyone</option>
           {members.filter((m) => m.id !== currentUserId).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
         </select>
-        <select className="zp-select" style={{ width: "auto", fontSize: 12 }} value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)}>
+        <select className="zp-select" style={{ width: "auto", fontSize: 12 }} value={status} onChange={(e) => setStatus(e.target.value as StatusFilter | "")}>
+          <option value="">Category…</option>
           {STATUS_FILTERS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
         </select>
+        {showList && (
+          <button type="button" onClick={() => { setWho(""); setStatus(""); }} className="faint" style={{ fontSize: 11.5, cursor: "pointer", background: "transparent", border: 0 }} title="Back to overview">
+            Clear
+          </button>
+        )}
       </div>
 
       {/* Workload strip */}
@@ -110,7 +123,7 @@ export default function MyWork({
           const c = workload.get(m.id)!;
           const selected = who === m.id;
           return (
-            <button key={m.id} type="button" onClick={() => setWho(selected ? "all" : m.id)}
+            <button key={m.id} type="button" onClick={() => setWho(selected ? "" : m.id)}
               className="flex items-center gap-2" style={{ padding: "6px 10px", borderRadius: "var(--r-md)", border: `1px solid ${selected ? VAR[m.color] : "var(--border)"}`, background: selected ? "var(--feature-grad)" : "var(--surface-2)" }}>
               <Avatar name={m.name} color={m.color} size={22} />
               <span style={{ fontSize: 12.5, fontWeight: 500 }}>{m.name}</span>
@@ -122,8 +135,10 @@ export default function MyWork({
         })}
       </div>
 
-      {/* Task list */}
-      {filtered.length === 0 ? (
+      {/* Task list — only once a person or category is selected */}
+      {!showList ? (
+        <p className="faint" style={{ fontSize: 12.5 }}>Pick a person above or choose a category to see their tasks.</p>
+      ) : filtered.length === 0 ? (
         <p className="faint" style={{ fontSize: 12.5 }}>No tasks match this filter.</p>
       ) : (
         <div className="flex flex-col" style={{ gap: 2 }}>
@@ -135,7 +150,7 @@ export default function MyWork({
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: VAR[dot], flexShrink: 0 }} />
                 <span style={{ fontSize: 12.5, flex: 1, textDecoration: k.done ? "line-through" : "none", opacity: k.done ? 0.6 : 1 }} className="truncate">{t.name}</span>
                 <span className="faint truncate" style={{ fontSize: 11, maxWidth: 130 }}>{t.projectName}</span>
-                {t.assigneeName && who === "all" && <span className="faint" style={{ fontSize: 11 }}>{t.assigneeName}</span>}
+                {t.assigneeName && effectiveWho === "all" && <span className="faint" style={{ fontSize: 11 }}>{t.assigneeName}</span>}
                 {t.dueDate && <span className="faint" style={{ fontSize: 11, flexShrink: 0 }}>{new Date(t.dueDate).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>}
                 {k.blocked && <Pill color="amber" style={{ fontSize: 9 }}>BLOCKED</Pill>}
               </Link>

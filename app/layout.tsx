@@ -44,8 +44,13 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${fredoka.variable} ${chakra.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      {/* suppressHydrationWarning: browser extensions (e.g. Demoway) inject
+          attributes onto <html>/<body> before React hydrates. Without this,
+          the root-level attribute mismatch makes React bail out of hydration
+          and client interactivity (expand/collapse, buttons) silently dies. */}
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>{children}</body>
     </html>
   );
 }

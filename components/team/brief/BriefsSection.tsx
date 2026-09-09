@@ -1,66 +1,44 @@
-"use client";
-
-import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 import ProjectBriefCard from "@/components/team/brief/ProjectBriefCard";
-import { createBrief, type BriefSummary } from "@/app/actions/project-brief";
+import type { BriefSummary } from "@/app/actions/project-brief";
 import type { RosterMember } from "@/lib/team";
 
 type Props = {
   projectId: string;
   projectName: string;
   currentStageLabel: string;
-  briefs: BriefSummary[];
+  brief: BriefSummary | null;
   roster: RosterMember[];
   dataContacts: { label: string; value: string }[];
   clientDefault: { name?: string; email?: string };
 };
 
+// Each project has exactly one Brief. (A separate engagement for the same
+// client is a new Project under that client, not a second brief here.)
 export default function BriefsSection(props: Props) {
-  const { projectId, briefs } = props;
-  const router = useRouter();
-  const [pending, start] = useTransition();
-
-  function addBrief() {
-    start(async () => {
-      await createBrief(projectId);
-      router.refresh();
-    });
-  }
+  const { brief } = props;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="eyebrow">Briefs</span>
-          <span className="faint" style={{ fontSize: 12 }}>{briefs.length} brief{briefs.length !== 1 ? "s" : ""}</span>
-        </div>
-        <button type="button" onClick={addBrief} disabled={pending} className="btn btn-sm btn-primary">
-          {pending ? "Adding…" : "+ Add New Brief"}
-        </button>
+      <div className="flex items-center gap-2">
+        <span className="eyebrow">Brief</span>
       </div>
 
-      {briefs.length === 0 ? (
+      {!brief ? (
         <div className="card muted" style={{ padding: 28, textAlign: "center", fontSize: 13.5 }}>
-          No briefs yet. Add one to define this project.
+          Preparing this project&apos;s brief…
         </div>
       ) : (
-        <div className="space-y-4">
-          {briefs.map((b) => (
-            <ProjectBriefCard
-              key={b.id}
-              projectId={projectId}
-              briefId={b.id}
-              projectName={props.projectName}
-              currentStageLabel={props.currentStageLabel}
-              brief={b.content}
-              publishedAt={b.publishedAt}
-              roster={props.roster}
-              dataContacts={props.dataContacts}
-              clientDefault={props.clientDefault}
-            />
-          ))}
-        </div>
+        <ProjectBriefCard
+          projectId={props.projectId}
+          briefId={brief.id}
+          projectName={props.projectName}
+          currentStageLabel={props.currentStageLabel}
+          brief={brief.content}
+          publishedAt={brief.publishedAt}
+          roster={props.roster}
+          dataContacts={props.dataContacts}
+          clientDefault={props.clientDefault}
+        />
       )}
     </div>
   );

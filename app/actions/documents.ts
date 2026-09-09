@@ -56,7 +56,7 @@ export async function saveDocument(
     where: { id: documentId },
     include: { project: true },
   });
-  if (!doc) throw new Error("Document not found");
+  if (!doc || !doc.project) throw new Error("Document not found");
 
   const profile = await prisma.profile.findUnique({ where: { id: user.id } });
   if (!profile) throw new Error("Profile not found");
@@ -81,7 +81,7 @@ export async function submitDocument(documentId: string) {
     where: { id: documentId },
     include: { project: true },
   });
-  if (!doc) throw new Error("Document not found");
+  if (!doc || !doc.project) throw new Error("Document not found");
 
   const profile = await prisma.profile.findUnique({ where: { id: user.id } });
   if (!profile) throw new Error("Profile not found");

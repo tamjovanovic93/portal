@@ -85,18 +85,31 @@ export async function createProject(formData: FormData) {
   // New onboarding flow: create the Initial Client Form as a DRAFT so the team
   // can pre-fill it and review before sending it to the client. The full intake
   // form comes later, after the offer is approved.
-  await prisma.document.create({
-    data: {
-      projectId: project.id,
-      stageNumber: 1,
-      templateType: "initial_client_form",
-      title: "Initial Client Form",
-      content: {},
-      status: "DRAFT",
-    },
+  // Also create the project's single Brief (exactly one per project). Client
+  // Data is NOT created here — it lives on the client and is shared/reused.
+  await prisma.document.createMany({
+    data: [
+      {
+        projectId: project.id,
+        stageNumber: 1,
+        templateType: "initial_client_form",
+        title: "Initial Client Form",
+        content: {},
+        status: "DRAFT",
+      },
+      {
+        projectId: project.id,
+        stageNumber: 1,
+        templateType: "project_brief",
+        title: "Project Brief",
+        content: { name: "Project Brief" },
+        status: "DRAFT",
+      },
+    ],
   });
 
   revalidatePath("/dashboard");
+  revalidatePath(`/clients/${clientProfile.id}`);
   redirect(`/projects/${project.id}`);
 }
 

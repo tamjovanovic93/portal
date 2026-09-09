@@ -34,13 +34,15 @@ async function requireUser() {
   return user;
 }
 
+// Onboarding docs are always project-scoped; narrow project + projectId to
+// non-null so callers don't have to guard the nullable Document relation.
 async function loadDoc(documentId: string) {
   const doc = await prisma.document.findUnique({
     where: { id: documentId },
     include: { project: { select: { id: true, clientId: true, name: true } } },
   });
-  if (!doc) throw new Error("Document not found");
-  return doc;
+  if (!doc || !doc.project || !doc.projectId) throw new Error("Document not found");
+  return doc as typeof doc & { projectId: string; project: NonNullable<typeof doc.project> };
 }
 
 function teamLink(projectId: string, documentId: string) {

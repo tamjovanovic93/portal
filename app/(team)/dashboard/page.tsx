@@ -3,11 +3,12 @@ import Link from "next/link";
 import { ProjectType, StageStatus } from "@prisma/client";
 import NewProjectButton from "@/components/team/NewProjectButton";
 import Icon from "@/components/ui/Icon";
-import { Eyebrow, Pill, StageBar, Health, Avatar, VAR, FILL, type Accent } from "@/components/ui/kit";
+import { Eyebrow, Pill, StageBar, Health, Avatar, VAR, type Accent } from "@/components/ui/kit";
 import { getTeamData, capacityColor } from "@/lib/team";
 import { createClient } from "@/lib/supabase/server";
 import { WAITING_CLIENT_STATUSES } from "@/lib/questions";
 import MyWork, { type WorkTask, type WorkMember } from "@/components/team/MyWork";
+import StatTiles, { type StatTile } from "@/components/team/StatTiles";
 
 function healthAccent(h: number): Accent {
   return h > 0.75 ? "mint" : h > 0.5 ? "amber" : "rose";
@@ -35,12 +36,6 @@ const STAGE_DESCRIPTIONS: Record<number, string> = {
 const TYPE_LABELS: Record<ProjectType, string> = {
   WEBSITE: "Website", BRANDING: "Branding", MARKETING: "Marketing",
   SOFTWARE_CRM: "Software / CRM", OTHER: "Other",
-};
-
-const EVENT_DOT: Record<string, Accent> = {
-  MEETING: "blue", DEADLINE: "rose", APPROVAL_GATE: "amber",
-  APPOINTMENT: "purple", MILESTONE: "mint", TASK_DUE: "mint",
-  task: "mint", material: "rose",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -238,7 +233,7 @@ export default async function DashboardPage() {
   const currentUserId = authUser?.id ?? "";
 
   // ── Connected PM data: tasks, blockers, waiting-on-client, meetings ──
-  const [workTasksRaw, blockerTasks, waitingQuestions, meetings] = await Promise.all([
+  const [workTasksRaw, blockerTasks, waitingQuestions] = await Promise.all([
     // Tasks across active projects for the workload/My-Work view (bounded).
     prisma.task.findMany({
       where: { cycle: { project: { isArchived: false } } },
@@ -266,12 +261,6 @@ export default async function DashboardPage() {
       },
       orderBy: { createdAt: "asc" },
       take: 30,
-    }),
-    prisma.appEvent.findMany({
-      where: { type: "MEETING", startAt: { gte: now } },
-      select: { id: true, title: true, startAt: true, project: { select: { id: true, name: true } } },
-      orderBy: { startAt: "asc" },
-      take: 8,
     }),
   ]);
 
@@ -362,7 +351,7 @@ export default async function DashboardPage() {
   };
   const notifications: NotificationItem[] = [];
   clientSubmittedDocs.forEach((doc) => {
-    if (!doc.completedAt) return;
+    if (!doc.completedAt || !doc.project) return;
     notifications.push({
       key: `notif-doc-${doc.id}`, projectName: doc.project.name,
       label: DOC_LABELS[doc.templateType] ?? `Document submitted — ${doc.title}`,
@@ -371,7 +360,7 @@ export default async function DashboardPage() {
     });
   });
   wireframeFeedbackDocs.forEach((doc) => {
-    if (!doc.completedAt) return;
+    if (!doc.completedAt || !doc.project) return;
     notifications.push({ key: `notif-wf-${doc.id}`, projectName: doc.project.name, label: "Wireframe feedback received", dot: "purple", at: doc.completedAt, href: `/projects/${doc.project.id}/stage/3` });
   });
   clientSubmittedMaterials.forEach((mat) => {
@@ -433,12 +422,28 @@ export default async function DashboardPage() {
     ...staleProjects.map((p) => ({ key: `stale-${p.id}`, dot: "mint" as const, label: `${clientName(p)} — no activity for ${Math.floor((Date.now() - p.updatedAt.getTime()) / 86400000)}d`, href: `/projects/${p.id}` })),
   ];
 
-  // ── Stat tiles ──
-  const stats: { n: number; label: string; color: Accent; icon: string }[] = [
-    { n: projects.length, label: "Active engagements", color: "mint", icon: "folder" },
-    { n: needsYou.length, label: "Need you", color: "amber", icon: "alert" },
-    { n: notifications.length, label: "From clients", color: "blue", icon: "bell" },
-    { n: upcoming.length, label: "Upcoming (14d)", color: "mint", icon: "calendar" },
+  // ── Stat tiles — each expands to reveal the items behind the number ──
+  const statTiles: StatTile[] = [
+    {
+      key: "engagements", n: projects.length, label: "Active engagements", color: "mint", icon: "folder",
+      items: projects.map((p) => ({ key: p.id, label: p.name, sub: clientName(p), href: `/projects/${p.id}` })),
+    },
+    {
+      key: "needsYou", n: needsYou.length, label: "Need you", color: "amber", icon: "alert",
+      items: needsYou.map((n) => ({ key: n.key, label: n.label, href: n.href, dot: n.dot })),
+    },
+    {
+      key: "fromClients", n: notifications.length, label: "From clients", color: "blue", icon: "bell",
+      items: notifications.map((n) => ({ key: n.key, label: n.label, sub: n.projectName, href: n.href, dot: n.dot })),
+    },
+    {
+      key: "upcoming", n: upcoming.length, label: "Upcoming (14d)", color: "mint", icon: "calendar",
+      items: upcoming.map((u) => ({
+        key: u.id, label: u.title,
+        sub: `${u.projectName ? `${u.projectName} · ` : ""}${formatUpcomingDate(u.startAt)}`,
+        href: "/calendar",
+      })),
+    },
   ];
 
   return (
@@ -457,19 +462,9 @@ export default async function DashboardPage() {
         <NewProjectButton />
       </div>
 
-      {/* Stat tiles */}
-      <div className="fade-up grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        {stats.map((s) => (
-          <div key={s.label} className="card flex items-center gap-4" style={{ padding: "18px 20px" }}>
-            <div style={{ width: 42, height: 42, borderRadius: 11, flexShrink: 0, background: FILL[s.color], color: VAR[s.color] }} className="flex items-center justify-center">
-              <Icon name={s.icon} size={20} />
-            </div>
-            <div>
-              <div className="figure" style={{ fontSize: 30, color: VAR[s.color], lineHeight: 1 }}>{String(s.n).padStart(2, "0")}</div>
-              <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{s.label}</div>
-            </div>
-          </div>
-        ))}
+      {/* Stat tiles — clickable, expand to reveal the items behind each count */}
+      <div className="fade-up">
+        <StatTiles tiles={statTiles} />
       </div>
 
       {/* My Work — tasks for the logged-in member, filterable, with workload strip */}
@@ -583,27 +578,6 @@ export default async function DashboardPage() {
 
         {/* Right rail */}
         <div className="fade-up flex flex-col gap-4 sticky" style={{ top: 76 }}>
-          {/* Needs you */}
-          <div className="card card-pad">
-            <div className="flex items-center gap-2" style={{ marginBottom: 14 }}>
-              <Icon name="alert" size={15} style={{ color: "var(--rose)" }} />
-              <span style={{ fontWeight: 600, fontSize: 13.5 }}>Needs you</span>
-              {needsYou.length > 0 && <Pill color="rose" style={{ marginLeft: "auto" }}>{needsYou.length}</Pill>}
-            </div>
-            {needsYou.length === 0 ? (
-              <p className="faint" style={{ fontSize: 12.5 }}>All clear — nothing needs you right now.</p>
-            ) : (
-              <div className="flex flex-col gap-1">
-                {needsYou.slice(0, 7).map((n) => (
-                  <Link key={n.key} href={n.href} className="flex items-start gap-2.5" style={{ padding: "8px", borderRadius: "var(--r-md)" }}>
-                    <span style={{ marginTop: 5, width: 7, height: 7, borderRadius: "50%", background: VAR[n.dot], flexShrink: 0 }} />
-                    <span style={{ fontSize: 12.5, lineHeight: 1.4 }}>{n.label}</span>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* Blockers */}
           <div className="card card-pad">
             <div className="flex items-center gap-2" style={{ marginBottom: 14 }}>
@@ -682,35 +656,6 @@ export default async function DashboardPage() {
             );
           })()}
 
-          {/* Meetings */}
-          <div className="card card-pad">
-            <div className="flex items-center gap-2" style={{ marginBottom: 14 }}>
-              <Icon name="calendar" size={15} style={{ color: "var(--purple)" }} />
-              <span style={{ fontWeight: 600, fontSize: 13.5 }}>Meetings</span>
-              <Link href="/calendar" className="faint" style={{ marginLeft: "auto", fontSize: 11.5 }}>Calendar →</Link>
-            </div>
-            {meetings.length === 0 ? (
-              <p className="faint" style={{ fontSize: 12.5 }}>No upcoming meetings.</p>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {meetings.map((m) => (
-                  <div key={m.id} className="flex items-center gap-3">
-                    <span style={{ width: 2, alignSelf: "stretch", borderRadius: 2, background: VAR.purple, opacity: 0.7 }} />
-                    <div className="min-w-0 flex-1">
-                      <p style={{ fontSize: 12.5, fontWeight: 500, lineHeight: 1.35 }} className="truncate">{m.title}</p>
-                      {m.project && <p className="faint" style={{ fontSize: 11 }}>{m.project.name}</p>}
-                    </div>
-                    <span className="faint" style={{ fontSize: 11, flexShrink: 0 }}>
-                      {m.startAt.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
-                      {" · "}
-                      {m.startAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* Team capacity */}
           {team.length > 0 && (
             <div className="card card-pad">
@@ -739,54 +684,6 @@ export default async function DashboardPage() {
             </div>
           )}
 
-          {/* From clients */}
-          <div className="card card-pad">
-            <div className="flex items-center gap-2" style={{ marginBottom: 14 }}>
-              <Icon name="bell" size={15} style={{ color: "var(--blue)" }} />
-              <span style={{ fontWeight: 600, fontSize: 13.5 }}>From clients</span>
-              {notifications.length > 0 && <Pill color="blue" style={{ marginLeft: "auto" }}>{notifications.length}</Pill>}
-            </div>
-            {notifications.length === 0 ? (
-              <p className="faint" style={{ fontSize: 12.5 }}>No new client activity.</p>
-            ) : (
-              <div className="flex flex-col gap-2.5">
-                {notifications.slice(0, 6).map((n) => (
-                  <Link key={n.key} href={n.href} className="flex items-start gap-2.5">
-                    <span style={{ marginTop: 5, width: 7, height: 7, borderRadius: "50%", background: VAR[n.dot], flexShrink: 0 }} />
-                    <div className="min-w-0">
-                      <p style={{ fontSize: 12.5, lineHeight: 1.35 }}>{n.label}</p>
-                      <p className="faint" style={{ fontSize: 11 }}>{n.projectName} · {timeAgo(n.at)}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Upcoming */}
-          <div className="card card-pad">
-            <div className="flex items-center gap-2" style={{ marginBottom: 14 }}>
-              <Icon name="calendar" size={15} style={{ color: "var(--mint)" }} />
-              <span style={{ fontWeight: 600, fontSize: 13.5 }}>This week</span>
-              <Link href="/calendar" className="faint" style={{ marginLeft: "auto", fontSize: 11.5 }}>Calendar →</Link>
-            </div>
-            {upcoming.length === 0 ? (
-              <p className="faint" style={{ fontSize: 12.5 }}>No events in the next 14 days.</p>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {upcoming.slice(0, 6).map((ev) => (
-                  <div key={ev.id} className="flex items-center gap-3">
-                    <span style={{ width: 2, alignSelf: "stretch", borderRadius: 2, background: VAR[EVENT_DOT[ev.sourceType === "manual" ? ev.type : ev.sourceType] ?? "mint"], opacity: 0.7 }} />
-                    <div className="min-w-0 flex-1">
-                      <p style={{ fontSize: 12.5, fontWeight: 500, lineHeight: 1.35 }} className="truncate">{ev.title}</p>
-                      {ev.projectName && <p className="faint" style={{ fontSize: 11 }}>{ev.projectName}</p>}
-                    </div>
-                    <span className="faint" style={{ fontSize: 11, flexShrink: 0 }}>{formatUpcomingDate(ev.startAt)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
       </div>
 

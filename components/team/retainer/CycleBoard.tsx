@@ -19,7 +19,8 @@ import {
 } from "@/app/actions/retainer";
 import type { TaskStatus, TaskType, TaskOwnerRole } from "@prisma/client";
 import { OWNER_ROLES, OWNER_ROLE_LABEL } from "@/lib/retainer-labels";
-import { ACTIVE_STATUSES, type QuestionRow } from "@/lib/questions";
+import { askClient, askTeam } from "@/app/actions/questions";
+import { type QuestionRow } from "@/lib/questions";
 import type { RosterMember } from "@/lib/team";
 import QuestionsPanel from "@/components/team/QuestionsPanel";
 
@@ -382,14 +383,29 @@ function TaskCard({ task, projectId, isActive, roster = [] }: { task: Task; proj
   );
 }
 
-function AddTaskForm({ cycleId, projectId, onDone }: { cycleId: string; projectId: string; onDone: () => void }) {
+// A question queued during task creation — sent once the task exists so it can
+// carry the new task id as its context. Reuses the shared Question system.
+type PendingQuestion =
+  | { to: "client"; text: string; proposed: string }
+  | { to: "team"; recipientId: string; recipientName: string; text: string };
+
+function AddTaskForm({ cycleId, projectId, onDone, roster = [] }: { cycleId: string; projectId: string; onDone: () => void; roster?: RosterMember[] }) {
   const [isPending, startTransition] = useTransition();
   const [type, setType] = useState<TaskType>("DELIVERABLE");
   const [isBlocker, setIsBlocker] = useState(false);
+  const [pendingQs, setPendingQs] = useState<PendingQuestion[]>([]);
 
   function handleSubmit(formData: FormData) {
     startTransition(async () => {
-      await addTask(cycleId, projectId, formData);
+      // Create the task first, then attach any queued questions to it by id.
+      const { id } = await addTask(cycleId, projectId, formData);
+      for (const q of pendingQs) {
+        if (q.to === "client") {
+          await askClient({ projectId, contextType: "TASK", contextId: id, questionText: q.text, proposedAnswer: q.proposed || undefined });
+        } else {
+          await askTeam({ projectId, contextType: "TASK", contextId: id, recipientId: q.recipientId, questionText: q.text });
+        }
+      }
       onDone();
     });
   }
@@ -411,8 +427,16 @@ function AddTaskForm({ cycleId, projectId, onDone }: { cycleId: string; projectI
       </div>
       <div className="flex gap-2">
         <input name="description" placeholder="Description (optional)" className="flex-1 text-sm rounded border border-neutral-300 px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-neutral-900" />
-        <select name="ownerRole" className="text-sm text-neutral-900 rounded border border-neutral-300 px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-neutral-900">
-          <option value="">Owner…</option>
+        {roster.length > 0 && (
+          <select name="assigneeId" defaultValue="" className="text-sm text-neutral-900 rounded border border-neutral-300 px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-neutral-900" title="Assign to a team member">
+            <option value="">Assign to…</option>
+            {roster.map((m) => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        )}
+        <select name="ownerRole" className="text-sm text-neutral-900 rounded border border-neutral-300 px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-neutral-900" title="Department (optional, secondary to the assignee)">
+          <option value="">Dept…</option>
           {OWNER_ROLES.map((r) => (
             <option key={r.value} value={r.value}>{r.label}</option>
           ))}
@@ -448,13 +472,106 @@ function AddTaskForm({ cycleId, projectId, onDone }: { cycleId: string; projectI
           </label>
         )}
       </div>
+
+      {/* Optional: queue questions to send once the task is created. */}
+      <CommunicationSection
+        roster={roster}
+        pending={pendingQs}
+        onAdd={(q) => setPendingQs((prev) => [...prev, q])}
+        onRemove={(i) => setPendingQs((prev) => prev.filter((_, idx) => idx !== i))}
+      />
+
       <div className="flex gap-2">
         <button type="submit" disabled={isPending} className="text-xs px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-700 disabled:opacity-50 transition-colors">
-          {isPending ? "Adding…" : "Add task"}
+          {isPending ? "Adding…" : pendingQs.length > 0 ? `Add task & send ${pendingQs.length} question${pendingQs.length !== 1 ? "s" : ""}` : "Add task"}
         </button>
         <button type="button" onClick={onDone} className="text-xs text-neutral-500 hover:text-neutral-800 transition-colors">Cancel</button>
       </div>
     </form>
+  );
+}
+
+// Compact "Communication / Questions" block for the create form. Lets the team
+// queue a client/team question that is sent (via the shared Question system)
+// after the task is saved. Optional — the task saves fine with none queued.
+function CommunicationSection({
+  roster,
+  pending,
+  onAdd,
+  onRemove,
+}: {
+  roster: RosterMember[];
+  pending: PendingQuestion[];
+  onAdd: (q: PendingQuestion) => void;
+  onRemove: (index: number) => void;
+}) {
+  const [mode, setMode] = useState<"none" | "client" | "team">("none");
+  const [text, setText] = useState("");
+  const [proposed, setProposed] = useState("");
+  const [recipientId, setRecipientId] = useState("");
+
+  function reset() { setText(""); setProposed(""); setRecipientId(""); setMode("none"); }
+
+  function addClient() {
+    if (!text.trim()) return;
+    onAdd({ to: "client", text: text.trim(), proposed: proposed.trim() });
+    reset();
+  }
+  function addTeamQ() {
+    if (!text.trim() || !recipientId) return;
+    const m = roster.find((r) => r.id === recipientId);
+    onAdd({ to: "team", recipientId, recipientName: m?.name ?? "team", text: text.trim() });
+    reset();
+  }
+
+  return (
+    <div className="pt-2 border-t border-neutral-100 space-y-2">
+      <p className="text-xs font-medium text-neutral-600">Communication / Questions <span className="text-neutral-400 font-normal">(optional)</span></p>
+
+      {pending.length > 0 && (
+        <div className="space-y-1">
+          {pending.map((q, i) => (
+            <div key={i} className="flex items-start gap-2 text-xs bg-neutral-50 border border-neutral-200 rounded px-2 py-1">
+              <span className={`shrink-0 px-1.5 py-0.5 rounded font-medium ${q.to === "client" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"}`}>
+                {q.to === "client" ? "Client" : q.recipientName}
+              </span>
+              <span className="flex-1 text-neutral-700">{q.text}</span>
+              <button type="button" onClick={() => onRemove(i)} className="shrink-0 text-neutral-300 hover:text-red-500">×</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {mode === "none" ? (
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setMode("client")} className="text-xs px-2 py-1 rounded border border-neutral-300 text-neutral-700 hover:bg-neutral-50">+ Ask Client</button>
+          {roster.length > 0 && (
+            <button type="button" onClick={() => setMode("team")} className="text-xs px-2 py-1 rounded border border-neutral-300 text-neutral-700 hover:bg-neutral-50">+ Ask Team Member</button>
+          )}
+        </div>
+      ) : mode === "client" ? (
+        <div className="space-y-1.5 bg-neutral-50 border border-neutral-200 rounded p-2">
+          <textarea rows={2} value={text} placeholder="Question for the client…" onChange={(e) => setText(e.target.value)} className="w-full text-xs rounded border border-neutral-300 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-neutral-900" />
+          <textarea rows={1} value={proposed} placeholder="Proposed answer (optional — turns into a confirm request)" onChange={(e) => setProposed(e.target.value)} className="w-full text-xs rounded border border-neutral-300 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-neutral-900" />
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={addClient} disabled={!text.trim()} className="text-xs px-2 py-1 rounded bg-neutral-900 text-white hover:bg-neutral-700 disabled:opacity-50">Add question</button>
+            <button type="button" onClick={reset} className="text-xs text-neutral-500 hover:text-neutral-800">Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-1.5 bg-neutral-50 border border-neutral-200 rounded p-2">
+          <select value={recipientId} onChange={(e) => setRecipientId(e.target.value)} className="w-full text-xs rounded border border-neutral-300 px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-neutral-900">
+            <option value="">Select team member…</option>
+            {roster.map((m) => <option key={m.id} value={m.id}>{m.name}{m.title ? ` · ${m.title}` : ""}</option>)}
+          </select>
+          <textarea rows={2} value={text} placeholder="Question for the team member…" onChange={(e) => setText(e.target.value)} className="w-full text-xs rounded border border-neutral-300 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-neutral-900" />
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={addTeamQ} disabled={!text.trim() || !recipientId} className="text-xs px-2 py-1 rounded bg-neutral-900 text-white hover:bg-neutral-700 disabled:opacity-50">Add question</button>
+            <button type="button" onClick={reset} className="text-xs text-neutral-500 hover:text-neutral-800">Cancel</button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -727,7 +844,7 @@ export default function CycleBoard({
 
         {showAddTask && isActive && (
           <div className="mt-3">
-            <AddTaskForm cycleId={cycle.id} projectId={projectId} onDone={() => setShowAddTask(false)} />
+            <AddTaskForm cycleId={cycle.id} projectId={projectId} onDone={() => setShowAddTask(false)} roster={roster} />
           </div>
         )}
       </div>

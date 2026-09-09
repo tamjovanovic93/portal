@@ -12,29 +12,29 @@ import {
 
 type Logo = { id: string; filename: string; url: string; isLink: boolean };
 
-export default function BrandKitCard({ projectId, typography, colors, logos }: {
-  projectId: string; typography: TypeStyle[]; colors: BrandColor[]; logos: Logo[];
+export default function BrandKitCard({ clientId, typography, colors, logos }: {
+  clientId: string; typography: TypeStyle[]; colors: BrandColor[]; logos: Logo[];
 }) {
   return (
     <div className="space-y-6">
-      <LogoSection projectId={projectId} logos={logos} />
-      <TypographyEditor projectId={projectId} items={typography} />
-      <ColorsEditor projectId={projectId} items={colors} />
+      <LogoSection clientId={clientId} logos={logos} />
+      <TypographyEditor clientId={clientId} items={typography} />
+      <ColorsEditor clientId={clientId} items={colors} />
     </div>
   );
 }
 
-function LogoSection({ projectId, logos }: { projectId: string; logos: Logo[] }) {
+function LogoSection({ clientId, logos }: { clientId: string; logos: Logo[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [label, setLabel] = useState("");
   const [url, setUrl] = useState("");
   function add() {
     if (!url.trim()) return;
-    start(async () => { await addBrandLogoLink(projectId, label, url); setLabel(""); setUrl(""); router.refresh(); });
+    start(async () => { await addBrandLogoLink(clientId, label, url); setLabel(""); setUrl(""); router.refresh(); });
   }
   function remove(id: string) {
-    start(async () => { await deleteBrandLogo(id, projectId); router.refresh(); });
+    start(async () => { await deleteBrandLogo(id, clientId); router.refresh(); });
   }
   return (
     <div>
@@ -61,11 +61,11 @@ function LogoSection({ projectId, logos }: { projectId: string; logos: Logo[] })
   );
 }
 
-function TypographyEditor({ projectId, items: initial }: { projectId: string; items: TypeStyle[] }) {
+function TypographyEditor({ clientId, items: initial }: { clientId: string; items: TypeStyle[] }) {
   const router = useRouter();
   const [items, setItems] = useState<TypeStyle[]>(initial);
   const [, start] = useTransition();
-  function commit(next: TypeStyle[]) { setItems(next); start(async () => { await updateBrandTypography(projectId, next); router.refresh(); }); }
+  function commit(next: TypeStyle[]) { setItems(next); start(async () => { await updateBrandTypography(clientId, next); router.refresh(); }); }
   function addPreset(label: string) { commit([...items, { id: briefId("t"), label, font: "", size: "", style: "" }]); }
   function remove(id: string) { commit(items.filter((i) => i.id !== id)); }
   function edit(id: string, key: keyof TypeStyle, val: string) { setItems(items.map((i) => (i.id === id ? { ...i, [key]: val } : i))); }
@@ -94,11 +94,11 @@ function TypographyEditor({ projectId, items: initial }: { projectId: string; it
   );
 }
 
-function ColorsEditor({ projectId, items: initial }: { projectId: string; items: BrandColor[] }) {
+function ColorsEditor({ clientId, items: initial }: { clientId: string; items: BrandColor[] }) {
   const router = useRouter();
   const [items, setItems] = useState<BrandColor[]>(initial);
   const [, start] = useTransition();
-  function commit(next: BrandColor[]) { setItems(next); start(async () => { await updateBrandColors(projectId, next); router.refresh(); }); }
+  function commit(next: BrandColor[]) { setItems(next); start(async () => { await updateBrandColors(clientId, next); router.refresh(); }); }
   function add() { commit([...items, { id: briefId("c"), name: "", hex: "#000000" }]); }
   function remove(id: string) { commit(items.filter((i) => i.id !== id)); }
   function edit(id: string, key: keyof BrandColor, val: string) { setItems(items.map((i) => (i.id === id ? { ...i, [key]: val } : i))); }

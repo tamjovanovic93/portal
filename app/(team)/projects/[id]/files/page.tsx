@@ -23,7 +23,7 @@ export default async function FilesPage({
       where: { projectId: id },
       orderBy: { uploadedAt: "desc" },
     }),
-    getDoc(id, PROFILE_DOC),
+    getDoc(project.clientId, PROFILE_DOC),
   ]);
 
   return (

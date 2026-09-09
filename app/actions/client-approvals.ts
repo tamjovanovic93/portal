@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
-import { mutateDoc } from "@/lib/intake/store";
+import { mutateDoc, clientIdForProject } from "@/lib/intake/store";
 import { PROFILE_DOC, type ClientProfile } from "@/lib/intake/types";
 
 async function getClientProfile() {
@@ -32,7 +32,8 @@ export async function respondToKeyMessage(
   const profile = await getClientProfile();
   await assertOwnsProject(projectId, profile.id);
 
-  await mutateDoc<ClientProfile>(projectId, PROFILE_DOC, (content) => {
+  const clientId = (await clientIdForProject(projectId)) ?? profile.id;
+  await mutateDoc<ClientProfile>(clientId, PROFILE_DOC, (content) => {
     const item = content.messaging?.key_messages?.find((m) => m.message_id === messageId);
     if (item) item.approved = decision;
   });
@@ -48,7 +49,8 @@ export async function respondToSlogan(
   const profile = await getClientProfile();
   await assertOwnsProject(projectId, profile.id);
 
-  await mutateDoc<ClientProfile>(projectId, PROFILE_DOC, (content) => {
+  const clientId = (await clientIdForProject(projectId)) ?? profile.id;
+  await mutateDoc<ClientProfile>(clientId, PROFILE_DOC, (content) => {
     const item = content.messaging?.slogans?.find((s) => s.slogan_id === sloganId);
     if (item) item.approved = decision;
   });
@@ -68,7 +70,8 @@ export async function acknowledgeApprovalItem(
   if (!user) throw new Error("Unauthorized");
 
   const now = new Date().toISOString();
-  await mutateDoc<ClientProfile>(projectId, PROFILE_DOC, (content) => {
+  const clientId = (await clientIdForProject(projectId)) ?? user.id;
+  await mutateDoc<ClientProfile>(clientId, PROFILE_DOC, (content) => {
     const item =
       kind === "message"
         ? content.messaging?.key_messages?.find((m) => m.message_id === id)

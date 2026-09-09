@@ -6,17 +6,18 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import type { TypeStyle, BrandColor } from "@/lib/brief/types";
 
-// Brand Kit lives under Data as a single JSON Document (templateType "brand_kit")
-// per project: typography + colors. Logo files are ProjectAsset rows (folder
-// "brand"). This is the central home for brand identity — never duplicated in
-// individual briefs.
+// Brand Kit is shared CLIENT DATA — a single JSON Document (templateType
+// "brand_kit") per CLIENT: typography + colors + logo links. The central home
+// for brand identity, referenced by all of the client's projects.
 
 // Not exported: a "use server" module may only export async functions.
 const BRAND_KIT_DOC = "brand_kit";
 
+export type BrandLogo = { id: string; filename: string; url: string; isLink: boolean };
 export type BrandKit = {
   typography?: TypeStyle[];
   colors?: BrandColor[];
+  logos?: BrandLogo[];
 };
 
 async function requireTeam() {
@@ -27,17 +28,17 @@ async function requireTeam() {
   return user;
 }
 
-async function getDoc(projectId: string) {
-  return prisma.document.findFirst({ where: { projectId, templateType: BRAND_KIT_DOC } });
+async function getDoc(clientId: string) {
+  return prisma.document.findFirst({ where: { clientId, templateType: BRAND_KIT_DOC } });
 }
 
-export async function getBrandKit(projectId: string): Promise<BrandKit> {
-  const doc = await getDoc(projectId);
+export async function getBrandKit(clientId: string): Promise<BrandKit> {
+  const doc = await getDoc(clientId);
   return (doc?.content as BrandKit) ?? {};
 }
 
-async function mutate(projectId: string, fn: (k: BrandKit) => BrandKit) {
-  const existing = await getDoc(projectId);
+async function mutate(clientId: string, fn: (k: BrandKit) => BrandKit) {
+  const existing = await getDoc(clientId);
   const current = (existing?.content as BrandKit) ?? {};
   const next = fn({ ...current });
   const data = { content: next as unknown as Prisma.InputJsonValue };
@@ -45,55 +46,45 @@ async function mutate(projectId: string, fn: (k: BrandKit) => BrandKit) {
     await prisma.document.update({ where: { id: existing.id }, data });
   } else {
     await prisma.document.create({
-      data: { projectId, stageNumber: 1, templateType: BRAND_KIT_DOC, title: "Brand Kit", ...data },
+      data: { clientId, stageNumber: 1, templateType: BRAND_KIT_DOC, title: "Brand Kit", ...data },
     });
   }
-  revalidatePath(`/projects/${projectId}/brief`);
+  revalidatePath(`/clients/${clientId}/data`);
 }
 
-export async function updateBrandTypography(projectId: string, typography: TypeStyle[]) {
+export async function updateBrandTypography(clientId: string, typography: TypeStyle[]) {
   await requireTeam();
-  await mutate(projectId, (k) => ({ ...k, typography }));
+  await mutate(clientId, (k) => ({ ...k, typography }));
   return { ok: true };
 }
 
-export async function updateBrandColors(projectId: string, colors: BrandColor[]) {
+export async function updateBrandColors(clientId: string, colors: BrandColor[]) {
   await requireTeam();
-  await mutate(projectId, (k) => ({ ...k, colors }));
+  await mutate(clientId, (k) => ({ ...k, colors }));
   return { ok: true };
 }
 
-// ── Logo assets (ProjectAsset, folder "brand") ──
-export async function getBrandLogos(projectId: string) {
-  const rows = await prisma.projectAsset.findMany({
-    where: { projectId, folder: "brand" },
-    orderBy: { uploadedAt: "desc" },
-    select: { id: true, filename: true, storagePath: true, mimeType: true },
-  });
-  return rows.map((r) => ({ id: r.id, filename: r.filename, url: r.storagePath, isLink: r.mimeType === "text/uri-list" }));
+// ── Logos (links, stored in the brand_kit JSON — client-level) ──
+export async function getBrandLogos(clientId: string): Promise<BrandLogo[]> {
+  const kit = await getBrandKit(clientId);
+  return kit.logos ?? [];
 }
 
-export async function addBrandLogoLink(projectId: string, label: string, url: string) {
-  const user = await requireTeam();
+export async function addBrandLogoLink(clientId: string, label: string, url: string) {
+  await requireTeam();
   if (!url.trim()) return { error: "URL required" };
-  await prisma.projectAsset.create({
-    data: {
-      projectId,
-      storagePath: url.trim(),
-      filename: label.trim() || url.trim(),
-      mimeType: "text/uri-list",
-      folder: "brand",
-      visibility: "SHARED",
-      uploadedBy: user.id,
-    },
-  });
-  revalidatePath(`/projects/${projectId}/brief`);
+  const logo: BrandLogo = {
+    id: `logo_${Date.now().toString(36)}`,
+    filename: label.trim() || url.trim(),
+    url: url.trim(),
+    isLink: true,
+  };
+  await mutate(clientId, (k) => ({ ...k, logos: [logo, ...(k.logos ?? [])] }));
   return { ok: true };
 }
 
-export async function deleteBrandLogo(assetId: string, projectId: string) {
+export async function deleteBrandLogo(logoId: string, clientId: string) {
   await requireTeam();
-  await prisma.projectAsset.delete({ where: { id: assetId } });
-  revalidatePath(`/projects/${projectId}/brief`);
+  await mutate(clientId, (k) => ({ ...k, logos: (k.logos ?? []).filter((l) => l.id !== logoId) }));
   return { ok: true };
 }

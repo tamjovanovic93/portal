@@ -146,6 +146,7 @@ model Profile {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   projectsAsClient  Project[]      @relation("ClientProjects")
+  clientDocuments   Document[]     @relation("ClientDocuments") // shared Client Data docs
   assignedTasks     Task[]         @relation("AssignedTasks")
   approvals         Approval[]
   gatedStages       ProjectStage[] @relation("GateApprover")
@@ -214,8 +215,14 @@ model ProjectStage {
 
 model Document {
   id           String         @id @default(uuid()) @db.Uuid
-  projectId    String         @map("project_id") @db.Uuid
-  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  // A document is either project-scoped (projectId set) or client-scoped
+  // (clientId set, projectId null). Client-scoped docs are the shared Client
+  // Data: client_profile / verification_queue / strategy / brand_kit — one
+  // canonical set per client, referenced by all of that client's projects.
+  projectId    String?        @map("project_id") @db.Uuid
+  project      Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  clientId     String?        @map("client_id") @db.Uuid
+  client       Profile?       @relation("ClientDocuments", fields: [clientId], references: [id], onDelete: Cascade)
   stageNumber  Int            @map("stage_number")
   templateType String         @map("template_type") // e.g. "intake_form", "scope_of_work"
   title        String
@@ -230,6 +237,7 @@ model Document {
   updatedAt    DateTime       @updatedAt @map("updated_at")
 
   @@index([projectId])
+  @@index([clientId])
   @@map("documents")
 }
 

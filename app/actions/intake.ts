@@ -15,7 +15,7 @@ import {
   type ClientProfile,
   type VerificationQueue,
 } from "@/lib/intake/types";
-import { getProfile, upsertIntakeDoc, mutateDoc } from "@/lib/intake/store";
+import { getProfile, upsertIntakeDoc, mutateDoc, clientIdForProject } from "@/lib/intake/store";
 
 import clientProfileTemplate from "@/lib/intake/templates/client_profile.template.json";
 import strategyTemplate from "@/lib/intake/templates/strategy.template.json";
@@ -221,11 +221,12 @@ export async function runIntakeAgent(
     resolved_count: items.length - pending,
   };
 
-  await upsertIntakeDoc(projectId, PROFILE_DOC, profile);
-  await upsertIntakeDoc(projectId, VERIFICATION_DOC, queue);
+  const clientId = (await clientIdForProject(projectId))!;
+  await upsertIntakeDoc(clientId, PROFILE_DOC, profile);
+  await upsertIntakeDoc(clientId, VERIFICATION_DOC, queue);
 
   revalidatePath(`/projects/${projectId}`);
-  revalidatePath(`/projects/${projectId}/brief`);
+  revalidatePath(`/clients/${clientId}/data`);
 
   return { success: true, verificationCount: items.length };
 }
@@ -236,15 +237,16 @@ export async function markProfileVerified(
   projectId: string
 ): Promise<{ success?: boolean; error?: string }> {
   await requireTeam();
+  const clientId = (await clientIdForProject(projectId))!;
   try {
-    await mutateDoc<ClientProfile>(projectId, PROFILE_DOC, (profile) => {
+    await mutateDoc<ClientProfile>(clientId, PROFILE_DOC, (profile) => {
       profile._meta.status = "verified";
     });
   } catch {
     return { error: "No client profile to verify. Run intake first." };
   }
   revalidatePath(`/projects/${projectId}`);
-  revalidatePath(`/projects/${projectId}/brief`);
+  revalidatePath(`/clients/${clientId}/data`);
   return { success: true };
 }
 
@@ -252,15 +254,16 @@ export async function markProfileDraft(
   projectId: string
 ): Promise<{ success?: boolean; error?: string }> {
   await requireTeam();
+  const clientId = (await clientIdForProject(projectId))!;
   try {
-    await mutateDoc<ClientProfile>(projectId, PROFILE_DOC, (profile) => {
+    await mutateDoc<ClientProfile>(clientId, PROFILE_DOC, (profile) => {
       profile._meta.status = "draft";
     });
   } catch {
     return { error: "No client profile found." };
   }
   revalidatePath(`/projects/${projectId}`);
-  revalidatePath(`/projects/${projectId}/brief`);
+  revalidatePath(`/clients/${clientId}/data`);
   return { success: true };
 }
 
@@ -293,7 +296,8 @@ export async function runStrategyAgent(
     return { error: "ANTHROPIC_API_KEY is not set in environment variables." };
   }
 
-  const profile = await getProfile(projectId);
+  const clientId = (await clientIdForProject(projectId))!;
+  const profile = await getProfile(clientId);
   if (!profile) return { error: "No client profile found. Run intake first." };
 
   // Hard gate — Agent 2 must not run on an unverified profile.
@@ -322,10 +326,10 @@ export async function runStrategyAgent(
     source: "Generated from verified client_profile.json",
   };
 
-  await upsertIntakeDoc(projectId, STRATEGY_DOC, strategy);
+  await upsertIntakeDoc(clientId, STRATEGY_DOC, strategy);
 
   revalidatePath(`/projects/${projectId}`);
-  revalidatePath(`/projects/${projectId}/brief`);
+  revalidatePath(`/clients/${clientId}/data`);
 
   return { success: true };
 }

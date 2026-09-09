@@ -6,7 +6,7 @@ import { resolveVerificationItem } from "@/app/actions/brief";
 type Status = "pending" | "confirmed" | "rejected";
 
 export default function VerificationRow({
-  projectId,
+  clientId,
   itemId,
   fieldPath,
   currentValue,
@@ -15,7 +15,7 @@ export default function VerificationRow({
   status,
   resolvedValue,
 }: {
-  projectId: string;
+  clientId: string;
   itemId: string;
   fieldPath: string;
   currentValue: string;
@@ -31,7 +31,7 @@ export default function VerificationRow({
   function resolve(next: Status) {
     setCurrent(next);
     startTransition(async () => {
-      await resolveVerificationItem(projectId, itemId, next, next === "confirmed" ? answer : undefined);
+      await resolveVerificationItem(clientId, itemId, next, next === "confirmed" ? answer : undefined);
     });
   }
 
