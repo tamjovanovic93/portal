@@ -9,6 +9,8 @@ import { getProfile, getStrategy } from "@/lib/intake/store";
 import { getProjectBrief, ensureProjectBrief } from "@/app/actions/project-brief";
 import BriefsSection from "@/components/team/brief/BriefsSection";
 import { getRoster } from "@/lib/team";
+import ProjectStageTasks from "@/components/team/project/ProjectStageTasks";
+import type { StageTask } from "@/components/team/project/StageTasks";
 import ApprovalCard from "@/components/team/project/ApprovalCard";
 import MarkReviewedButton from "@/components/team/project/MarkReviewedButton";
 import MaterialRow from "@/components/team/MaterialRow";
@@ -259,6 +261,22 @@ export default async function ProjectPage({
     0
   );
   const tasksAvailable = project.currentStage >= 1;
+  // All scope-derived tasks for the stage-tabbed board (Stage 1 = planning
+  // overview of everything; Stage 2+ = only that stage's tasks).
+  const projectStageTasks: StageTask[] = project.cycles.flatMap((c) =>
+    c.tasks.map((t) => ({
+      id: t.id,
+      name: t.name,
+      status: t.status,
+      stageNumber: t.stageNumber,
+      assigneeId: t.assigneeId,
+      estimateDate: t.estimateDate ? t.estimateDate.toISOString() : null,
+      workLink: t.workLink,
+      notes: t.notes,
+      isBlocker: t.isBlocker,
+      listName: c.name,
+    }))
+  );
 
   type ActivityItem = {
     type: "upload" | "approval" | "stage_complete";
@@ -559,7 +577,7 @@ export default async function ProjectPage({
         />
       </div>
 
-      {/* ── Tasks — now live inside the stages (planning in Stage 1) ─────────── */}
+      {/* ── Tasks — stage-tabbed board (Stage 1 planning, Stage 2+ Kanban) ───── */}
       <div className="mb-6">
         <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-3">
           Tasks
@@ -568,25 +586,12 @@ export default async function ProjectPage({
           <p className="text-sm text-neutral-600">
             Tasks become available from the Strategy stage (stage 1).
           </p>
+        ) : projectStageTasks.length === 0 ? (
+          <p className="text-sm text-neutral-600">
+            No tasks yet. Approve “Sync Scope to Tasks” on the brief to generate them.
+          </p>
         ) : (
-          <Link
-            href={`/projects/${id}/stage/1`}
-            className="flex items-center justify-between bg-white border border-neutral-200 rounded-lg px-4 py-3 hover:border-neutral-400 transition-colors group"
-          >
-            <div>
-              <p className="text-sm font-medium text-neutral-800 group-hover:underline">
-                Planning — all tasks (Stage 1)
-              </p>
-              <p className="text-xs text-neutral-600 mt-0.5">
-                {openTasks > 0
-                  ? `${openTasks} open task${openTasks !== 1 ? "s" : ""} across ${activeCycles.length} list${activeCycles.length !== 1 ? "s" : ""}. Approve “Sync Scope to Tasks” on the brief to generate them.`
-                  : "Approve “Sync Scope to Tasks” on the brief to generate tasks, then plan them here."}
-              </p>
-            </div>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700 font-medium shrink-0 ml-4">
-              Open →
-            </span>
-          </Link>
+          <ProjectStageTasks projectId={id} tasks={projectStageTasks} roster={roster} initialStage={1} />
         )}
       </div>
 
