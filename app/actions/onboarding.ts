@@ -80,6 +80,29 @@ async function persistContent(documentId: string, content: FormContent) {
 
 // ─── Client-level onboarding document creation ───────────────────────────────
 
+export async function createClientInitialForm(
+  clientId: string
+): Promise<{ id?: string; error?: string }> {
+  await requireTeam();
+  const existing = await prisma.document.findFirst({
+    where: { clientId, templateType: "initial_client_form" },
+    orderBy: { createdAt: "desc" },
+  });
+  if (existing) return { id: existing.id };
+  const doc = await prisma.document.create({
+    data: {
+      clientId,
+      stageNumber: 1,
+      templateType: "initial_client_form",
+      title: "Initial Client Form",
+      content: {} as Prisma.InputJsonValue,
+      status: "DRAFT",
+    },
+  });
+  revalidatePath(`/clients/${clientId}`);
+  return { id: doc.id };
+}
+
 export async function createClientIntakeForm(
   clientId: string
 ): Promise<{ id?: string; error?: string }> {

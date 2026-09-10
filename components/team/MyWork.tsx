@@ -18,6 +18,15 @@ export type WorkTask = {
 
 export type WorkMember = { id: string; name: string; color: Accent };
 
+export type WorkQuestion = {
+  id: string;
+  assigneeId: string;
+  questionText: string;
+  taskName: string | null;
+  projectId: string | null;
+  projectName: string | null;
+};
+
 type StatusFilter = "active" | "due_soon" | "overdue" | "blocked" | "done" | "all";
 
 const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
@@ -43,10 +52,12 @@ function classify(t: WorkTask, now: number) {
 export default function MyWork({
   tasks,
   members,
+  questions = [],
   currentUserId,
 }: {
   tasks: WorkTask[];
   members: WorkMember[];
+  questions?: WorkQuestion[];
   currentUserId: string;
 }) {
   // Nothing selected by default: show only the member bubbles. The task list
@@ -74,6 +85,21 @@ export default function MyWork({
     }
     return map;
   }, [tasks, members, now]);
+
+  const questionsByMember = useMemo(() => {
+    const map = new Map<string, WorkQuestion[]>();
+    for (const q of questions) {
+      if (!map.has(q.assigneeId)) map.set(q.assigneeId, []);
+      map.get(q.assigneeId)!.push(q);
+    }
+    return map;
+  }, [questions]);
+
+  const selectedQuestions = useMemo(() => {
+    if (!showList) return [];
+    if (effectiveWho === "all") return questions;
+    return questionsByMember.get(effectiveWho) ?? [];
+  }, [showList, effectiveWho, questions, questionsByMember]);
 
   const filtered = useMemo(() => {
     if (!showList) return [];
@@ -130,10 +156,35 @@ export default function MyWork({
               <span className="tech" style={{ fontSize: 11, color: VAR[m.color] }}>{c.active}</span>
               {c.overdue > 0 && <Pill color="rose" style={{ fontSize: 9 }}>{c.overdue} od</Pill>}
               {c.blocked > 0 && <Pill color="amber" style={{ fontSize: 9 }}>{c.blocked} bl</Pill>}
+              {(questionsByMember.get(m.id)?.length ?? 0) > 0 && (
+                <Pill color="blue" style={{ fontSize: 9 }}>{questionsByMember.get(m.id)!.length} q</Pill>
+              )}
             </button>
           );
         })}
       </div>
+
+      {/* Questions directed at the selected member(s) under a task */}
+      {showList && selectedQuestions.length > 0 && (
+        <div className="flex flex-col" style={{ gap: 2 }}>
+          <span className="tech" style={{ fontSize: 10.5, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Questions ({selectedQuestions.length})
+          </span>
+          {selectedQuestions.slice(0, 20).map((q) => (
+            <Link
+              key={q.id}
+              href={q.projectId ? `/projects/${q.projectId}` : "/dashboard"}
+              className="flex items-center gap-2.5"
+              style={{ padding: "7px 8px", borderRadius: "var(--r-md)" }}
+            >
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: VAR.blue, flexShrink: 0 }} />
+              <span style={{ fontSize: 12.5, flex: 1 }} className="truncate">{q.questionText}</span>
+              {q.taskName && <span className="faint truncate" style={{ fontSize: 11, maxWidth: 130 }}>{q.taskName}</span>}
+              <Pill color="blue" style={{ fontSize: 9 }}>Q</Pill>
+            </Link>
+          ))}
+        </div>
+      )}
 
       {/* Task list — only once a person or category is selected */}
       {!showList ? (

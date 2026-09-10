@@ -217,6 +217,16 @@ export async function deleteClient(clientId: string) {
   });
   const projectIds = projects.map((p) => p.id);
 
+  // Client-scoped documents (projectId null) — used to purge lingering TEAM
+  // notifications that link to them (those have no projectId/recipientId, so they
+  // don't cascade when the profile is deleted and would otherwise stay on the
+  // dashboard/bell forever pointing at a deleted client).
+  const clientDocs = await prisma.document.findMany({
+    where: { clientId, projectId: null },
+    select: { id: true },
+  });
+  const clientDocIds = clientDocs.map((d) => d.id);
+
   // One transaction: any failure rolls back so the client is never left in a
   // half-deleted state.
   await prisma.$transaction(async (tx) => {
@@ -229,6 +239,17 @@ export async function deleteClient(clientId: string) {
       // Deleting the projects cascades stages, project documents, approvals,
       // assets, materials, cycles → tasks → approvals, notifications and questions.
       await tx.project.deleteMany({ where: { id: { in: projectIds } } });
+    }
+    // Purge team notifications about this client's client-level docs/onboarding
+    // (projectId null → not covered by any cascade).
+    if (clientDocIds.length > 0) {
+      await tx.notification.deleteMany({
+        where: {
+          recipientRole: "TEAM",
+          projectId: null,
+          OR: clientDocIds.map((docId) => ({ link: { contains: docId } })),
+        },
+      });
     }
     // Cascades the shared Client Data documents (client_profile /
     // verification_queue / strategy / brand_kit) and the client's notifications.

@@ -144,6 +144,9 @@ model Profile {
   email        String   @unique
   name         String?
   role         UserRole
+  // Client-level default engagement mode, chosen at client creation. Projects
+  // (proposed later by the agent) default to this. Null for team members.
+  clientMode   ProjectMode? @map("client_mode")
   // Team-member profile fields (single source of truth — replaces lib/team-static.ts).
   // Null / empty for clients.
   title        String?
