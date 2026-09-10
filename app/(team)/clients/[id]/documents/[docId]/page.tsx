@@ -6,6 +6,7 @@ import { TEMPLATES } from "@/lib/templates/registry";
 import DocumentForm, { type FormMode } from "@/components/DocumentForm";
 import DeleteDocumentButton from "@/components/team/project/DeleteDocumentButton";
 import OfferEditor from "@/components/team/project/OfferEditor";
+import OfferPricingView from "@/components/OfferPricingView";
 import IntakeBuilder from "@/components/team/project/IntakeBuilder";
 import { applyConfig, getConfig } from "@/lib/templates/config";
 import type { FormContent } from "@/lib/forms/collab";
@@ -51,6 +52,29 @@ export default async function ClientDocumentPage({
   const isIntake = doc.templateType === "intake_form";
   const isCollab = COLLAB_FORMS.has(doc.templateType);
   const effectiveTemplate = isCollab ? applyConfig(template, getConfig(content)) : template;
+
+  // While building the offer, show the client's Initial Form answers for
+  // reference (their answers inform the scope/price).
+  let initialFormAnswers: { label: string; value: string }[] = [];
+  if (isOffer && doc.status === "DRAFT") {
+    const initialDoc = await prisma.document.findFirst({
+      where: { clientId, templateType: "initial_client_form" },
+      orderBy: { createdAt: "desc" },
+      select: { content: true },
+    });
+    if (initialDoc) {
+      const initContent = (initialDoc.content ?? {}) as Record<string, unknown>;
+      const initialTemplate = TEMPLATES["initial_client_form"];
+      for (const section of initialTemplate.sections) {
+        for (const field of section.fields) {
+          const v = initContent[field.key];
+          if (v != null && String(v).trim() !== "") {
+            initialFormAnswers.push({ label: field.label, value: String(v) });
+          }
+        }
+      }
+    }
+  }
 
   let mode: FormMode = "fill";
   let isReadOnly = doc.status === "APPROVED";
@@ -106,7 +130,12 @@ export default async function ClientDocumentPage({
 
       {isOffer ? (
         doc.status === "DRAFT" ? (
-          <OfferEditor documentId={documentId} template={template} initialContent={content} />
+          <OfferEditor
+            documentId={documentId}
+            template={template}
+            initialContent={content}
+            initialFormAnswers={initialFormAnswers}
+          />
         ) : (
           <div className="border border-neutral-200 rounded-lg bg-white px-6 py-6 space-y-4">
             {template.sections[0].fields.map((field) => (
@@ -117,6 +146,7 @@ export default async function ClientDocumentPage({
                 </p>
               </div>
             ))}
+            <OfferPricingView content={content} />
           </div>
         )
       ) : isIntake && doc.status === "DRAFT" ? (

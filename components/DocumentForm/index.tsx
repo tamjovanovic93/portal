@@ -778,8 +778,6 @@ function EditableForm({
 
 // ─── respond — client approves/changes pre-filled answers, fills the rest ────
 
-const MAX_FIELDS_PER_STEP = 5;
-
 function RespondForm({
   documentId,
   template,
@@ -914,19 +912,17 @@ function RespondForm({
     // Build steps from the visible sections/fields (respecting conditionals).
     type Wizard = { key: string; title: string; description?: string; fields: Field[] };
     const steps: Wizard[] = [];
+    // One wizard step per section — sections are never split into parts, so
+    // small sections like Brand Identity and Goals & Strategy stay together.
     for (const section of visibleSections) {
       const fields = section.fields.filter((f) => isVisible(f.showIf, content));
       if (fields.length === 0) continue;
-      for (let i = 0; i < fields.length; i += MAX_FIELDS_PER_STEP) {
-        const chunk = fields.slice(i, i + MAX_FIELDS_PER_STEP);
-        const multi = fields.length > MAX_FIELDS_PER_STEP;
-        steps.push({
-          key: `${section.key}-${i}`,
-          title: section.title + (multi ? ` (part ${Math.floor(i / MAX_FIELDS_PER_STEP) + 1})` : ""),
-          description: i === 0 ? section.description : undefined,
-          fields: chunk,
-        });
-      }
+      steps.push({
+        key: section.key,
+        title: section.title,
+        description: section.description,
+        fields,
+      });
     }
 
     if (steps.length === 0) {

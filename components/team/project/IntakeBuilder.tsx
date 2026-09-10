@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import type { Template, Field } from "@/lib/templates/types";
 import { saveDocument } from "@/app/actions/documents";
 import { sendFormToClient } from "@/app/actions/onboarding";
-import { getConfig, type FormConfig } from "@/lib/templates/config";
+import { getConfig, type FormConfig, type AddedField } from "@/lib/templates/config";
 import { teamPrefill, getCollab, type FormContent } from "@/lib/forms/collab";
 
 // Team-side "building blocks" editor for the full intake form: remove fields or
@@ -35,6 +35,7 @@ export default function IntakeBuilder({
   const [removedFields, setRemovedFields] = useState<Set<string>>(
     new Set(config.removedFields ?? [])
   );
+  const [addedFields, setAddedFields] = useState<AddedField[]>(config.addedFields ?? []);
   const [values, setValues] = useState<Record<string, unknown>>(() => {
     // Seed prefill values from any already-saved answers.
     const seed: Record<string, unknown> = {};
@@ -81,12 +82,22 @@ export default function IntakeBuilder({
     setValues((prev) => ({ ...prev, [key]: v }));
     setSaved(false);
   }
+  function addField(sectionKey: string, label: string, type: Field["type"]) {
+    const key = `custom_${Math.random().toString(36).slice(2, 9)}`;
+    setAddedFields((prev) => [...prev, { section: sectionKey, field: { key, label, type } }]);
+    setSaved(false);
+  }
+  function removeAddedField(key: string) {
+    setAddedFields((prev) => prev.filter((a) => a.field.key !== key));
+    setSaved(false);
+  }
 
   function buildConfig(): FormConfig {
     return {
       sectionOrder: order,
       removedSections: [...removedSections],
       removedFields: [...removedFields],
+      addedFields,
     };
   }
 
@@ -187,6 +198,39 @@ export default function IntakeBuilder({
                     </div>
                   );
                 })}
+
+                {/* Custom fields added by the team */}
+                {addedFields
+                  .filter((a) => a.section === section.key)
+                  .map((a) => (
+                    <div key={a.field.key} className="flex items-start gap-3">
+                      <span className="mt-1 w-4 h-4 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-sm font-medium text-neutral-800">
+                            {a.field.label}
+                            <span className="ml-2 text-[10px] uppercase tracking-wide text-neutral-400">custom</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => removeAddedField(a.field.key)}
+                            className="text-xs text-neutral-400 hover:text-red-600"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <div className="mt-1.5">
+                          <PrefillInput
+                            field={a.field}
+                            value={values[a.field.key]}
+                            onChange={(v) => setValue(a.field.key, v)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                <AddFieldForm onAdd={(label, type) => addField(section.key, label, type)} />
               </div>
             )}
           </div>
@@ -244,4 +288,70 @@ function PrefillInput({
     );
   }
   return <p className="text-xs text-neutral-400 italic">The client will fill this in.</p>;
+}
+
+// Inline "add a custom field to this section" control.
+function AddFieldForm({ onAdd }: { onAdd: (label: string, type: Field["type"]) => void }) {
+  const [open, setOpen] = useState(false);
+  const [label, setLabel] = useState("");
+  const [type, setType] = useState<Field["type"]>("text");
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="text-xs px-2.5 py-1 rounded border border-dashed border-neutral-300 text-neutral-600 hover:bg-neutral-50"
+      >
+        + Add field
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-end gap-2 border border-neutral-200 rounded-md p-2.5 bg-neutral-50">
+      <div className="flex-1">
+        <label className="block text-[11px] text-neutral-500 mb-1">New field label</label>
+        <input
+          type="text"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder="e.g. Preferred CMS"
+          className="w-full rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+        />
+      </div>
+      <div>
+        <label className="block text-[11px] text-neutral-500 mb-1">Type</label>
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value as Field["type"])}
+          className="rounded-md border border-neutral-300 px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
+        >
+          <option value="text">Short text</option>
+          <option value="textarea">Long text</option>
+          <option value="date">Date</option>
+        </select>
+      </div>
+      <button
+        type="button"
+        onClick={() => {
+          if (!label.trim()) return;
+          onAdd(label.trim(), type);
+          setLabel("");
+          setType("text");
+          setOpen(false);
+        }}
+        className="px-3 py-1.5 rounded-md bg-neutral-900 text-white text-sm hover:bg-neutral-700"
+      >
+        Add
+      </button>
+      <button
+        type="button"
+        onClick={() => { setOpen(false); setLabel(""); }}
+        className="px-2 py-1.5 text-sm text-neutral-500 hover:text-neutral-800"
+      >
+        Cancel
+      </button>
+    </div>
+  );
 }

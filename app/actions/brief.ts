@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { mutateDoc } from "@/lib/intake/store";
+import { notifyClient } from "@/lib/notifications";
 import {
   PROFILE_DOC,
   VERIFICATION_DOC,
@@ -155,6 +156,75 @@ export async function resolveVerificationItem(
     };
   });
   revalidate(clientId);
+}
+
+// Add a custom (team-authored) verification question to the queue. It behaves
+// like an agent-flagged item — the team can resolve it directly or send it to
+// the client for verification.
+export async function addCustomVerification(clientId: string, question: string) {
+  await requireTeam();
+  const q = question.trim();
+  if (!q) return { error: "Question required." };
+  await mutateDoc<VerificationQueue>(clientId, VERIFICATION_DOC, (queue) => {
+    queue.items ??= [];
+    const id = nextId([queue.items], "item_id", "VER");
+    queue.items.push({
+      item_id: id,
+      source_document: "custom",
+      field_path: "",
+      current_value: "",
+      question_for_client: q,
+      status: "pending",
+      resolved_value: null,
+      date_raised: new Date().toISOString(),
+      date_resolved: null,
+      is_custom: true,
+    });
+    const pending = queue.items.filter((i) => (i.status ?? "pending") === "pending").length;
+    queue._meta = {
+      ...queue._meta,
+      total_items: queue.items.length,
+      pending_count: pending,
+      resolved_count: queue.items.length - pending,
+    };
+  });
+  revalidate(clientId);
+  return { ok: true };
+}
+
+// Explicitly send a verification item to the client (nothing is sent until the
+// team clicks this). Creates a client-facing Question linked to the item and
+// marks it as sent.
+export async function sendVerificationToClient(clientId: string, itemId: string) {
+  await requireTeam();
+  let questionText = "";
+  await mutateDoc<VerificationQueue>(clientId, VERIFICATION_DOC, (queue) => {
+    const item = queue.items?.find((i) => i.item_id === itemId);
+    if (!item) return;
+    questionText = (item.question_for_client as string) || "Please verify this detail.";
+    item.sent_to_client_at = new Date().toISOString();
+  });
+  if (!questionText) return { error: "Item not found." };
+
+  await prisma.question.create({
+    data: {
+      projectId: null,
+      contextType: "VERIFICATION",
+      contextId: itemId,
+      kind: "ANSWER",
+      recipientId: clientId,
+      recipientRole: "CLIENT",
+      questionText,
+      status: "WAITING_CLIENT",
+    },
+  });
+  await notifyClient(clientId, {
+    type: "verification_asked",
+    message: "Your team asked you to verify a detail.",
+    link: "/portal",
+  });
+  revalidate(clientId);
+  return { ok: true };
 }
 
 export async function upsertCompany(clientId: string, formData: FormData) {

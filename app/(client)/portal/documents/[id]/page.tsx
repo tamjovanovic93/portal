@@ -5,6 +5,7 @@ import Link from "next/link";
 import { TEMPLATES } from "@/lib/templates/registry";
 import DocumentForm from "@/components/DocumentForm";
 import OfferApprove from "@/components/client/OfferApprove";
+import OfferPricingView from "@/components/OfferPricingView";
 import AnswerFollowups, { type Followup } from "@/components/client/AnswerFollowups";
 import { getCollab, type FormContent } from "@/lib/forms/collab";
 import { applyConfig, getConfig } from "@/lib/templates/config";
@@ -86,6 +87,7 @@ export default async function ClientDocumentPage({
               </p>
             </div>
           ))}
+          <OfferPricingView content={content as Record<string, unknown>} />
         </div>
         {doc.status === "APPROVED" ? (
           <div className="rounded-lg border border-green-200 bg-green-50 px-5 py-4">

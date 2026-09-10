@@ -16,7 +16,7 @@ const intakeForm: Template = {
         "The foundation of your business — used to build your company profile and research your competitive landscape.",
       fields: [
         { key: "industry", label: "Industry / Sector", type: "text", required: true, placeholder: "e.g. Fashion, Hospitality, SaaS…" },
-        { key: "yearsInBusiness", label: "Years in Business", type: "text", placeholder: "e.g. Launched 2019 / 6 years" },
+        { key: "yearsInBusiness", label: "Founding year", type: "text", placeholder: "e.g. 2019" },
         { key: "geographicMarket", label: "Geographic Market", type: "text", required: true, placeholder: "Where do you operate and where are your customers?" },
         { key: "websiteUrl", label: "Website URL", type: "text", placeholder: "https://…" },
         { key: "whatYouSell", label: "What do you sell?", type: "textarea", required: true, rows: 4, placeholder: "List your main products or services. Be specific — include names and rough price ranges if possible." },
@@ -976,7 +976,7 @@ const initialClientForm: Template = {
         { key: "definitionOfProject", label: "Definition of project", type: "textarea", required: true, rows: 3, placeholder: "In your own words, what is this project?" },
         { key: "mainGoal", label: "Main goal", type: "textarea", required: true, rows: 2, placeholder: "The single most important outcome you want from this project." },
         { key: "keyFunctions", label: "Key functions", type: "textarea", rows: 3, placeholder: "The main things it needs to do." },
-        { key: "strategyOfGrowth", label: "Strategy of growth", type: "textarea", rows: 3, placeholder: "How do you see this helping the business grow?" },
+        { key: "strategyOfGrowth", label: "Strategy of growth", type: "textarea", rows: 3, placeholder: "How should it grow over time?", hint: "How should it grow over time?" },
         { key: "timeFrame", label: "Time frame", type: "text", placeholder: "e.g. Launch before Q3 / 8–10 weeks" },
         { key: "additionalInformation", label: "Additional information", type: "textarea", rows: 3, placeholder: "Anything else we should know at this stage." },
       ],
@@ -996,12 +996,14 @@ const financialOffer: Template = {
     {
       key: "offer",
       title: "Project / Financial Offer",
+      // Pricing (one-time / monthly / currency) and the payment schedule are
+      // handled as structured fields in OfferEditor, stored on the same document
+      // content under: currency, oneTimePrice, monthlyPrice, paymentSchedule[].
       fields: [
         { key: "project", label: "Project", type: "text", required: true, placeholder: "Project name" },
         { key: "projectOverview", label: "Project Overview", type: "textarea", required: true, rows: 4, placeholder: "Short description" },
         { key: "scope", label: "Scope", type: "textarea", required: true, rows: 4, placeholder: "Scope of work" },
         { key: "timeFrame", label: "Time Frame", type: "text", placeholder: "Estimated time frame" },
-        { key: "price", label: "Price", type: "text", required: true, placeholder: "Price" },
         { key: "additionalInformation", label: "Additional Information", type: "textarea", rows: 3, placeholder: "Additional information" },
       ],
     },

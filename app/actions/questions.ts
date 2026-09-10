@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { notifyClient, notify } from "@/lib/notifications";
+import { mutateDoc } from "@/lib/intake/store";
+import { VERIFICATION_DOC, type VerificationQueue } from "@/lib/intake/types";
 import type { QuestionContext } from "@prisma/client";
 
 // Server actions for the generalized Question model. Team asks a client (open
@@ -130,13 +132,35 @@ export async function answerQuestion(questionId: string, answer: string): Promis
     where: { id: questionId },
     data: { answerText: text, status: "ANSWERED", answeredAt: new Date() },
   });
+
+  // Verification questions: write the client's answer back onto the queue item so
+  // it appears (with dates) in the Verification tab / Resolved history.
+  if (q.contextType === "VERIFICATION" && q.contextId && q.recipientId) {
+    const clientId = q.recipientId;
+    try {
+      await mutateDoc<VerificationQueue>(clientId, VERIFICATION_DOC, (queue) => {
+        const item = queue.items?.find((i) => i.item_id === q.contextId);
+        if (!item) return;
+        item.client_answer = text;
+        item.client_answered_at = new Date().toISOString();
+        if (!item.resolved_value) item.resolved_value = text;
+      });
+      revalidatePath(`/clients/${clientId}/data`);
+    } catch (err) {
+      console.error("answerQuestion: verification writeback failed", err);
+    }
+  }
+
   // Notify the team (asker) that it was answered.
   await notify({
     projectId: q.projectId ?? undefined,
     type: "question_answered",
     toRole: "TEAM",
-    message: `A question was answered.`,
-    link: q.projectId ? `/projects/${q.projectId}` : undefined,
+    message:
+      q.contextType === "VERIFICATION"
+        ? `A client answered a verification question.`
+        : `A question was answered.`,
+    link: q.projectId ? `/projects/${q.projectId}` : q.contextType === "VERIFICATION" && q.recipientId ? `/clients/${q.recipientId}/data?tab=verify` : undefined,
   });
   revalidateFor(q.projectId);
   return { ok: true };

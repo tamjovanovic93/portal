@@ -119,6 +119,13 @@ export type VerificationItem = Row & {
   resolved_value?: string | null;
   date_raised?: string;
   date_resolved?: string | null;
+  // Set when the team explicitly sends this item to the client for verification
+  // (nothing is sent automatically). Populated when the client answers.
+  sent_to_client_at?: string | null;
+  client_answer?: string | null;
+  client_answered_at?: string | null;
+  // Custom (team-authored) verification questions vs. agent-flagged ones.
+  is_custom?: boolean;
 };
 
 export type VerificationQueue = {
