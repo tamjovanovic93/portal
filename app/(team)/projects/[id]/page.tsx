@@ -9,9 +9,6 @@ import { getProfile, getStrategy } from "@/lib/intake/store";
 import { getProjectBrief, ensureProjectBrief } from "@/app/actions/project-brief";
 import BriefsSection from "@/components/team/brief/BriefsSection";
 import { getRoster } from "@/lib/team";
-import { listByTaskIds } from "@/lib/questions";
-import CycleBoard from "@/components/team/retainer/CycleBoard";
-import { createTaskGroup } from "@/app/actions/retainer";
 import ApprovalCard from "@/components/team/project/ApprovalCard";
 import MarkReviewedButton from "@/components/team/project/MarkReviewedButton";
 import MaterialRow from "@/components/team/MaterialRow";
@@ -262,36 +259,6 @@ export default async function ProjectPage({
     0
   );
   const tasksAvailable = project.currentStage >= 1;
-  // Task-level questions (one grouped query for the whole project — no N+1).
-  const allTaskIds = project.cycles.flatMap((c) => c.tasks.map((t) => t.id));
-  const questionsByTask = await listByTaskIds(allTaskIds);
-  function toBoardCycle(c: (typeof activeCycles)[number]) {
-    return {
-      id: c.id,
-      name: c.name,
-      focus: c.focus,
-      startDate: c.startDate,
-      endDate: c.endDate,
-      status: c.status as "ACTIVE" | "CLOSED",
-      tasks: c.tasks.map((t) => ({
-        id: t.id,
-        name: t.name,
-        type: t.type,
-        status: t.status,
-        description: t.description,
-        dueDate: t.dueDate,
-        completedAt: t.completedAt,
-        ownerRole: t.ownerRole,
-        isBlocker: t.isBlocker,
-        blockerResolver: t.blockerResolver,
-        unblockedAt: t.unblockedAt,
-        requiresClientApproval: t.requiresClientApproval,
-        approvalCount: t._count.approvals,
-        assigneeId: t.assigneeId,
-        questions: questionsByTask.get(t.id) ?? [],
-      })),
-    };
-  }
 
   type ActivityItem = {
     type: "upload" | "approval" | "stage_complete";
@@ -592,46 +559,34 @@ export default async function ProjectPage({
         />
       </div>
 
-      {/* ── Tasks / to-do lists (reused Cycle+Task) ──────────────────────────── */}
+      {/* ── Tasks — now live inside the stages (planning in Stage 1) ─────────── */}
       <div className="mb-6">
         <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-3">
           Tasks
         </p>
         {!tasksAvailable ? (
           <p className="text-sm text-neutral-600">
-            Task lists become available from the Strategy stage (stage 1).
+            Tasks become available from the Strategy stage (stage 1).
           </p>
         ) : (
-          <div className="space-y-6">
-            <form
-              action={createTaskGroup.bind(null, id)}
-              className="flex items-center gap-2 bg-white border border-neutral-200 rounded-lg px-4 py-3"
-            >
-              <input
-                name="name"
-                required
-                placeholder="New to-do list (e.g. Design tasks)"
-                className="flex-1 text-sm rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-700 transition-colors"
-              >
-                + Add list
-              </button>
-            </form>
-            {activeCycles.length === 0 ? (
-              <p className="text-sm text-neutral-600">
-                No to-do lists yet. Create one above to start adding tasks.
+          <Link
+            href={`/projects/${id}/stage/1`}
+            className="flex items-center justify-between bg-white border border-neutral-200 rounded-lg px-4 py-3 hover:border-neutral-400 transition-colors group"
+          >
+            <div>
+              <p className="text-sm font-medium text-neutral-800 group-hover:underline">
+                Planning — all tasks (Stage 1)
               </p>
-            ) : (
-              <div className="space-y-6">
-                {activeCycles.map((c) => (
-                  <CycleBoard key={c.id} cycle={toBoardCycle(c)} projectId={id} variant="tasks" roster={roster} />
-                ))}
-              </div>
-            )}
-          </div>
+              <p className="text-xs text-neutral-600 mt-0.5">
+                {openTasks > 0
+                  ? `${openTasks} open task${openTasks !== 1 ? "s" : ""} across ${activeCycles.length} list${activeCycles.length !== 1 ? "s" : ""}. Approve “Sync Scope to Tasks” on the brief to generate them.`
+                  : "Approve “Sync Scope to Tasks” on the brief to generate tasks, then plan them here."}
+              </p>
+            </div>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700 font-medium shrink-0 ml-4">
+              Open →
+            </span>
+          </Link>
         )}
       </div>
 

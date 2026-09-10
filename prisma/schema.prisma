@@ -360,6 +360,14 @@ model Task {
   startDate              DateTime?      @map("start_date")
   dueDate                DateTime?      @map("due_date")
   completedAt            DateTime?      @map("completed_at")
+  // PROJECT-mode staged tasks: which delivery stage (2–7) this task belongs to.
+  // Stage 1 is the planning view that lists every task regardless of this value.
+  // Null for retainer tasks. estimateDate = when it will be ready; workLink = a
+  // link to the work; notes = per-task planning notes.
+  stageNumber            Int?           @map("stage_number")
+  estimateDate           DateTime?      @map("estimate_date")
+  workLink               String?        @map("work_link")
+  notes                  String?
   // Scope-of-Work linkage: tasks generated from a brief's Scope carry the brief
   // Document id + the stable scope item id, so re-syncing updates rather than
   // duplicates. Manual tasks leave these null. See app/actions/scope.ts.

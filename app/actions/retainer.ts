@@ -379,3 +379,43 @@ export async function deleteTask(taskId: string, projectId: string) {
   await prisma.task.delete({ where: { id: taskId } });
   revalidateProject(projectId);
 }
+
+// ─── Staged (PROJECT-mode) task fields ───────────────────────────────────────
+
+// Move a task to a different delivery stage (in case the agent placed it wrong).
+export async function moveTaskToStage(taskId: string, projectId: string, stageNumber: number | null) {
+  await requireTeam();
+  const valid = stageNumber === null || (stageNumber >= 1 && stageNumber <= STAGE_COUNT);
+  await prisma.task.update({
+    where: { id: taskId },
+    data: { stageNumber: valid ? stageNumber : null },
+  });
+  revalidateProject(projectId);
+}
+
+export async function updateTaskNotes(taskId: string, projectId: string, notes: string) {
+  await requireTeam();
+  await prisma.task.update({
+    where: { id: taskId },
+    data: { notes: notes.trim() || null },
+  });
+  revalidateProject(projectId);
+}
+
+export async function updateTaskEstimate(taskId: string, projectId: string, date: string | null) {
+  await requireTeam();
+  await prisma.task.update({
+    where: { id: taskId },
+    data: { estimateDate: date ? new Date(date) : null },
+  });
+  revalidateProject(projectId);
+}
+
+export async function updateTaskWorkLink(taskId: string, projectId: string, link: string) {
+  await requireTeam();
+  await prisma.task.update({
+    where: { id: taskId },
+    data: { workLink: link.trim() || null },
+  });
+  revalidateProject(projectId);
+}

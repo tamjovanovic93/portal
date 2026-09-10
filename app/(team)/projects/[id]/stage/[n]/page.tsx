@@ -7,6 +7,8 @@ import { createDocument, sendDocumentToClient } from "@/app/actions/documents";
 import WireframeSection from "@/components/team/WireframeSection";
 import MockupSection from "@/components/team/MockupSection";
 import RevisionTracker from "@/components/team/RevisionTracker";
+import StageTasks, { type StageTask } from "@/components/team/project/StageTasks";
+import { getRoster } from "@/lib/team";
 import { STAGE_COUNT, WIREFRAME_STAGE, DESIGN_STAGE, stageLabel } from "@/lib/stages";
 
 const OVERALL_LABELS: Record<string, string> = {
@@ -126,6 +128,38 @@ export default async function StagePage({
     where: { projectId, stageNumber },
     orderBy: { createdAt: "asc" },
   });
+
+  // Staged tasks (PROJECT mode). Stage 1 = planning view of every task; stages
+  // 2+ show only the tasks the agent placed there. Retainers keep their board.
+  const isProjectMode = project.mode !== "ONGOING";
+  let stageTasks: StageTask[] = [];
+  let roster: Awaited<ReturnType<typeof getRoster>> = [];
+  if (isProjectMode) {
+    const [taskRows, rosterData] = await Promise.all([
+      prisma.task.findMany({
+        where: {
+          cycle: { projectId },
+          ...(stageNumber === 1 ? {} : { stageNumber }),
+        },
+        include: { cycle: { select: { name: true } } },
+        orderBy: { createdAt: "asc" },
+      }),
+      getRoster(),
+    ]);
+    roster = rosterData;
+    stageTasks = taskRows.map((t) => ({
+      id: t.id,
+      name: t.name,
+      status: t.status,
+      stageNumber: t.stageNumber,
+      assigneeId: t.assigneeId,
+      estimateDate: t.estimateDate ? t.estimateDate.toISOString() : null,
+      workLink: t.workLink,
+      notes: t.notes,
+      isBlocker: t.isBlocker,
+      listName: t.cycle.name,
+    }));
+  }
 
   const templateEntries = STAGE_TEMPLATES[stageNumber] ?? [];
 
@@ -258,6 +292,29 @@ export default async function StagePage({
           </p>
         )}
       </div>
+
+      {/* Tasks — Stage 1 is the planning list of every task; stages 2+ show
+          only the tasks placed in that stage. */}
+      {isProjectMode && (
+        <div>
+          <div className="mb-3">
+            <h2 className="text-sm font-semibold text-neutral-900">
+              {stageNumber === 1 ? "Planning — all tasks" : "Tasks for this stage"}
+            </h2>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              {stageNumber === 1
+                ? "Every scope item and its tasks. Add notes, assign people and estimates; statuses start from Stage 2."
+                : "Update status, assign people, add estimates and links, or move a task to another stage."}
+            </p>
+          </div>
+          <StageTasks
+            projectId={projectId}
+            tasks={stageTasks}
+            roster={roster}
+            planning={stageNumber === 1}
+          />
+        </div>
+      )}
 
       {/* Sketch stage — Wireframe uploads */}
       {stageNumber === WIREFRAME_STAGE && (
