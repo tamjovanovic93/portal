@@ -213,11 +213,37 @@ export default function StageTasks({
   }
 
   if (!planning) {
+    // Familiar Kanban board: Planning / In Progress / Waiting Approval / Done.
+    const COLUMNS: { key: string; label: string; statuses: TaskStatus[] }[] = [
+      { key: "PLANNING", label: "Planning", statuses: ["PLANNING"] },
+      { key: "IN_PROGRESS", label: "In Progress", statuses: ["IN_PROGRESS"] },
+      { key: "WAITING_APPROVAL", label: "Waiting Approval", statuses: ["NEEDS_APPROVAL", "WAITING_FINAL_APPROVAL"] },
+      { key: "DONE", label: "Done", statuses: ["DONE"] },
+    ];
     return (
-      <div className="space-y-2">
-        {tasks.map((t) => (
-          <TaskRow key={t.id} task={t} projectId={projectId} roster={roster} planning={false} />
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {COLUMNS.map((col) => {
+          const items = tasks.filter((t) => col.statuses.includes(t.status));
+          return (
+            <div key={col.key} className="rounded-lg bg-neutral-50 border border-neutral-200 p-2.5">
+              <div className="flex items-center justify-between mb-2 px-0.5">
+                <span className="text-xs font-semibold text-neutral-600 uppercase tracking-wide">{col.label}</span>
+                <span className={`text-xs font-medium px-1.5 rounded-full ${items.length > 0 ? "bg-neutral-200 text-neutral-600" : "text-neutral-300"}`}>
+                  {items.length}
+                </span>
+              </div>
+              <div className="space-y-2 min-h-[3rem]">
+                {items.length === 0 ? (
+                  <div className="h-12 rounded-md border border-dashed border-neutral-200" />
+                ) : (
+                  items.map((t) => (
+                    <TaskRow key={t.id} task={t} projectId={projectId} roster={roster} planning={false} />
+                  ))
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   }

@@ -211,11 +211,18 @@ export async function syncScopeTasks(
     if (!cycleId) continue;
     const found = existingByKey.get(d.scopeItemId);
     if (found) {
-      // Update name/dates/list only — preserve status, assignee, description,
-      // and any stage the team manually moved the task to.
+      // Update name/dates/list — preserve status, assignee, description, and any
+      // stage the team manually set. Backfill the stage when it's still empty
+      // (e.g. tasks synced before staged tasks existed).
       await prisma.task.update({
         where: { id: found.id },
-        data: { name: d.name, startDate: d.startDate, dueDate: d.dueDate, cycleId },
+        data: {
+          name: d.name,
+          startDate: d.startDate,
+          dueDate: d.dueDate,
+          cycleId,
+          ...(isProjectMode && found.stageNumber == null ? { stageNumber: d.stage } : {}),
+        },
       });
       updated++;
     } else {
