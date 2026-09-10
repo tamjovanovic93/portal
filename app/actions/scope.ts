@@ -7,7 +7,9 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import type { ProjectBrief, ScopeItem } from "@/lib/brief/types";
 
-const MODEL = "claude-opus-4-8";
+// Fast structured-JSON task (task breakdown + stage placement) — a quick model
+// without extended thinking keeps the Sync responsive.
+const MODEL = "claude-sonnet-4-6";
 
 async function requireTeam() {
   const supabase = await createClient();
@@ -71,10 +73,19 @@ ${JSON.stringify(items.map((i) => ({ id: i.id, text: i.text })))}`;
     const stream = anthropic.messages.stream({
       model: MODEL,
       max_tokens: 4000,
-      thinking: { type: "adaptive" },
       messages: [{ role: "user", content: prompt }],
     });
-    const message = await stream.finalMessage();
+    // Bound the AI call so a stalled stream can never hang the whole sync — fall
+    // back to a 1:1 mapping (default stage) if it doesn't finish in time.
+    const message = await Promise.race([
+      stream.finalMessage(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => {
+          try { stream.abort(); } catch {}
+          reject(new Error("breakdown timeout"));
+        }, 20000)
+      ),
+    ]);
     const text = message.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map((b) => b.text).join("");
     const start = text.indexOf("{");
     const end = text.lastIndexOf("}");
@@ -107,6 +118,7 @@ export async function syncScopeTasks(
   useAi = true
 ): Promise<{ created?: number; updated?: number; removed?: number; error?: string }> {
   await requireTeam();
+  try {
 
   const doc = await prisma.document.findUnique({
     where: { id: briefDocId },
@@ -237,4 +249,8 @@ export async function syncScopeTasks(
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/dashboard");
   return { created, updated, removed };
+  } catch (err) {
+    console.error("syncScopeTasks failed:", err);
+    return { error: err instanceof Error ? err.message : "Sync failed. Please try again." };
+  }
 }
