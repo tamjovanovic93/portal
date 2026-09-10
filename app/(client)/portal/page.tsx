@@ -118,6 +118,65 @@ export default async function ClientPortalPage() {
   });
   const clientActionDocs = clientDocs.filter(isDocActive);
 
+  // Persistent mini-dashboard: the client's initial form, approved offer and
+  // intake — always visible so they can revisit them after onboarding.
+  const onboardingHistory = clientDocs.filter((d) =>
+    ["initial_client_form", "financial_offer", "intake_form"].includes(d.templateType)
+  );
+
+  // Questions asked & answered involving this client (both directions).
+  const answeredQuestions = await prisma.question.findMany({
+    where: {
+      OR: [{ recipientId: profile.id }, { askedById: profile.id }],
+      answerText: { not: null },
+    },
+    orderBy: { answeredAt: "desc" },
+    take: 20,
+    select: { id: true, questionText: true, answerText: true },
+  });
+
+  const MiniDashboard = () =>
+    onboardingHistory.length > 0 || answeredQuestions.length > 0 ? (
+      <section>
+        <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
+          Your onboarding
+        </h3>
+        {onboardingHistory.length > 0 && (
+          <div className="space-y-2 mb-4">
+            {onboardingHistory.map((doc) => (
+              <Link
+                key={doc.id}
+                href={`/portal/documents/${doc.id}`}
+                className="flex items-center justify-between bg-white border border-neutral-200 rounded-md px-4 py-3 hover:border-neutral-400 transition-colors group"
+              >
+                <span className="text-sm text-neutral-800 group-hover:underline">{doc.title}</span>
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ml-4 ${
+                    doc.status === "APPROVED" ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
+                  }`}
+                >
+                  {doc.status === "APPROVED"
+                    ? doc.templateType === "financial_offer" ? "Accepted" : "Submitted"
+                    : "Action needed"}
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+        {answeredQuestions.length > 0 && (
+          <div className="bg-white border border-neutral-200 rounded-md px-4 py-3 space-y-2.5">
+            <p className="text-xs font-medium text-neutral-500">Questions &amp; answers</p>
+            {answeredQuestions.map((q) => (
+              <div key={q.id}>
+                <p className="text-sm text-neutral-800">{q.questionText}</p>
+                <p className="text-sm text-neutral-600 mt-0.5">↳ {q.answerText}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    ) : null;
+
   const OnboardingForms = () =>
     clientActionDocs.length > 0 ? (
       <section>
@@ -147,11 +206,12 @@ export default async function ClientPortalPage() {
         <AnswerQuestions questions={clientQuestions} />
         {clientActionDocs.length > 0 ? (
           <OnboardingForms />
-        ) : (
+        ) : onboardingHistory.length === 0 && answeredQuestions.length === 0 ? (
           <p className="text-neutral-500 text-sm text-center">
             Your onboarding is being set up. Check back shortly.
           </p>
-        )}
+        ) : null}
+        <MiniDashboard />
       </div>
     );
   }
@@ -160,6 +220,7 @@ export default async function ClientPortalPage() {
     <div className="max-w-4xl mx-auto px-6 py-10 space-y-10">
       <AnswerQuestions questions={clientQuestions} />
       <OnboardingForms />
+      <MiniDashboard />
       {projects.map((project) => {
         // ── Retainer (ONGOING) clients get a cycle/task view, not stages ──
         if (project.mode === "ONGOING") {

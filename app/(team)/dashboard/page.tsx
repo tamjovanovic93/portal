@@ -424,6 +424,7 @@ export default async function DashboardPage() {
     "question_confirmed",
     "question_change_requested",
     "edit_approved",
+    "offer_question",
   ]);
   teamNotificationsRaw
     .filter((n) => FEED_NOTIF_TYPES.has(n.type))

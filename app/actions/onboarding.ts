@@ -276,6 +276,40 @@ export async function sendOffer(documentId: string) {
   revalidatePath(`/portal`);
 }
 
+// Client asks a question about the offer instead of (or before) accepting.
+// Creates a client → team Question tied to the offer document.
+export async function askAboutOffer(
+  documentId: string,
+  questionText: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const user = await requireUser();
+  const doc = await loadDoc(documentId);
+  if (doc.clientId !== user.id) return { error: "Unauthorized" };
+  const text = questionText.trim();
+  if (!text) return { error: "Question required." };
+  await prisma.question.create({
+    data: {
+      projectId: doc.projectId ?? null,
+      contextType: "BRIEF",
+      contextId: documentId,
+      kind: "ANSWER",
+      askedById: user.id,
+      recipientRole: "TEAM",
+      questionText: text,
+      status: "WAITING_TEAM",
+    },
+  });
+  await notifyTeam({
+    projectId: doc.projectId ?? undefined,
+    type: "offer_question",
+    message: `${doc.clientLabel}: asked a question about the offer.`,
+    link: teamDocLink(doc),
+  });
+  revalidateDoc(doc);
+  revalidatePath("/portal");
+  return { ok: true };
+}
+
 export async function approveOffer(documentId: string) {
   const user = await requireUser();
   const doc = await loadDoc(documentId);

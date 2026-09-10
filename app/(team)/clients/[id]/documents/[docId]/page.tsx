@@ -7,6 +7,7 @@ import DocumentForm, { type FormMode } from "@/components/DocumentForm";
 import DeleteDocumentButton from "@/components/team/project/DeleteDocumentButton";
 import OfferEditor from "@/components/team/project/OfferEditor";
 import OfferPricingView from "@/components/OfferPricingView";
+import OfferQuestionsAdmin from "@/components/team/project/OfferQuestionsAdmin";
 import IntakeBuilder from "@/components/team/project/IntakeBuilder";
 import { applyConfig, getConfig } from "@/lib/templates/config";
 import type { FormContent } from "@/lib/forms/collab";
@@ -52,6 +53,15 @@ export default async function ClientDocumentPage({
   const isIntake = doc.templateType === "intake_form";
   const isCollab = COLLAB_FORMS.has(doc.templateType);
   const effectiveTemplate = isCollab ? applyConfig(template, getConfig(content)) : template;
+
+  // Client questions about the offer (client → team), answerable inline.
+  const offerQuestions = isOffer
+    ? await prisma.question.findMany({
+        where: { contextType: "BRIEF", contextId: documentId },
+        orderBy: { createdAt: "asc" },
+        select: { id: true, questionText: true, answerText: true, status: true },
+      })
+    : [];
 
   // While building the offer, show the client's Initial Form answers for
   // reference (their answers inform the scope/price).
@@ -149,22 +159,27 @@ export default async function ClientDocumentPage({
             <OfferPricingView content={content} />
           </div>
         )
-      ) : isIntake && doc.status === "DRAFT" ? (
-        <IntakeBuilder
-          documentId={documentId}
-          template={template}
-          initialContent={content as FormContent}
-        />
-      ) : (
-        <DocumentForm
-          documentId={documentId}
-          template={effectiveTemplate}
-          initialContent={content}
-          readOnly={isReadOnly}
-          isTeam
-          mode={mode}
-        />
-      )}
+      ) : null}
+
+      {isOffer && <OfferQuestionsAdmin questions={offerQuestions} />}
+
+      {!isOffer &&
+        (isIntake && doc.status === "DRAFT" ? (
+          <IntakeBuilder
+            documentId={documentId}
+            template={template}
+            initialContent={content as FormContent}
+          />
+        ) : (
+          <DocumentForm
+            documentId={documentId}
+            template={effectiveTemplate}
+            initialContent={content}
+            readOnly={isReadOnly}
+            isTeam
+            mode={mode}
+          />
+        ))}
     </div>
   );
 }
