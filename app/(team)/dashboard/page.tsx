@@ -1,14 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ProjectType, StageStatus } from "@prisma/client";
-import NewProjectButton from "@/components/team/NewProjectButton";
+import NewClientButton from "@/components/team/NewClientButton";
 import Icon from "@/components/ui/Icon";
 import { Eyebrow, Pill, StageBar, Health, Avatar, VAR, type Accent } from "@/components/ui/kit";
 import { getTeamData, capacityColor } from "@/lib/team";
 import { createClient } from "@/lib/supabase/server";
 import { WAITING_CLIENT_STATUSES } from "@/lib/questions";
 import { listNotifications } from "@/lib/notifications";
-import DashboardNotifications, { type DashNotification } from "@/components/team/DashboardNotifications";
 import MyWork, { type WorkTask, type WorkMember } from "@/components/team/MyWork";
 import StatTiles, { type StatTile } from "@/components/team/StatTiles";
 import { STAGE_LABELS, STAGE_INFO, STAGE_COUNT, FINAL_STAGE, GATED_STAGES } from "@/lib/stages";
@@ -315,14 +314,6 @@ export default async function DashboardPage() {
     projectName: q.project?.name ?? null,
   }));
 
-  const teamNotifications: DashNotification[] = teamNotificationsRaw.map((n) => ({
-    id: n.id,
-    type: n.type,
-    message: n.message,
-    link: n.link,
-    readAt: n.readAt ? n.readAt.toISOString() : null,
-    createdAt: n.createdAt.toISOString(),
-  }));
 
   // ── Derived data ──
   const gateProjects = projects.filter((p) => p.stages.some((s) => s.status === "GATE_PENDING"));
@@ -425,6 +416,27 @@ export default async function DashboardPage() {
   recentTaskApprovals.forEach((a) => {
     notifications.push({ key: `notif-task-${a.id}`, projectName: a.project.name, label: `Approved deliverable — ${a.task?.name ?? "task"}`, dot: "mint", at: a.approvedAt, href: `/projects/${a.project.id}` });
   });
+  // Client → team actions captured in the Notification table that the derived
+  // feed above doesn't cover — chiefly answered questions, confirmations and
+  // approved edits (the reported gap). Doc submissions are already covered above.
+  const FEED_NOTIF_TYPES = new Set([
+    "question_answered",
+    "question_confirmed",
+    "question_change_requested",
+    "edit_approved",
+  ]);
+  teamNotificationsRaw
+    .filter((n) => FEED_NOTIF_TYPES.has(n.type))
+    .forEach((n) => {
+      notifications.push({
+        key: `notif-tbl-${n.id}`,
+        projectName: "",
+        label: n.message,
+        dot: "blue",
+        at: n.createdAt,
+        href: n.link ?? "/dashboard",
+      });
+    });
   notifications.sort((a, b) => b.at.getTime() - a.at.getTime());
 
   // ── Retainer aggregates ──
@@ -509,11 +521,11 @@ export default async function DashboardPage() {
             {gateProjects.length > 0 && <> · <span style={{ color: "var(--rose)" }}>{gateProjects.length} awaiting sign-off</span></>}
           </p>
         </div>
-        <NewProjectButton />
+        <NewClientButton
+          triggerClassName="px-4 py-2 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-800 transition-colors"
+          label="+ New client"
+        />
       </div>
-
-      {/* Notifications — everything clients have sent back to the team */}
-      <DashboardNotifications items={teamNotifications} />
 
       {/* Stat tiles — clickable, expand to reveal the items behind each count */}
       <div className="fade-up">
