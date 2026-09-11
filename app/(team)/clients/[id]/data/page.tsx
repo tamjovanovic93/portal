@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import CompanyCard from "@/components/team/brief/CompanyCard";
 import BriefTable from "@/components/team/brief/BriefTable";
 import VerificationRow from "@/components/team/brief/VerificationRow";
+import AddVerificationQuestion from "@/components/team/brief/AddVerificationQuestion";
 import { Eyebrow, Pill } from "@/components/ui/kit";
 import {
   Snapshot,
@@ -88,6 +89,19 @@ export default async function ClientDataPage({
   const activeVerification = verificationItems.filter((i) => (i.status ?? "pending") === "pending");
   const resolvedVerification = verificationItems.filter((i) => (i.status ?? "pending") !== "pending");
   const pendingVerification = activeVerification.length;
+
+  // Verification items sometimes reference a message/slogan by its id (e.g.
+  // MSG_011). Resolve those tokens to the actual text so we see the content,
+  // not the label.
+  const refText = new Map<string, string>();
+  for (const m of profile?.messaging?.key_messages ?? []) {
+    if (m.message_id) refText.set(m.message_id, m.message_text ?? "");
+  }
+  for (const s of profile?.messaging?.slogans ?? []) {
+    if (s.slogan_id) refText.set(s.slogan_id, s.slogan_text ?? "");
+  }
+  const resolveRefs = (s: string | undefined | null): string =>
+    (s ?? "").replace(/\b([A-Z]{2,4}_\d{1,4})\b/g, (tok) => refText.get(tok) || tok);
 
   // Suggested Projects (Projects tab) — generated from Client Data.
   const dataReady = !!strategy && profile?._meta?.status === "verified";
@@ -912,9 +926,13 @@ export default async function ClientDataPage({
 
           {/* Auto-flagged verification items — active only */}
           <div className="space-y-2">
-            <GroupHeading>Flagged fields — need action</GroupHeading>
+            <div className="flex items-center justify-between gap-2">
+              <GroupHeading>Flagged fields — need action</GroupHeading>
+              <AddVerificationQuestion clientId={clientId} />
+            </div>
             <p className="muted" style={{ fontSize: 13 }}>
-              Fields the intake agent was unsure about. Check against the source, then Confirm or Reject.
+              Fields the intake agent was unsure about, plus any custom questions. Check the source,
+              then Confirm/Reject — or send it to the client for verification.
             </p>
             {activeVerification.length === 0 ? (
               <p className="faint" style={{ fontSize: 13 }}>Nothing needs action — all flagged fields are resolved.</p>
@@ -926,18 +944,22 @@ export default async function ClientDataPage({
                     clientId={clientId}
                     itemId={item.item_id}
                     fieldPath={(item.field_path as string) ?? ""}
-                    currentValue={(item.current_value as string) ?? ""}
-                    question={(item.question_for_client as string) ?? ""}
+                    currentValue={resolveRefs(item.current_value as string)}
+                    question={resolveRefs(item.question_for_client as string)}
                     source={(item.source_document as string) ?? ""}
                     status={((item.status as string) ?? "pending") as "pending" | "confirmed" | "rejected"}
                     resolvedValue={item.resolved_value ?? ""}
+                    sentToClientAt={(item.sent_to_client_at as string) ?? null}
+                    clientAnswer={(item.client_answer as string) ?? null}
+                    clientAnsweredAt={(item.client_answered_at as string) ?? null}
+                    dateResolved={(item.date_resolved as string) ?? null}
                   />
                 ))}
               </div>
             )}
           </div>
 
-          {/* Resolved history */}
+          {/* Resolved history — questions, dates and answers */}
           {resolvedVerification.length > 0 && (
             <Disclosure summary={`Resolved (${resolvedVerification.length})`}>
               <div className="space-y-3">
@@ -947,11 +969,15 @@ export default async function ClientDataPage({
                     clientId={clientId}
                     itemId={item.item_id}
                     fieldPath={(item.field_path as string) ?? ""}
-                    currentValue={(item.current_value as string) ?? ""}
-                    question={(item.question_for_client as string) ?? ""}
+                    currentValue={resolveRefs(item.current_value as string)}
+                    question={resolveRefs(item.question_for_client as string)}
                     source={(item.source_document as string) ?? ""}
                     status={((item.status as string) ?? "pending") as "pending" | "confirmed" | "rejected"}
                     resolvedValue={item.resolved_value ?? ""}
+                    sentToClientAt={(item.sent_to_client_at as string) ?? null}
+                    clientAnswer={(item.client_answer as string) ?? null}
+                    clientAnsweredAt={(item.client_answered_at as string) ?? null}
+                    dateResolved={(item.date_resolved as string) ?? null}
                   />
                 ))}
               </div>

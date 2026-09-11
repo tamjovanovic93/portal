@@ -1,31 +1,38 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { resolveVerificationItem } from "@/app/actions/brief";
+import { resolveVerificationItem, sendVerificationToClient } from "@/app/actions/brief";
 
 type Status = "pending" | "confirmed" | "rejected";
 
 export default function VerificationRow({
   clientId,
   itemId,
-  fieldPath,
   currentValue,
   question,
-  source,
   status,
   resolvedValue,
+  sentToClientAt = null,
+  clientAnswer = null,
+  clientAnsweredAt = null,
+  dateResolved = null,
 }: {
   clientId: string;
   itemId: string;
-  fieldPath: string;
+  fieldPath?: string;
   currentValue: string;
   question: string;
-  source: string;
+  source?: string;
   status: Status;
   resolvedValue: string;
+  sentToClientAt?: string | null;
+  clientAnswer?: string | null;
+  clientAnsweredAt?: string | null;
+  dateResolved?: string | null;
 }) {
   const [current, setCurrent] = useState<Status>(status);
-  const [answer, setAnswer] = useState(resolvedValue || currentValue || "");
+  const [answer, setAnswer] = useState(resolvedValue || clientAnswer || currentValue || "");
+  const [sent, setSent] = useState<boolean>(!!sentToClientAt);
   const [isPending, startTransition] = useTransition();
 
   function resolve(next: Status) {
@@ -35,23 +42,54 @@ export default function VerificationRow({
     });
   }
 
+  function send() {
+    setSent(true);
+    startTransition(async () => {
+      await sendVerificationToClient(clientId, itemId);
+    });
+  }
+
   const pillColor =
     current === "confirmed" ? "pill-mint" : current === "rejected" ? "pill-rose" : "pill-amber";
+
+  // Never expose internal/agent wording to the admin. Hide values that are
+  // clearly template placeholders or internal markers (legacy data), and the
+  // raw field path / source-document names entirely.
+  const cleanCurrent = (currentValue || "")
+    .replace(/^\s*\*?\[?UNVERIFIED\]?\s*/i, "")
+    .trim();
+  const looksInternal = /^(synthesized|inferred|current value|scale points|unverified)\b/i.test(cleanCurrent) || cleanCurrent.includes("|");
+  const showCurrent = cleanCurrent && !looksInternal;
+  const statusLabel = current === "confirmed" ? "verified" : current === "rejected" ? "not correct" : "needs review";
 
   return (
     <div className="card card-pad space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
-        <code className="mono" style={{ fontSize: 11.5, background: "var(--surface-2)", color: "var(--text-2)", padding: "2px 7px", borderRadius: "var(--r-sm)" }}>
-          {fieldPath || "—"}
-        </code>
-        {source && <span className="faint" style={{ fontSize: 11 }}>{source}</span>}
-        <span className={`pill ${pillColor}`}>{current}</span>
+        <span className={`pill ${pillColor}`}>{statusLabel}</span>
+        {clientAnswer ? (
+          <span className="pill pill-mint">client answered</span>
+        ) : sent ? (
+          <span className="pill pill-blue">sent — waiting on client</span>
+        ) : null}
       </div>
 
-      <p style={{ fontSize: 13.5 }}>{question || "—"}</p>
-      <p className="faint" style={{ fontSize: 12 }}>
-        Current value: <span style={{ color: "var(--text-2)" }}>{currentValue || "—"}</span>
-      </p>
+      <p style={{ fontSize: 13.5 }}>{question || "Please review this detail and confirm it's correct."}</p>
+      {showCurrent && (
+        <p className="faint" style={{ fontSize: 12 }}>
+          Currently on file: <span style={{ color: "var(--text-2)" }}>{cleanCurrent}</span>
+        </p>
+      )}
+
+      {clientAnswer && (
+        <p style={{ fontSize: 12.5 }}>
+          Client answered: <span style={{ color: "var(--text-1)" }}>{clientAnswer}</span>
+          {clientAnsweredAt && (
+            <span className="faint" style={{ fontSize: 11, marginLeft: 6 }}>
+              {new Date(clientAnsweredAt).toLocaleDateString()}
+            </span>
+          )}
+        </p>
+      )}
 
       <div>
         <label className="zp-label">Your answer</label>
@@ -64,13 +102,23 @@ export default function VerificationRow({
         />
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <button onClick={() => resolve("confirmed")} disabled={isPending} className="btn btn-sm btn-primary">
           {isPending ? "Saving…" : "Confirm with this answer"}
         </button>
         <button onClick={() => resolve("rejected")} disabled={isPending} className="btn btn-sm">Reject</button>
+        {current === "pending" && !sent && (
+          <button onClick={send} disabled={isPending} className="btn btn-sm btn-ghost">
+            Send to client for verification
+          </button>
+        )}
         {current !== "pending" && (
           <button onClick={() => resolve("pending")} disabled={isPending} className="btn btn-sm btn-ghost">Reset</button>
+        )}
+        {dateResolved && current !== "pending" && (
+          <span className="faint" style={{ fontSize: 11, marginLeft: "auto" }}>
+            Resolved {new Date(dateResolved).toLocaleDateString()}
+          </span>
         )}
       </div>
     </div>

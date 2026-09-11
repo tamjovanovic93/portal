@@ -51,6 +51,10 @@ export type KeyMessage = Row & {
   message_id: string;
   message_text?: string;
   approved?: string;
+  // Set ONLY when a team member explicitly sends this copy to the client for
+  // approval. Until then the item is internal and never shown to the client —
+  // agents generate copy but never initiate client approval.
+  client_approval_requested_at?: string | null;
   team_acknowledged_at?: string | null;
   team_acknowledged_by?: string | null;
 };
@@ -59,6 +63,8 @@ export type Slogan = Row & {
   slogan_id: string;
   slogan_text?: string;
   approved?: string;
+  // See KeyMessage.client_approval_requested_at.
+  client_approval_requested_at?: string | null;
   team_acknowledged_at?: string | null;
   team_acknowledged_by?: string | null;
 };
@@ -119,6 +125,13 @@ export type VerificationItem = Row & {
   resolved_value?: string | null;
   date_raised?: string;
   date_resolved?: string | null;
+  // Set when the team explicitly sends this item to the client for verification
+  // (nothing is sent automatically). Populated when the client answers.
+  sent_to_client_at?: string | null;
+  client_answer?: string | null;
+  client_answered_at?: string | null;
+  // Custom (team-authored) verification questions vs. agent-flagged ones.
+  is_custom?: boolean;
 };
 
 export type VerificationQueue = {

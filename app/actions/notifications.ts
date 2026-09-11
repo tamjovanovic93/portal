@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
-import { markNotificationsRead } from "@/lib/notifications";
+import { markNotificationsRead, ATTENTION_TYPES } from "@/lib/notifications";
 
 export async function markAllNotificationsRead(): Promise<{ ok: boolean }> {
   const supabase = await createClient();
@@ -18,7 +18,9 @@ export async function markAllNotificationsRead(): Promise<{ ok: boolean }> {
   });
   if (!profile) return { ok: false };
 
-  await markNotificationsRead(user.id, profile.role);
+  // Opening the dropdown clears ordinary notifications, but NOT attention items
+  // (e.g. client offer questions) — those stay until the question is viewed.
+  await markNotificationsRead(user.id, profile.role, { excludeTypes: ATTENTION_TYPES });
   revalidatePath("/", "layout");
   return { ok: true };
 }

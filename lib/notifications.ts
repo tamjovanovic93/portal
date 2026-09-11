@@ -66,10 +66,20 @@ export async function unreadCount(userId: string, role: UserRole): Promise<numbe
   });
 }
 
-export async function markNotificationsRead(userId: string, role: UserRole): Promise<void> {
+// Notification types that require someone to actually view the underlying item
+// before they clear — merely opening the notifications dropdown must NOT dismiss
+// them. They stay in an attention state and are cleared individually when viewed.
+export const ATTENTION_TYPES = ["offer_question"] as const;
+
+export async function markNotificationsRead(
+  userId: string,
+  role: UserRole,
+  opts?: { excludeTypes?: readonly string[] }
+): Promise<void> {
   await prisma.notification.updateMany({
     where: {
       readAt: null,
+      ...(opts?.excludeTypes?.length ? { type: { notIn: [...opts.excludeTypes] } } : {}),
       ...(role === "TEAM" ? { recipientRole: "TEAM" } : { recipientId: userId }),
     },
     data: { readAt: new Date() },

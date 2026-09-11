@@ -5,6 +5,7 @@ import Link from "next/link";
 import { TEMPLATES } from "@/lib/templates/registry";
 import DocumentForm from "@/components/DocumentForm";
 import OfferApprove from "@/components/client/OfferApprove";
+import OfferPricingView from "@/components/OfferPricingView";
 import AnswerFollowups, { type Followup } from "@/components/client/AnswerFollowups";
 import { getCollab, type FormContent } from "@/lib/forms/collab";
 import { applyConfig, getConfig } from "@/lib/templates/config";
@@ -71,8 +72,13 @@ export default async function ClientDocumentPage({
     </div>
   );
 
-  // ── Financial offer: read-only display + approve ──
+  // ── Financial offer: read-only display + accept / additional questions ──
   if (doc.templateType === "financial_offer") {
+    const offerQuestions = await prisma.question.findMany({
+      where: { contextType: "BRIEF", contextId: doc.id },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, questionText: true, answerText: true },
+    });
     return (
       <div className="max-w-2xl mx-auto px-6 py-10 space-y-8">
         {backLink}
@@ -86,14 +92,13 @@ export default async function ClientDocumentPage({
               </p>
             </div>
           ))}
+          <OfferPricingView content={content as Record<string, unknown>} />
         </div>
-        {doc.status === "APPROVED" ? (
-          <div className="rounded-lg border border-green-200 bg-green-50 px-5 py-4">
-            <p className="text-sm font-medium text-green-900">You approved this offer ✓</p>
-          </div>
-        ) : (
-          <OfferApprove documentId={doc.id} />
-        )}
+        <OfferApprove
+          documentId={doc.id}
+          approved={doc.status === "APPROVED"}
+          questions={offerQuestions}
+        />
       </div>
     );
   }

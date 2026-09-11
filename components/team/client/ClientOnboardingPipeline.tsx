@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createClientOffer, createClientIntakeForm } from "@/app/actions/onboarding";
+import { createClientInitialForm, createClientOffer, createClientIntakeForm } from "@/app/actions/onboarding";
 
 // Client-level onboarding: Initial Client Form → Offer → Full Intake Form.
 // All documents are client-scoped (no project required). Mirrors the old
@@ -30,6 +30,13 @@ export default function ClientOnboardingPipeline({
   const offerDone = offer?.status === "APPROVED";
   const intakeDone = intake?.status === "APPROVED";
 
+  function handleCreateInitial() {
+    startTransition(async () => {
+      const res = await createClientInitialForm(clientId);
+      if (res.id) router.push(docLink(res.id));
+    });
+  }
+
   function handleCreateOffer() {
     startTransition(async () => {
       const res = await createClientOffer(clientId);
@@ -48,7 +55,9 @@ export default function ClientOnboardingPipeline({
     <ol className="space-y-2">
       <Step n={1} title="Initial Client Form" done={initialDone}>
         {!initialForm ? (
-          <span className="text-xs text-neutral-500">Not created.</span>
+          <button onClick={handleCreateInitial} disabled={isPending} className="btn-mini">
+            {isPending ? "Creating…" : "Create form →"}
+          </button>
         ) : initialForm.status === "DRAFT" ? (
           <Link href={docLink(initialForm.id)} className="btn-mini">
             Pre-fill &amp; send →

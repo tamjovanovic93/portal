@@ -130,6 +130,12 @@ enum SuggestionStatus {
   REJECTED
 }
 
+enum ProjectHealth {
+  ON_TRACK
+  NEEDS_ATTENTION
+  AT_RISK
+}
+
 // ─── Portal Tables ────────────────────────────────────────────────────────────
 
 // Maps 1:1 to auth.users — created by trigger on signup
@@ -138,6 +144,9 @@ model Profile {
   email        String   @unique
   name         String?
   role         UserRole
+  // Client-level default engagement mode, chosen at client creation. Projects
+  // (proposed later by the agent) default to this. Null for team members.
+  clientMode   ProjectMode? @map("client_mode")
   // Team-member profile fields (single source of truth — replaces lib/team-static.ts).
   // Null / empty for clients.
   title        String?
@@ -172,8 +181,9 @@ model Project {
   client           Profile     @relation("ClientProjects", fields: [clientId], references: [id])
   type             ProjectType
   mode             ProjectMode @default(PROJECT)
-  currentStage     Int         @default(1) @map("current_stage") // 1–8
+  currentStage     Int         @default(1) @map("current_stage") // 1–7 (Strategy=1)
   isArchived       Boolean     @default(false) @map("is_archived")
+  health           ProjectHealth @default(ON_TRACK)
   briefReviewedAt  DateTime?   @map("brief_reviewed_at")
   // Onboarding flow (new intake pipeline): tracks where the project is in the
   // Initial Form → Offer → Intake → Brief sequence. See app/actions/onboarding.ts.
@@ -350,6 +360,14 @@ model Task {
   startDate              DateTime?      @map("start_date")
   dueDate                DateTime?      @map("due_date")
   completedAt            DateTime?      @map("completed_at")
+  // PROJECT-mode staged tasks: which delivery stage (2–7) this task belongs to.
+  // Stage 1 is the planning view that lists every task regardless of this value.
+  // Null for retainer tasks. estimateDate = when it will be ready; workLink = a
+  // link to the work; notes = per-task planning notes.
+  stageNumber            Int?           @map("stage_number")
+  estimateDate           DateTime?      @map("estimate_date")
+  workLink               String?        @map("work_link")
+  notes                  String?
   // Scope-of-Work linkage: tasks generated from a brief's Scope carry the brief
   // Document id + the stable scope item id, so re-syncing updates rather than
   // duplicates. Manual tasks leave these null. See app/actions/scope.ts.

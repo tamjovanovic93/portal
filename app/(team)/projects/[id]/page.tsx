@@ -9,10 +9,10 @@ import { getProfile, getStrategy } from "@/lib/intake/store";
 import { getProjectBrief, ensureProjectBrief } from "@/app/actions/project-brief";
 import BriefsSection from "@/components/team/brief/BriefsSection";
 import { getRoster } from "@/lib/team";
-import { listByTaskIds } from "@/lib/questions";
-import CycleBoard from "@/components/team/retainer/CycleBoard";
-import { createTaskGroup } from "@/app/actions/retainer";
+import ProjectStageTasks from "@/components/team/project/ProjectStageTasks";
+import type { StageTask } from "@/components/team/project/StageTasks";
 import ApprovalCard from "@/components/team/project/ApprovalCard";
+import SendCopyCard from "@/components/team/project/SendCopyCard";
 import MarkReviewedButton from "@/components/team/project/MarkReviewedButton";
 import MaterialRow from "@/components/team/MaterialRow";
 import AddMaterialForm from "@/components/team/AddMaterialForm";
@@ -217,19 +217,23 @@ export default async function ProjectPage({
     campaign: "Campaign line", seasonal: "Seasonal copy",
   };
 
-  type ApprovalItem = { id: string; text: string; kind: string; itemKind: "message" | "slogan" };
+  type ApprovalItem = { id: string; text: string; kind: string; itemKind: "message" | "slogan"; requested: boolean };
   // Only items not yet acknowledged by the team appear in the live lists.
   const liveMessages = keyMessages.filter((m) => !m.team_acknowledged_at);
   const liveSlogans = slogans.filter((s) => !s.team_acknowledged_at);
   const buildApprovals = (decision: string): ApprovalItem[] => [
     ...liveMessages
       .filter((m) => (m.approved ?? "pending") === decision)
-      .map((m) => ({ id: m.message_id, itemKind: "message" as const, text: (m.message_text as string) ?? "—", kind: MESSAGE_TYPE_LABELS[(m.message_type as string) ?? ""] ?? "Message" })),
+      .map((m) => ({ id: m.message_id, itemKind: "message" as const, text: (m.message_text as string) ?? "—", kind: MESSAGE_TYPE_LABELS[(m.message_type as string) ?? ""] ?? "Message", requested: !!m.client_approval_requested_at })),
     ...liveSlogans
       .filter((s) => (s.approved ?? "pending") === decision)
-      .map((s) => ({ id: s.slogan_id, itemKind: "slogan" as const, text: (s.slogan_text as string) ?? "—", kind: MESSAGE_TYPE_LABELS[(s.type as string) ?? ""] ?? "Slogan" })),
+      .map((s) => ({ id: s.slogan_id, itemKind: "slogan" as const, text: (s.slogan_text as string) ?? "—", kind: MESSAGE_TYPE_LABELS[(s.type as string) ?? ""] ?? "Slogan", requested: !!s.client_approval_requested_at })),
   ];
-  const pendingApprovals = buildApprovals("pending");
+  // Pending copy splits in two: generated-but-not-yet-sent (internal — the team
+  // decides whether to send it) vs. already sent and awaiting the client.
+  const pendingRaw = buildApprovals("pending");
+  const generatedCopy = pendingRaw.filter((i) => !i.requested);
+  const pendingApprovals = pendingRaw.filter((i) => i.requested);
   const clientApproved = buildApprovals("yes");
   const changesRequested = buildApprovals("no");
 
@@ -262,36 +266,22 @@ export default async function ProjectPage({
     0
   );
   const tasksAvailable = project.currentStage >= 1;
-  // Task-level questions (one grouped query for the whole project — no N+1).
-  const allTaskIds = project.cycles.flatMap((c) => c.tasks.map((t) => t.id));
-  const questionsByTask = await listByTaskIds(allTaskIds);
-  function toBoardCycle(c: (typeof activeCycles)[number]) {
-    return {
-      id: c.id,
-      name: c.name,
-      focus: c.focus,
-      startDate: c.startDate,
-      endDate: c.endDate,
-      status: c.status as "ACTIVE" | "CLOSED",
-      tasks: c.tasks.map((t) => ({
-        id: t.id,
-        name: t.name,
-        type: t.type,
-        status: t.status,
-        description: t.description,
-        dueDate: t.dueDate,
-        completedAt: t.completedAt,
-        ownerRole: t.ownerRole,
-        isBlocker: t.isBlocker,
-        blockerResolver: t.blockerResolver,
-        unblockedAt: t.unblockedAt,
-        requiresClientApproval: t.requiresClientApproval,
-        approvalCount: t._count.approvals,
-        assigneeId: t.assigneeId,
-        questions: questionsByTask.get(t.id) ?? [],
-      })),
-    };
-  }
+  // All scope-derived tasks for the stage-tabbed board (Stage 1 = planning
+  // overview of everything; Stage 2+ = only that stage's tasks).
+  const projectStageTasks: StageTask[] = project.cycles.flatMap((c) =>
+    c.tasks.map((t) => ({
+      id: t.id,
+      name: t.name,
+      status: t.status,
+      stageNumber: t.stageNumber,
+      assigneeId: t.assigneeId,
+      estimateDate: t.estimateDate ? t.estimateDate.toISOString() : null,
+      workLink: t.workLink,
+      notes: t.notes,
+      isBlocker: t.isBlocker,
+      listName: c.name,
+    }))
+  );
 
   type ActivityItem = {
     type: "upload" | "approval" | "stage_complete";
@@ -592,46 +582,21 @@ export default async function ProjectPage({
         />
       </div>
 
-      {/* ── Tasks / to-do lists (reused Cycle+Task) ──────────────────────────── */}
+      {/* ── Tasks — stage-tabbed board (Stage 1 planning, Stage 2+ Kanban) ───── */}
       <div className="mb-6">
         <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-3">
           Tasks
         </p>
         {!tasksAvailable ? (
           <p className="text-sm text-neutral-600">
-            Task lists become available from the Strategy stage (stage 1).
+            Tasks become available from the Strategy stage (stage 1).
+          </p>
+        ) : projectStageTasks.length === 0 ? (
+          <p className="text-sm text-neutral-600">
+            No tasks yet. Approve “Sync Scope to Tasks” on the brief to generate them.
           </p>
         ) : (
-          <div className="space-y-6">
-            <form
-              action={createTaskGroup.bind(null, id)}
-              className="flex items-center gap-2 bg-white border border-neutral-200 rounded-lg px-4 py-3"
-            >
-              <input
-                name="name"
-                required
-                placeholder="New to-do list (e.g. Design tasks)"
-                className="flex-1 text-sm rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-700 transition-colors"
-              >
-                + Add list
-              </button>
-            </form>
-            {activeCycles.length === 0 ? (
-              <p className="text-sm text-neutral-600">
-                No to-do lists yet. Create one above to start adding tasks.
-              </p>
-            ) : (
-              <div className="space-y-6">
-                {activeCycles.map((c) => (
-                  <CycleBoard key={c.id} cycle={toBoardCycle(c)} projectId={id} variant="tasks" roster={roster} />
-                ))}
-              </div>
-            )}
-          </div>
+          <ProjectStageTasks projectId={id} tasks={projectStageTasks} roster={roster} initialStage={1} />
         )}
       </div>
 
@@ -734,6 +699,30 @@ export default async function ProjectPage({
                 kind={item.itemKind}
                 variant="revise"
                 headline={`${item.kind} — client requested changes`}
+                text={item.text}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Generated copy (internal — send only if you choose to) ───────────── */}
+      {generatedCopy.length > 0 && (
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">
+            Generated copy — internal
+          </p>
+          <p className="text-xs text-neutral-500 mb-2">
+            Draft copy the agent generated. It is not visible to the client. Send an item only if you want the client to approve it.
+          </p>
+          <div className="space-y-2">
+            {generatedCopy.map((item) => (
+              <SendCopyCard
+                key={item.id}
+                projectId={id}
+                id={item.id}
+                kind={item.itemKind}
+                label={item.kind}
                 text={item.text}
               />
             ))}

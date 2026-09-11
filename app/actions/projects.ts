@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
-import { ProjectMode, ProjectType } from "@prisma/client";
+import { ProjectMode, ProjectType, ProjectHealth } from "@prisma/client";
 import { STAGE_COUNT } from "@/lib/stages";
 
 export async function createProject(formData: FormData) {
@@ -138,6 +138,25 @@ export async function restoreProject(id: string) {
   revalidatePath("/dashboard");
 }
 
+export async function setProjectHealth(id: string, health: ProjectHealth) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || user.user_metadata?.role?.toLowerCase() === "client") {
+    return { error: "Unauthorized" };
+  }
+  const project = await prisma.project.update({
+    where: { id },
+    data: { health },
+    select: { clientId: true },
+  });
+  revalidatePath(`/clients/${project.clientId}`);
+  revalidatePath(`/projects/${id}`);
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
 export async function deleteProject(id: string) {
   const supabase = await createClient();
   const {
@@ -146,9 +165,25 @@ export async function deleteProject(id: string) {
   if (!user || user.user_metadata?.role?.toLowerCase() === "client") {
     return { error: "Unauthorized" };
   }
-  await prisma.project.delete({ where: { id } });
+
+  const project = await prisma.project.findUnique({
+    where: { id },
+    select: { clientId: true },
+  });
+
+  // app_events.project_id and activity_log.project_id are ON DELETE SET NULL, so
+  // a plain delete would leave the project's calendar events and activity behind
+  // (still visible on the dashboard/calendar). Remove them first, in one tx.
+  await prisma.$transaction(async (tx) => {
+    await tx.appEvent.deleteMany({ where: { projectId: id } });
+    await tx.activityLog.deleteMany({ where: { projectId: id } });
+    await tx.project.delete({ where: { id } });
+  });
+
   revalidatePath("/projects");
   revalidatePath("/dashboard");
+  revalidatePath("/calendar");
+  if (project) revalidatePath(`/clients/${project.clientId}`);
 }
 
 // Permanently delete a Client (a Profile with role CLIENT) and everything that
@@ -182,6 +217,16 @@ export async function deleteClient(clientId: string) {
   });
   const projectIds = projects.map((p) => p.id);
 
+  // Client-scoped documents (projectId null) — used to purge lingering TEAM
+  // notifications that link to them (those have no projectId/recipientId, so they
+  // don't cascade when the profile is deleted and would otherwise stay on the
+  // dashboard/bell forever pointing at a deleted client).
+  const clientDocs = await prisma.document.findMany({
+    where: { clientId, projectId: null },
+    select: { id: true },
+  });
+  const clientDocIds = clientDocs.map((d) => d.id);
+
   // One transaction: any failure rolls back so the client is never left in a
   // half-deleted state.
   await prisma.$transaction(async (tx) => {
@@ -194,6 +239,17 @@ export async function deleteClient(clientId: string) {
       // Deleting the projects cascades stages, project documents, approvals,
       // assets, materials, cycles → tasks → approvals, notifications and questions.
       await tx.project.deleteMany({ where: { id: { in: projectIds } } });
+    }
+    // Purge team notifications about this client's client-level docs/onboarding
+    // (projectId null → not covered by any cascade).
+    if (clientDocIds.length > 0) {
+      await tx.notification.deleteMany({
+        where: {
+          recipientRole: "TEAM",
+          projectId: null,
+          OR: clientDocIds.map((docId) => ({ link: { contains: docId } })),
+        },
+      });
     }
     // Cascades the shared Client Data documents (client_profile /
     // verification_queue / strategy / brand_kit) and the client's notifications.
@@ -211,6 +267,8 @@ export async function deleteClient(clientId: string) {
 
   revalidatePath("/clients");
   revalidatePath("/dashboard");
+  revalidatePath("/projects");
+  revalidatePath("/calendar");
   redirect("/clients");
 }
 

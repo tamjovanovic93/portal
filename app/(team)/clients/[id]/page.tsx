@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { ProjectType, StageStatus } from "@prisma/client";
 import NewProjectButton from "@/components/team/NewProjectButton";
 import DeleteClientButton from "@/components/team/DeleteClientButton";
+import EditClientButton from "@/components/team/client/EditClientButton";
+import ClientCredentials from "@/components/team/client/ClientCredentials";
+import ProjectCardMenu from "@/components/team/ProjectCardMenu";
 import Icon from "@/components/ui/Icon";
 import { Eyebrow, Pill, Avatar, VAR, type Accent } from "@/components/ui/kit";
 import { STAGE_LABELS, STAGE_COUNT } from "@/lib/stages";
@@ -61,7 +64,7 @@ export default async function ClientStreamPage({
             where: { status: "ACTIVE" },
             select: {
               name: true,
-              tasks: { select: { status: true, isBlocker: true, unblockedAt: true, dueDate: true } },
+              tasks: { select: { status: true, isBlocker: true, unblockedAt: true, dueDate: true, assigneeId: true } },
             },
           },
         },
@@ -135,7 +138,8 @@ export default async function ClientStreamPage({
           </div>
         </div>
         <div className="flex items-center gap-2.5 flex-shrink-0">
-          <NewProjectButton prefillEmail={client.email} label="+ New engagement" />
+          <NewProjectButton prefillEmail={client.email} label="+ New project" />
+          <EditClientButton clientId={id} name={clientName} email={client.email} />
           <DeleteClientButton clientId={id} clientName={clientName} />
         </div>
       </div>
@@ -149,6 +153,14 @@ export default async function ClientStreamPage({
           </div>
         ))}
       </div>
+
+      {/* Client login credentials */}
+      <section className="fade-up">
+        <Eyebrow style={{ marginBottom: 14 }}>CLIENT LOGIN</Eyebrow>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+          <ClientCredentials clientId={id} email={client.email} />
+        </div>
+      </section>
 
       {/* Onboarding & Client Data pipeline — happens once at the client level */}
       <section className="fade-up">
@@ -214,7 +226,10 @@ export default async function ClientStreamPage({
                 <Link key={p.id} href={`/projects/${p.id}`} className="card block" style={{ padding: 18, borderLeft: "3px solid var(--blue)" }}>
                   <div className="flex items-start justify-between gap-2">
                     <p style={{ fontSize: 15, fontWeight: 600 }} className="truncate">{p.name}</p>
-                    <Pill color="blue">RETAINER</Pill>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <Pill color="blue">RETAINER</Pill>
+                      <ProjectCardMenu projectId={p.id} />
+                    </div>
                   </div>
                   <p className="faint truncate" style={{ fontSize: 12, marginTop: 3 }}>{p.cycles[0]?.name ?? "No active cycle"}</p>
                   <div className="flex items-center gap-1.5 flex-wrap" style={{ marginTop: 12 }}>
@@ -242,7 +257,10 @@ export default async function ClientStreamPage({
                 <Link key={p.id} href={`/projects/${p.id}`} className="card block" style={{ padding: 18 }}>
                   <div className="flex items-start justify-between gap-2">
                     <p style={{ fontSize: 15, fontWeight: 600 }} className="truncate">{p.name}</p>
-                    {hasGate && <Pill color="amber">GATE</Pill>}
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {hasGate && <Pill color="amber">GATE</Pill>}
+                      <ProjectCardMenu projectId={p.id} />
+                    </div>
                   </div>
                   <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
                     <span className="faint" style={{ fontSize: 12 }}>{TYPE_LABELS[p.type]}</span>

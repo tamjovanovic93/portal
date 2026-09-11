@@ -80,6 +80,29 @@ async function persistContent(documentId: string, content: FormContent) {
 
 // ─── Client-level onboarding document creation ───────────────────────────────
 
+export async function createClientInitialForm(
+  clientId: string
+): Promise<{ id?: string; error?: string }> {
+  await requireTeam();
+  const existing = await prisma.document.findFirst({
+    where: { clientId, templateType: "initial_client_form" },
+    orderBy: { createdAt: "desc" },
+  });
+  if (existing) return { id: existing.id };
+  const doc = await prisma.document.create({
+    data: {
+      clientId,
+      stageNumber: 1,
+      templateType: "initial_client_form",
+      title: "Initial Client Form",
+      content: {} as Prisma.InputJsonValue,
+      status: "DRAFT",
+    },
+  });
+  revalidatePath(`/clients/${clientId}`);
+  return { id: doc.id };
+}
+
 export async function createClientIntakeForm(
   clientId: string
 ): Promise<{ id?: string; error?: string }> {
@@ -251,6 +274,40 @@ export async function sendOffer(documentId: string) {
   });
   revalidateDoc(doc);
   revalidatePath(`/portal`);
+}
+
+// Client asks a question about the offer instead of (or before) accepting.
+// Creates a client → team Question tied to the offer document.
+export async function askAboutOffer(
+  documentId: string,
+  questionText: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const user = await requireUser();
+  const doc = await loadDoc(documentId);
+  if (doc.clientId !== user.id) return { error: "Unauthorized" };
+  const text = questionText.trim();
+  if (!text) return { error: "Question required." };
+  await prisma.question.create({
+    data: {
+      projectId: doc.projectId ?? null,
+      contextType: "BRIEF",
+      contextId: documentId,
+      kind: "ANSWER",
+      askedById: user.id,
+      recipientRole: "TEAM",
+      questionText: text,
+      status: "WAITING_TEAM",
+    },
+  });
+  await notifyTeam({
+    projectId: doc.projectId ?? undefined,
+    type: "offer_question",
+    message: `${doc.clientLabel}: asked a question about the offer.`,
+    link: teamDocLink(doc),
+  });
+  revalidateDoc(doc);
+  revalidatePath("/portal");
+  return { ok: true };
 }
 
 export async function approveOffer(documentId: string) {

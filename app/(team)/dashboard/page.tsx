@@ -1,12 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ProjectType, StageStatus } from "@prisma/client";
-import NewProjectButton from "@/components/team/NewProjectButton";
+import NewClientButton from "@/components/team/NewClientButton";
 import Icon from "@/components/ui/Icon";
 import { Eyebrow, Pill, StageBar, Health, Avatar, VAR, type Accent } from "@/components/ui/kit";
 import { getTeamData, capacityColor } from "@/lib/team";
 import { createClient } from "@/lib/supabase/server";
 import { WAITING_CLIENT_STATUSES } from "@/lib/questions";
+import { listNotifications } from "@/lib/notifications";
 import MyWork, { type WorkTask, type WorkMember } from "@/components/team/MyWork";
 import StatTiles, { type StatTile } from "@/components/team/StatTiles";
 import { STAGE_LABELS, STAGE_INFO, STAGE_COUNT, FINAL_STAGE, GATED_STAGES } from "@/lib/stages";
@@ -223,7 +224,7 @@ export default async function DashboardPage() {
   const currentUserId = authUser?.id ?? "";
 
   // ── Connected PM data: tasks, blockers, waiting-on-client, meetings ──
-  const [workTasksRaw, blockerTasks, waitingQuestions] = await Promise.all([
+  const [workTasksRaw, blockerTasks, waitingQuestions, waitingDocs, memberQuestionsRaw, teamNotificationsRaw] = await Promise.all([
     // Tasks across active projects for the workload/My-Work view (bounded).
     prisma.task.findMany({
       where: { cycle: { project: { isArchived: false } } },
@@ -252,6 +253,35 @@ export default async function DashboardPage() {
       orderBy: { createdAt: "asc" },
       take: 30,
     }),
+    // Client-facing forms/offers sent but not yet returned — we're waiting on the
+    // client to fill/approve them (covers intake, initial form, offer). Both
+    // project-scoped and client-scoped (onboarding) docs.
+    prisma.document.findMany({
+      where: {
+        status: "SENT",
+        templateType: { in: ["intake_form", "initial_client_form", "financial_offer"] },
+      },
+      select: {
+        id: true, title: true, templateType: true, sentAt: true, projectId: true, clientId: true,
+        project: { select: { id: true, name: true } },
+        client: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: { sentAt: "asc" },
+      take: 30,
+    }),
+    // Questions addressed to a specific team member and awaiting their answer
+    // (e.g. a question asked under a task) — surfaced under that member.
+    prisma.question.findMany({
+      where: { recipientRole: "TEAM", recipientId: { not: null }, status: "WAITING_TEAM" },
+      select: {
+        id: true, questionText: true, contextType: true, contextId: true, recipientId: true,
+        project: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: "asc" },
+      take: 100,
+    }),
+    // Team notification inbox (client → team actions) for the top-of-dashboard feed.
+    listNotifications(currentUserId, "TEAM", 20),
   ]);
 
   const workTasks: WorkTask[] = workTasksRaw.map((t) => ({
@@ -262,6 +292,28 @@ export default async function DashboardPage() {
     projectId: t.cycle.project.id, projectName: t.cycle.project.name,
   }));
   const workMembers: WorkMember[] = team.map((m) => ({ id: m.id, name: m.name, color: m.color }));
+
+  // Resolve task names for member-directed task questions (Question.contextId is
+  // polymorphic, so there's no relation to follow).
+  const taskQuestionIds = memberQuestionsRaw
+    .filter((q) => q.contextType === "TASK" && q.contextId)
+    .map((q) => q.contextId!) as string[];
+  const questionTasks = taskQuestionIds.length
+    ? await prisma.task.findMany({
+        where: { id: { in: taskQuestionIds } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const taskNameById = new Map(questionTasks.map((t) => [t.id, t.name]));
+  const memberQuestions = memberQuestionsRaw.map((q) => ({
+    id: q.id,
+    assigneeId: q.recipientId!,
+    questionText: q.questionText,
+    taskName: q.contextType === "TASK" && q.contextId ? taskNameById.get(q.contextId) ?? null : null,
+    projectId: q.project?.id ?? null,
+    projectName: q.project?.name ?? null,
+  }));
+
 
   // ── Derived data ──
   const gateProjects = projects.filter((p) => p.stages.some((s) => s.status === "GATE_PENDING"));
@@ -364,6 +416,28 @@ export default async function DashboardPage() {
   recentTaskApprovals.forEach((a) => {
     notifications.push({ key: `notif-task-${a.id}`, projectName: a.project.name, label: `Approved deliverable — ${a.task?.name ?? "task"}`, dot: "mint", at: a.approvedAt, href: `/projects/${a.project.id}` });
   });
+  // Client → team actions captured in the Notification table that the derived
+  // feed above doesn't cover — chiefly answered questions, confirmations and
+  // approved edits (the reported gap). Doc submissions are already covered above.
+  const FEED_NOTIF_TYPES = new Set([
+    "question_answered",
+    "question_confirmed",
+    "question_change_requested",
+    "edit_approved",
+    "offer_question",
+  ]);
+  teamNotificationsRaw
+    .filter((n) => FEED_NOTIF_TYPES.has(n.type))
+    .forEach((n) => {
+      notifications.push({
+        key: `notif-tbl-${n.id}`,
+        projectName: "",
+        label: n.message,
+        dot: "blue",
+        at: n.createdAt,
+        href: n.link ?? "/dashboard",
+      });
+    });
   notifications.sort((a, b) => b.at.getTime() - a.at.getTime());
 
   // ── Retainer aggregates ──
@@ -448,7 +522,10 @@ export default async function DashboardPage() {
             {gateProjects.length > 0 && <> · <span style={{ color: "var(--rose)" }}>{gateProjects.length} awaiting sign-off</span></>}
           </p>
         </div>
-        <NewProjectButton />
+        <NewClientButton
+          triggerClassName="px-4 py-2 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-800 transition-colors"
+          label="+ New client"
+        />
       </div>
 
       {/* Stat tiles — clickable, expand to reveal the items behind each count */}
@@ -459,7 +536,7 @@ export default async function DashboardPage() {
       {/* My Work — tasks for the logged-in member, filterable, with workload strip */}
       <div className="fade-up">
         <Eyebrow style={{ marginBottom: 14 }}>MY W0RK</Eyebrow>
-        <MyWork tasks={workTasks} members={workMembers} currentUserId={currentUserId} />
+        <MyWork tasks={workTasks} members={workMembers} questions={memberQuestions} currentUserId={currentUserId} />
       </div>
 
       {/* Main split */}
@@ -618,6 +695,26 @@ export default async function DashboardPage() {
                 href: `/projects/${p.id}/materials`,
                 dot: "blue" as Accent,
               })),
+              ...waitingDocs.map((d) => {
+                const who = d.client?.name ?? d.client?.email ?? d.project?.name ?? "Client";
+                const label =
+                  d.templateType === "intake_form"
+                    ? "Intake form — waiting on client"
+                    : d.templateType === "financial_offer"
+                    ? "Offer — waiting on client approval"
+                    : "Initial form — waiting on client";
+                return {
+                  key: `doc-${d.id}`,
+                  label,
+                  sub: `${who} · ${d.title}`,
+                  href: d.projectId
+                    ? `/projects/${d.projectId}`
+                    : d.clientId
+                    ? `/clients/${d.clientId}`
+                    : "/dashboard",
+                  dot: "amber" as Accent,
+                };
+              }),
             ];
             return (
               <div className="card card-pad">
