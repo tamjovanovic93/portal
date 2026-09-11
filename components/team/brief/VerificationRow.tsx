@@ -8,10 +8,8 @@ type Status = "pending" | "confirmed" | "rejected";
 export default function VerificationRow({
   clientId,
   itemId,
-  fieldPath,
   currentValue,
   question,
-  source,
   status,
   resolvedValue,
   sentToClientAt = null,
@@ -21,10 +19,10 @@ export default function VerificationRow({
 }: {
   clientId: string;
   itemId: string;
-  fieldPath: string;
+  fieldPath?: string;
   currentValue: string;
   question: string;
-  source: string;
+  source?: string;
   status: Status;
   resolvedValue: string;
   sentToClientAt?: string | null;
@@ -54,16 +52,20 @@ export default function VerificationRow({
   const pillColor =
     current === "confirmed" ? "pill-mint" : current === "rejected" ? "pill-rose" : "pill-amber";
 
+  // Never expose internal/agent wording to the admin. Hide values that are
+  // clearly template placeholders or internal markers (legacy data), and the
+  // raw field path / source-document names entirely.
+  const cleanCurrent = (currentValue || "")
+    .replace(/^\s*\*?\[?UNVERIFIED\]?\s*/i, "")
+    .trim();
+  const looksInternal = /^(synthesized|inferred|current value|scale points|unverified)\b/i.test(cleanCurrent) || cleanCurrent.includes("|");
+  const showCurrent = cleanCurrent && !looksInternal;
+  const statusLabel = current === "confirmed" ? "verified" : current === "rejected" ? "not correct" : "needs review";
+
   return (
     <div className="card card-pad space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
-        {fieldPath && (
-          <code className="mono" style={{ fontSize: 11.5, background: "var(--surface-2)", color: "var(--text-2)", padding: "2px 7px", borderRadius: "var(--r-sm)" }}>
-            {fieldPath}
-          </code>
-        )}
-        {source && <span className="faint" style={{ fontSize: 11 }}>{source}</span>}
-        <span className={`pill ${pillColor}`}>{current}</span>
+        <span className={`pill ${pillColor}`}>{statusLabel}</span>
         {clientAnswer ? (
           <span className="pill pill-mint">client answered</span>
         ) : sent ? (
@@ -71,10 +73,10 @@ export default function VerificationRow({
         ) : null}
       </div>
 
-      <p style={{ fontSize: 13.5 }}>{question || "—"}</p>
-      {currentValue && (
+      <p style={{ fontSize: 13.5 }}>{question || "Please review this detail and confirm it's correct."}</p>
+      {showCurrent && (
         <p className="faint" style={{ fontSize: 12 }}>
-          Current value: <span style={{ color: "var(--text-2)" }}>{currentValue}</span>
+          Currently on file: <span style={{ color: "var(--text-2)" }}>{cleanCurrent}</span>
         </p>
       )}
 

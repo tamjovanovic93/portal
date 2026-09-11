@@ -7,6 +7,7 @@ import { mutateDoc } from "@/lib/intake/store";
 import { notifyClient } from "@/lib/notifications";
 import {
   PROFILE_DOC,
+  STRATEGY_DOC,
   VERIFICATION_DOC,
   type IntakeDocType,
   type ClientProfile,
@@ -130,8 +131,57 @@ const COMPANY_FIELD_MAP: Record<string, string> = {
   businessType: "business_type",
 };
 
-// Mark a verification-queue item confirmed / rejected (or back to pending), and
-// keep the queue meta counts in sync.
+// Write a value into a JSON document at a dotted / indexed path such as
+// "company.founded_year", "competitors[0].their_weakness", or
+// "messaging.key_messages[2].message_text". Missing intermediate objects/arrays
+// are created so a verification answer can *add* previously-missing information.
+// Returns false when the path can't be resolved to a settable location.
+type PathToken = { key: string } | { index: number };
+
+function parsePath(path: string): PathToken[] {
+  const tokens: PathToken[] = [];
+  for (const segment of path.split(".")) {
+    const m = segment.match(/^([^[\]]*)((\[\d+\])*)$/);
+    if (!m) return [];
+    if (m[1]) tokens.push({ key: m[1] });
+    for (const idx of m[2].match(/\d+/g) ?? []) tokens.push({ index: Number(idx) });
+  }
+  return tokens;
+}
+
+function setByPath(root: Row, path: string, value: unknown): boolean {
+  const tokens = parsePath(path);
+  if (tokens.length === 0) return false;
+  let node: unknown = root;
+  for (let i = 0; i < tokens.length - 1; i++) {
+    const token = tokens[i];
+    const next = tokens[i + 1];
+    const container = "index" in next ? [] : {};
+    if ("key" in token) {
+      const obj = node as Row;
+      if (obj[token.key] == null) obj[token.key] = container;
+      node = obj[token.key];
+    } else {
+      const arr = node as unknown[];
+      if (!Array.isArray(arr)) return false;
+      if (arr[token.index] == null) arr[token.index] = container;
+      node = arr[token.index];
+    }
+  }
+  const last = tokens[tokens.length - 1];
+  if ("key" in last) {
+    (node as Row)[last.key] = value;
+  } else {
+    if (!Array.isArray(node)) return false;
+    (node as unknown[])[last.index] = value;
+  }
+  return true;
+}
+
+// Mark a verification-queue item confirmed / rejected (or back to pending), keep
+// the queue meta counts in sync, and — crucially — when an item is confirmed
+// with an answer, apply that answer back into the Client Data (client_profile or
+// strategy) at the item's field_path so the Data screen shows the verified truth.
 export async function resolveVerificationItem(
   clientId: string,
   itemId: string,
@@ -139,12 +189,25 @@ export async function resolveVerificationItem(
   resolvedValue?: string
 ) {
   await requireTeam();
+
+  let writeBack: { doc: IntakeDocType; path: string; value: string } | null = null;
+
   await mutateDoc<VerificationQueue>(clientId, VERIFICATION_DOC, (queue) => {
     const item = queue.items?.find((i) => i.item_id === itemId);
     if (!item) return;
     item.status = status;
-    item.resolved_value = status === "pending" ? null : (resolvedValue ?? item.resolved_value ?? null);
+    const value = status === "pending" ? null : (resolvedValue ?? item.resolved_value ?? null);
+    item.resolved_value = value;
     item.date_resolved = status === "pending" ? null : new Date().toISOString();
+
+    // Only a confirmed answer with an addressable field and a real value flows
+    // back into Client Data. Rejections and blank confirmations leave data as-is.
+    const path = (item.field_path as string) ?? "";
+    if (status === "confirmed" && path && typeof value === "string" && value.trim() !== "") {
+      const source = (item.source_document as string) ?? "";
+      const doc: IntakeDocType = /strategy/i.test(source) ? STRATEGY_DOC : PROFILE_DOC;
+      writeBack = { doc, path, value };
+    }
 
     const items = queue.items ?? [];
     const pending = items.filter((i) => (i.status ?? "pending") === "pending").length;
@@ -155,6 +218,19 @@ export async function resolveVerificationItem(
       resolved_count: items.length - pending,
     };
   });
+
+  if (writeBack) {
+    const { doc, path, value } = writeBack;
+    try {
+      await mutateDoc<Row>(clientId, doc, (content) => {
+        setByPath(content, path, value);
+      });
+    } catch {
+      // Target doc may not exist yet (e.g. strategy not generated) — the answer
+      // is still recorded on the verification item; nothing else to do.
+    }
+  }
+
   revalidate(clientId);
 }
 

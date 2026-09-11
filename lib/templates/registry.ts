@@ -59,27 +59,29 @@ const intakeForm: Template = {
       title: "Your Customer",
       description: "Seeds your audience and persona database.",
       fields: [
-        // First, branch on whether customers are consumers (B2C) or businesses (B2B).
+        // First, branch on whether customers are consumers (B2C), businesses
+        // (B2B), or both. "Both" shows the B2C and B2B question sets together.
         { key: "customerType", label: "Who are your customers?", type: "radio", required: true, options: [
           { value: "b2c", label: "B2C — I sell to consumers / individuals" },
           { value: "b2b", label: "B2B — I sell to other businesses" },
+          { value: "both", label: "Both — I sell to consumers and businesses" },
         ]},
 
-        // ── B2C questions ──
-        { key: "bestCustomer", label: "Who is your best customer?", type: "textarea", required: true, rows: 3, placeholder: "Describe them in 2–3 sentences — who they are, what they do, what stage of life they're in.", showIf: { field: "customerType", equals: "b2c" } },
-        { key: "ageRange", label: "Age Range", type: "text", placeholder: "e.g. 25–45 primary, 45–60 secondary", showIf: { field: "customerType", equals: "b2c" } },
-        { key: "gender", label: "Gender", type: "text", placeholder: "e.g. Primarily female / Mixed", showIf: { field: "customerType", equals: "b2c" } },
-        { key: "location", label: "Location", type: "text", placeholder: "City, region, country — where are most of your customers?", showIf: { field: "customerType", equals: "b2c" } },
-        { key: "problemYouSolve", label: "What problem do you solve for them?", type: "textarea", required: true, rows: 3, placeholder: "What pain or frustration brings them to you?", showIf: { field: "customerType", equals: "b2c" } },
-        { key: "whyChooseYou", label: "Why do they choose you over competitors?", type: "textarea", rows: 2, placeholder: "In their own words if possible.", showIf: { field: "customerType", equals: "b2c" } },
-        { key: "brandsCustomerLoves", label: "3 Brands Your Customer Already Loves", type: "text", placeholder: "Not in your industry — brands whose aesthetic or values your customer admires.", showIf: { field: "customerType", equals: "b2c" } },
+        // ── B2C questions (also shown when "both" is selected) ──
+        { key: "bestCustomer", label: "Who is your best customer?", type: "textarea", required: true, rows: 3, placeholder: "Describe them in 2–3 sentences — who they are, what they do, what stage of life they're in.", showIf: { field: "customerType", equals: ["b2c", "both"] } },
+        { key: "ageRange", label: "Age Range", type: "text", placeholder: "e.g. 25–45 primary, 45–60 secondary", showIf: { field: "customerType", equals: ["b2c", "both"] } },
+        { key: "gender", label: "Gender", type: "text", placeholder: "e.g. Primarily female / Mixed", showIf: { field: "customerType", equals: ["b2c", "both"] } },
+        { key: "location", label: "Location", type: "text", placeholder: "City, region, country — where are most of your customers?", showIf: { field: "customerType", equals: ["b2c", "both"] } },
+        { key: "problemYouSolve", label: "What problem do you solve for them?", type: "textarea", required: true, rows: 3, placeholder: "What pain or frustration brings them to you?", showIf: { field: "customerType", equals: ["b2c", "both"] } },
+        { key: "whyChooseYou", label: "Why do they choose you over competitors?", type: "textarea", rows: 2, placeholder: "In their own words if possible.", showIf: { field: "customerType", equals: ["b2c", "both"] } },
+        { key: "brandsCustomerLoves", label: "3 Brands Your Customer Already Loves", type: "text", placeholder: "Not in your industry — brands whose aesthetic or values your customer admires.", showIf: { field: "customerType", equals: ["b2c", "both"] } },
 
-        // ── B2B questions (temporary set — will be refined later) ──
-        { key: "idealBusinessTypes", label: "What types of businesses are your ideal customers?", type: "textarea", rows: 3, placeholder: "e.g. Boutique hotels, mid-size law firms, DTC fashion brands…", showIf: { field: "customerType", equals: "b2b" } },
-        { key: "decisionMaker", label: "Who is usually the decision-maker when purchasing your product or service?", type: "textarea", rows: 2, placeholder: "e.g. Marketing director, founder, procurement lead…", showIf: { field: "customerType", equals: "b2b" } },
-        { key: "businessProblems", label: "What are the main business problems your customers are trying to solve?", type: "textarea", rows: 3, placeholder: "The business outcomes they're chasing or pains they're removing.", showIf: { field: "customerType", equals: "b2b" } },
-        { key: "salesProcessLength", label: "How long does the typical decision or sales process take?", type: "text", placeholder: "e.g. 2 weeks / 3–6 months", showIf: { field: "customerType", equals: "b2b" } },
-        { key: "whyChooseYouB2B", label: "What usually influences a business to choose you over another provider?", type: "textarea", rows: 2, placeholder: "Price, expertise, relationship, results…", showIf: { field: "customerType", equals: "b2b" } },
+        // ── B2B questions (also shown when "both" is selected) ──
+        { key: "idealBusinessTypes", label: "What types of businesses are your ideal customers?", type: "textarea", rows: 3, placeholder: "e.g. Boutique hotels, mid-size law firms, DTC fashion brands…", showIf: { field: "customerType", equals: ["b2b", "both"] } },
+        { key: "decisionMaker", label: "Who is usually the decision-maker when purchasing your product or service?", type: "textarea", rows: 2, placeholder: "e.g. Marketing director, founder, procurement lead…", showIf: { field: "customerType", equals: ["b2b", "both"] } },
+        { key: "businessProblems", label: "What are the main business problems your customers are trying to solve?", type: "textarea", rows: 3, placeholder: "The business outcomes they're chasing or pains they're removing.", showIf: { field: "customerType", equals: ["b2b", "both"] } },
+        { key: "salesProcessLength", label: "How long does the typical decision or sales process take?", type: "text", placeholder: "e.g. 2 weeks / 3–6 months", showIf: { field: "customerType", equals: ["b2b", "both"] } },
+        { key: "whyChooseYouB2B", label: "What usually influences a business to choose you over another provider?", type: "textarea", rows: 2, placeholder: "Price, expertise, relationship, results…", showIf: { field: "customerType", equals: ["b2b", "both"] } },
       ],
     },
     {

@@ -92,9 +92,16 @@ export default async function ClientPortalPage() {
   >();
   if (clientProfileDoc) {
     const content = clientProfileDoc.content as ClientProfile;
+    // Copy is client-facing ONLY after a team member explicitly sends it for
+    // approval (client_approval_requested_at). Agent-generated copy stays
+    // internal — it never auto-appears in the client's approval flow.
     const approvals = {
-      messages: (content.messaging?.key_messages ?? []).filter((m) => (m.approved ?? "pending") === "pending"),
-      slogans: (content.messaging?.slogans ?? []).filter((s) => (s.approved ?? "pending") === "pending"),
+      messages: (content.messaging?.key_messages ?? []).filter(
+        (m) => !!m.client_approval_requested_at && (m.approved ?? "pending") === "pending"
+      ),
+      slogans: (content.messaging?.slogans ?? []).filter(
+        (s) => !!s.client_approval_requested_at && (s.approved ?? "pending") === "pending"
+      ),
     };
     for (const p of projects) pendingApprovalsByProject.set(p.id, approvals);
   }

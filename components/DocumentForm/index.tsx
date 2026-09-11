@@ -788,6 +788,7 @@ function RespondForm({
   const [content, setContent] = useState<FormContent>(initialContent as FormContent);
   const [editing, setEditing] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [unresolvedList, setUnresolvedList] = useState<{ key: string; label: string }[]>([]);
   const [step, setStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -799,10 +800,12 @@ function RespondForm({
   }
   function approve(key: string) {
     setContent((prev) => clientApprovePrefill(prev, key));
+    setUnresolvedList((prev) => prev.filter((u) => u.key !== key));
   }
   function beginChange(key: string) {
     setEditing((prev) => new Set(prev).add(key));
     setContent((prev) => clientReplace(prev, key, prev[key] ?? ""));
+    setUnresolvedList((prev) => prev.filter((u) => u.key !== key));
   }
   function replaceValue(key: string, v: unknown) {
     setContent((prev) => clientReplace(prev, key, v));
@@ -812,17 +815,71 @@ function RespondForm({
     (s) => !s.teamOnly && isVisible(s.showIf, content)
   );
 
-  function hasUnresolved(): boolean {
-    return Object.entries(getCollab(content)).some(
-      ([k, c]) => c.prefill?.status === "pending" && !editing.has(k)
-    );
+  // Fields still awaiting the client's approval, in form order (with labels).
+  function computeUnresolved(): { key: string; label: string }[] {
+    const collabNow = getCollab(content);
+    const out: { key: string; label: string }[] = [];
+    for (const section of visibleSections) {
+      for (const field of section.fields) {
+        if (!isVisible(field.showIf, content)) continue;
+        const c = collabNow[field.key];
+        if (c?.prefill?.status === "pending" && !editing.has(field.key)) {
+          out.push({ key: field.key, label: field.label });
+        }
+      }
+    }
+    return out;
+  }
+
+  // How many suggested answers are still pending the client's approval.
+  const pendingPrefillCount = Object.entries(collab).filter(
+    ([k, c]) => c.prefill?.status === "pending" && !editing.has(k)
+  ).length;
+
+  // Approve every currently-pending suggested answer in one action. Does NOT
+  // submit the form — the client still reviews the rest and submits normally.
+  function approveAll() {
+    setContent((prev) => {
+      let next = prev;
+      for (const [key, c] of Object.entries(getCollab(prev))) {
+        if (c.prefill?.status === "pending" && !editing.has(key)) {
+          next = clientApprovePrefill(next, key);
+        }
+      }
+      return next;
+    });
+    setUnresolvedList([]);
+    setError(null);
+  }
+
+  // Map each field to the wizard step that contains it (stepped mode), so the
+  // "needs approval" list can jump straight to the right step.
+  const stepSections = visibleSections.filter((s) =>
+    s.fields.some((f) => isVisible(f.showIf, content))
+  );
+  const fieldStep = new Map<string, number>();
+  stepSections.forEach((s, i) =>
+    s.fields.forEach((f) => {
+      if (isVisible(f.showIf, content)) fieldStep.set(f.key, i);
+    })
+  );
+
+  function goToField(key: string) {
+    if (stepped && fieldStep.has(key)) setStep(fieldStep.get(key)!);
+    setTimeout(() => {
+      const el = document.getElementById(`field-${key}`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 60);
   }
 
   function submit() {
-    if (hasUnresolved()) {
-      setError("Please approve or change every pre-filled answer before submitting.");
+    const unresolved = computeUnresolved();
+    if (unresolved.length > 0) {
+      setUnresolvedList(unresolved);
+      setError(null);
       return;
     }
+    setUnresolvedList([]);
     setError(null);
     startTransition(async () => {
       await saveDocument(documentId, content);
@@ -832,6 +889,51 @@ function RespondForm({
     });
   }
 
+  // Banner offering to approve all still-pending suggested answers at once.
+  const approveAllBar =
+    pendingPrefillCount > 0 ? (
+      <div className="flex items-center justify-between gap-3 rounded-md border border-blue-200 bg-blue-50 px-4 py-3">
+        <p className="text-sm text-blue-900">
+          Your team pre-filled{" "}
+          <span className="font-semibold">
+            {pendingPrefillCount} answer{pendingPrefillCount !== 1 ? "s" : ""}
+          </span>{" "}
+          for you to approve.
+        </p>
+        <button
+          type="button"
+          onClick={approveAll}
+          className="shrink-0 px-3 py-1.5 rounded-md bg-neutral-900 text-white text-xs font-medium hover:bg-neutral-700 transition-colors"
+        >
+          Approve all
+        </button>
+      </div>
+    ) : null;
+
+  // List of the specific questions still needing approval before submit, each
+  // clickable to jump straight to it.
+  const unresolvedNotice =
+    unresolvedList.length > 0 ? (
+      <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
+        <p className="text-sm font-medium text-amber-900 mb-2">
+          Before finalizing, please approve the following answers:
+        </p>
+        <ul className="space-y-1">
+          {unresolvedList.map((u) => (
+            <li key={u.key}>
+              <button
+                type="button"
+                onClick={() => goToField(u.key)}
+                className="text-sm text-amber-900 underline underline-offset-2 hover:text-amber-700 text-left"
+              >
+                {u.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ) : null;
+
   // ── Render a single field with its collab controls ──
   function renderField(field: Field) {
     const c = collab[field.key];
@@ -840,7 +942,7 @@ function RespondForm({
 
     if (c?.prefill && status === "pending" && !isEditing) {
       return (
-        <div key={field.key} className="rounded-md border border-blue-200 bg-blue-50/50 px-4 py-3">
+        <div key={field.key} id={`field-${field.key}`} className="scroll-mt-24 rounded-md border border-blue-200 bg-blue-50/50 px-4 py-3">
           <p className="text-sm font-medium text-neutral-800 mb-1">{field.label}</p>
           <p className="text-xs text-neutral-500 mb-2">Your team suggested:</p>
           <p className="text-sm text-neutral-900 mb-3 whitespace-pre-wrap">
@@ -949,6 +1051,8 @@ function RespondForm({
           </div>
         </div>
 
+        {approveAllBar}
+
         <section className="border border-neutral-200 rounded-lg bg-white px-6 py-6 space-y-6">
           <div>
             <h3 className="text-base font-semibold text-neutral-900">{current.title}</h3>
@@ -999,6 +1103,7 @@ function RespondForm({
             )}
           </div>
         </div>
+        {unresolvedNotice}
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
     );
@@ -1007,6 +1112,7 @@ function RespondForm({
   // ── Single-page (Initial Form) ──
   return (
     <div className="space-y-10">
+      {approveAllBar}
       {visibleSections.map((section) => (
         <section key={section.key} className="border border-neutral-200 rounded-lg bg-white px-6 py-6 space-y-6">
           <div>
@@ -1039,6 +1145,7 @@ function RespondForm({
           Submit
         </button>
       </div>
+      {unresolvedNotice}
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
   );

@@ -4,7 +4,53 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { mutateDoc, clientIdForProject } from "@/lib/intake/store";
+import { notifyClient } from "@/lib/notifications";
 import { PROFILE_DOC, type ClientProfile } from "@/lib/intake/types";
+
+async function requireTeam() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+  if (user.user_metadata?.role?.toLowerCase() === "client") throw new Error("Unauthorized");
+  return user;
+}
+
+// Team EXPLICITLY sends a generated key message / slogan to the client for
+// approval. Nothing reaches the client until this runs — agents only generate
+// copy internally; a human decides what (if anything) to send.
+export async function requestClientApprovalForItem(
+  projectId: string,
+  id: string,
+  kind: "message" | "slogan"
+): Promise<{ ok?: boolean; error?: string }> {
+  await requireTeam();
+  const clientId = await clientIdForProject(projectId);
+  if (!clientId) return { error: "Project has no client." };
+
+  let found = false;
+  await mutateDoc<ClientProfile>(clientId, PROFILE_DOC, (content) => {
+    const item =
+      kind === "message"
+        ? content.messaging?.key_messages?.find((m) => m.message_id === id)
+        : content.messaging?.slogans?.find((s) => s.slogan_id === id);
+    if (!item) return;
+    found = true;
+    item.client_approval_requested_at = new Date().toISOString();
+    // Ensure it's pending so it surfaces as an open approval for the client.
+    if ((item.approved ?? "pending") !== "pending") item.approved = "pending";
+  });
+  if (!found) return { error: "Item not found." };
+
+  await notifyClient(clientId, {
+    projectId,
+    type: "copy_approval_requested",
+    message: "Your team sent new copy for your approval.",
+    link: "/portal",
+  });
+  revalidatePath("/portal");
+  revalidatePath(`/projects/${projectId}`);
+  return { ok: true };
+}
 
 async function getClientProfile() {
   const supabase = await createClient();

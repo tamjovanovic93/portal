@@ -12,6 +12,7 @@ import { getRoster } from "@/lib/team";
 import ProjectStageTasks from "@/components/team/project/ProjectStageTasks";
 import type { StageTask } from "@/components/team/project/StageTasks";
 import ApprovalCard from "@/components/team/project/ApprovalCard";
+import SendCopyCard from "@/components/team/project/SendCopyCard";
 import MarkReviewedButton from "@/components/team/project/MarkReviewedButton";
 import MaterialRow from "@/components/team/MaterialRow";
 import AddMaterialForm from "@/components/team/AddMaterialForm";
@@ -216,19 +217,23 @@ export default async function ProjectPage({
     campaign: "Campaign line", seasonal: "Seasonal copy",
   };
 
-  type ApprovalItem = { id: string; text: string; kind: string; itemKind: "message" | "slogan" };
+  type ApprovalItem = { id: string; text: string; kind: string; itemKind: "message" | "slogan"; requested: boolean };
   // Only items not yet acknowledged by the team appear in the live lists.
   const liveMessages = keyMessages.filter((m) => !m.team_acknowledged_at);
   const liveSlogans = slogans.filter((s) => !s.team_acknowledged_at);
   const buildApprovals = (decision: string): ApprovalItem[] => [
     ...liveMessages
       .filter((m) => (m.approved ?? "pending") === decision)
-      .map((m) => ({ id: m.message_id, itemKind: "message" as const, text: (m.message_text as string) ?? "—", kind: MESSAGE_TYPE_LABELS[(m.message_type as string) ?? ""] ?? "Message" })),
+      .map((m) => ({ id: m.message_id, itemKind: "message" as const, text: (m.message_text as string) ?? "—", kind: MESSAGE_TYPE_LABELS[(m.message_type as string) ?? ""] ?? "Message", requested: !!m.client_approval_requested_at })),
     ...liveSlogans
       .filter((s) => (s.approved ?? "pending") === decision)
-      .map((s) => ({ id: s.slogan_id, itemKind: "slogan" as const, text: (s.slogan_text as string) ?? "—", kind: MESSAGE_TYPE_LABELS[(s.type as string) ?? ""] ?? "Slogan" })),
+      .map((s) => ({ id: s.slogan_id, itemKind: "slogan" as const, text: (s.slogan_text as string) ?? "—", kind: MESSAGE_TYPE_LABELS[(s.type as string) ?? ""] ?? "Slogan", requested: !!s.client_approval_requested_at })),
   ];
-  const pendingApprovals = buildApprovals("pending");
+  // Pending copy splits in two: generated-but-not-yet-sent (internal — the team
+  // decides whether to send it) vs. already sent and awaiting the client.
+  const pendingRaw = buildApprovals("pending");
+  const generatedCopy = pendingRaw.filter((i) => !i.requested);
+  const pendingApprovals = pendingRaw.filter((i) => i.requested);
   const clientApproved = buildApprovals("yes");
   const changesRequested = buildApprovals("no");
 
@@ -694,6 +699,30 @@ export default async function ProjectPage({
                 kind={item.itemKind}
                 variant="revise"
                 headline={`${item.kind} — client requested changes`}
+                text={item.text}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Generated copy (internal — send only if you choose to) ───────────── */}
+      {generatedCopy.length > 0 && (
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">
+            Generated copy — internal
+          </p>
+          <p className="text-xs text-neutral-500 mb-2">
+            Draft copy the agent generated. It is not visible to the client. Send an item only if you want the client to approve it.
+          </p>
+          <div className="space-y-2">
+            {generatedCopy.map((item) => (
+              <SendCopyCard
+                key={item.id}
+                projectId={id}
+                id={item.id}
+                kind={item.itemKind}
+                label={item.kind}
                 text={item.text}
               />
             ))}
