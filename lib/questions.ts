@@ -16,6 +16,22 @@ export function isActive(status: QuestionStatus): boolean {
   return ACTIVE_STATUSES.includes(status);
 }
 
+// VERIFICATION questions: item ids (VQ_001) restart per client, so the context
+// id is scoped as "<clientId>:<itemId>". Unprefixed values are legacy rows.
+export function verificationContextId(clientId: string, itemId: string): string {
+  return `${clientId}:${itemId}`;
+}
+
+export function parseVerificationContextId(
+  contextId: string | null,
+  fallbackClientId: string | null
+): { clientId: string; itemId: string } | null {
+  if (!contextId) return null;
+  const idx = contextId.indexOf(":");
+  if (idx === -1) return fallbackClientId ? { clientId: fallbackClientId, itemId: contextId } : null;
+  return { clientId: contextId.slice(0, idx), itemId: contextId.slice(idx + 1) };
+}
+
 export type QuestionRow = {
   id: string;
   projectId: string | null;

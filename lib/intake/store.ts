@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { mutateDocumentContent } from "@/lib/documents/mutate";
 import {
   PROFILE_DOC,
   STRATEGY_DOC,
@@ -58,29 +59,29 @@ export function getVerificationQueue(clientId: string) {
   return getContent<VerificationQueue>(clientId, VERIFICATION_DOC);
 }
 
-// Find-or-create + overwrite the content for one of the client-data docs.
+// Find-or-create + overwrite the content for one of the client-data docs
+// (agent output replaces the whole document, so no merge is attempted).
 export async function upsertIntakeDoc(
   clientId: string,
   templateType: IntakeDocType,
   content: unknown
 ) {
   const existing = await getDoc(clientId, templateType);
-  const data = {
-    title: `${clientId}_${TITLE_SUFFIX[templateType]}`,
-    content: content as Prisma.InputJsonValue,
-  };
+  const title = `${clientId}_${TITLE_SUFFIX[templateType]}`;
   if (existing) {
-    await prisma.document.update({ where: { id: existing.id }, data });
+    await mutateDocumentContent(existing.id, () => content, { extraData: { title } });
   } else {
     await prisma.document.create({
-      data: { clientId, stageNumber: 1, templateType, ...data },
+      data: { clientId, stageNumber: 1, templateType, title, content: content as Prisma.InputJsonValue },
     });
   }
 }
 
 // Load a doc, hand its parsed content to `fn`, persist the (possibly returned)
-// result. Mutating in place and returning void is fine; returning a new object
-// also works. Throws if the doc does not exist. Callers handle revalidation.
+// result under an optimistic lock — a concurrent write makes `fn` run again on
+// the fresh content. Mutating in place and returning void is fine; returning a
+// new object also works. Throws if the doc does not exist. Callers handle
+// revalidation.
 export async function mutateDoc<T>(
   clientId: string,
   templateType: IntakeDocType,
@@ -88,10 +89,5 @@ export async function mutateDoc<T>(
 ): Promise<void> {
   const doc = await getDoc(clientId, templateType);
   if (!doc) throw new Error(`No ${templateType} document for client ${clientId}`);
-  const content = doc.content as T;
-  const next = fn(content) ?? content;
-  await prisma.document.update({
-    where: { id: doc.id },
-    data: { content: next as Prisma.InputJsonValue },
-  });
+  await mutateDocumentContent<T>(doc.id, fn);
 }

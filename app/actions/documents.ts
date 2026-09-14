@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { requireTeam } from "@/lib/auth/session";
 import { requireDocumentAccess } from "@/lib/auth/access";
+import { mergeFormContent, mutateDocumentContent } from "@/lib/documents/mutate";
 import { TEMPLATES } from "@/lib/templates/registry";
 
 // A document is owned by a client either directly (clientId, client-scoped) or
@@ -53,16 +54,17 @@ export async function createDocument(
   return doc.id;
 }
 
+// Full-form saves are merged over the latest stored content under the
+// optimistic lock, so a collaboration edit made meanwhile is not clobbered.
 export async function saveDocument(
   documentId: string,
   content: Record<string, unknown>
 ) {
   const { doc } = await requireDocumentAccess(documentId);
 
-  await prisma.document.update({
-    where: { id: documentId },
-    data: { content: content as Prisma.InputJsonValue, updatedAt: new Date() },
-  });
+  await mutateDocumentContent<Record<string, unknown>>(documentId, (latest) =>
+    mergeFormContent(latest ?? {}, content)
+  );
 
   revalidateDoc(doc);
 }

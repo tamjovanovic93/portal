@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireTeam, requireUser } from "@/lib/auth/session";
+import { mutateDocumentContent } from "@/lib/documents/mutate";
 import { notifyTeam, notifyClient } from "@/lib/notifications";
 import {
   teamEdit,
@@ -54,11 +55,10 @@ function revalidateDoc(doc: { id: string; projectId: string | null; clientId: st
   }
 }
 
-async function persistContent(documentId: string, content: FormContent) {
-  await prisma.document.update({
-    where: { id: documentId },
-    data: { content: content as Prisma.InputJsonValue },
-  });
+// All answer-level edits go through the optimistic lock so a team question and
+// a client edit landing at the same moment both survive.
+async function mutateForm(documentId: string, fn: (content: FormContent) => FormContent) {
+  await mutateDocumentContent<FormContent>(documentId, (c) => fn(c ?? {}));
 }
 
 // ─── Client-level onboarding document creation ───────────────────────────────
@@ -175,8 +175,7 @@ export async function completeForm(documentId: string) {
 export async function changeAnswer(documentId: string, fieldKey: string, value: unknown) {
   await requireTeam();
   const doc = await loadDoc(documentId);
-  const next = teamEdit((doc.content ?? {}) as FormContent, fieldKey, value);
-  await persistContent(documentId, next);
+  await mutateForm(documentId, (c) => teamEdit(c, fieldKey, value));
   await notifyClient(doc.clientId, {
     projectId: doc.projectId ?? undefined,
     type: "answer_changed",
@@ -191,8 +190,7 @@ export async function changeAnswer(documentId: string, fieldKey: string, value: 
 export async function askQuestion(documentId: string, fieldKey: string, text: string) {
   await requireTeam();
   const doc = await loadDoc(documentId);
-  const next = teamAskQuestion((doc.content ?? {}) as FormContent, fieldKey, text);
-  await persistContent(documentId, next);
+  await mutateForm(documentId, (c) => teamAskQuestion(c, fieldKey, text));
   await notifyClient(doc.clientId, {
     projectId: doc.projectId ?? undefined,
     type: "question_asked",
@@ -210,8 +208,7 @@ export async function approveEdit(documentId: string, fieldKey: string) {
   const user = await requireUser();
   const doc = await loadDoc(documentId);
   if (doc.clientId !== user.id) throw new Error("Unauthorized");
-  const next = clientApproveEdit((doc.content ?? {}) as FormContent, fieldKey);
-  await persistContent(documentId, next);
+  await mutateForm(documentId, (c) => clientApproveEdit(c, fieldKey));
   await notifyTeam({
     projectId: doc.projectId ?? undefined,
     type: "edit_approved",
@@ -227,8 +224,7 @@ export async function answerQuestion(documentId: string, fieldKey: string, answe
   const user = await requireUser();
   const doc = await loadDoc(documentId);
   if (doc.clientId !== user.id) throw new Error("Unauthorized");
-  const next = clientAnswerQuestion((doc.content ?? {}) as FormContent, fieldKey, answer);
-  await persistContent(documentId, next);
+  await mutateForm(documentId, (c) => clientAnswerQuestion(c, fieldKey, answer));
   await notifyTeam({
     projectId: doc.projectId ?? undefined,
     type: "question_answered",

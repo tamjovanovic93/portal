@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireTeam } from "@/lib/auth/session";
+import { mutateDocumentContent } from "@/lib/documents/mutate";
 import type { TypeStyle, BrandColor } from "@/lib/brief/types";
 
 // Brand Kit is shared CLIENT DATA — a single JSON Document (templateType
@@ -29,16 +30,20 @@ export async function getBrandKit(clientId: string): Promise<BrandKit> {
   return (doc?.content as BrandKit) ?? {};
 }
 
+// Optimistically locked once the document exists; the first write creates it.
 async function mutate(clientId: string, fn: (k: BrandKit) => BrandKit) {
   const existing = await getDoc(clientId);
-  const current = (existing?.content as BrandKit) ?? {};
-  const next = fn({ ...current });
-  const data = { content: next as unknown as Prisma.InputJsonValue };
   if (existing) {
-    await prisma.document.update({ where: { id: existing.id }, data });
+    await mutateDocumentContent<BrandKit>(existing.id, (current) => fn({ ...(current ?? {}) }));
   } else {
     await prisma.document.create({
-      data: { clientId, stageNumber: 1, templateType: BRAND_KIT_DOC, title: "Brand Kit", ...data },
+      data: {
+        clientId,
+        stageNumber: 1,
+        templateType: BRAND_KIT_DOC,
+        title: "Brand Kit",
+        content: fn({}) as unknown as Prisma.InputJsonValue,
+      },
     });
   }
   revalidatePath(`/clients/${clientId}/data`);

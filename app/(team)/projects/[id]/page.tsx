@@ -3,7 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import StageProgressBar from "@/components/team/project/StageProgressBar";
 import ClientLoginLink from "@/components/team/project/ClientLoginLink";
-import { getProfile, getStrategy } from "@/lib/intake/store";
+import { getProfile } from "@/lib/intake/store";
 import { getProjectBrief } from "@/app/actions/project-brief";
 import BriefsSection from "@/components/team/brief/BriefsSection";
 import { getRoster } from "@/lib/team";
@@ -113,11 +113,11 @@ export default async function ProjectPage({
 
   if (!project) notFound();
 
-  // Client Data (profile + strategy) is shared at the CLIENT level; the Brief
-  // is the project's single brief (created with the project).
+  // Client Data (profile) is shared at the CLIENT level; the Brief is the
+  // project's single brief (created with the project).
   const clientId = project.clientId;
-  const [profile, strategy, roster, brief] = await Promise.all([
-    getProfile(clientId), getStrategy(clientId), getRoster(), getProjectBrief(id),
+  const [profile, roster, brief] = await Promise.all([
+    getProfile(clientId), getRoster(), getProjectBrief(id),
   ]);
   const company = profile?.company ?? null;
 
@@ -164,9 +164,6 @@ export default async function ProjectPage({
   );
   const gateStages = project.stages.filter((s) => s.status === "GATE_PENDING");
   const databaseGenerated = !!profile;
-  const profileStatus = profile?._meta?.status ?? null;
-  const hasStrategy = !!strategy;
-  const briefReviewed = !!project.briefReviewedAt;
   const wireframeFeedbackDoc = project.documents.find(
     (d) => d.templateType === "wireframe_feedback"
   );

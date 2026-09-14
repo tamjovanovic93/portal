@@ -251,6 +251,8 @@ model Document {
   // Set when the team has reviewed/handled a client-submitted document, so it
   // moves out of "Action Required" into completed/history.
   handledAt    DateTime?      @map("handled_at")
+  // Optimistic lock — bumped on every content write (lib/documents/mutate.ts).
+  version      Int            @default(0)
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
 

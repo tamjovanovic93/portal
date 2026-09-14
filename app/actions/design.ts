@@ -7,6 +7,7 @@ import { Prisma } from "@prisma/client";
 import { requireTeam } from "@/lib/auth/session";
 import { requireProjectAccess } from "@/lib/auth/access";
 import { getOrCreateFeedbackDoc, resetFeedbackIfSubmitted } from "@/lib/documents/feedback";
+import { mutateDocumentContent } from "@/lib/documents/mutate";
 import { removeStorageObjects } from "@/lib/storage";
 import { DESIGN_STAGE } from "@/lib/stages";
 
@@ -78,26 +79,11 @@ export async function updateRevisionStatus(
 ) {
   await requireTeam();
 
-  const doc = await prisma.document.findUnique({
-    where: { id: documentId },
-    select: { content: true, projectId: true },
-  });
-  if (!doc) throw new Error("Document not found");
-
-  const content = (doc.content ?? {}) as Record<string, unknown>;
-  const revisionStatuses = { ...((content.revisionStatuses ?? {}) as Record<string, string>) };
-
-  if (status === "") {
-    delete revisionStatuses[revisionIndex];
-  } else {
-    revisionStatuses[revisionIndex] = status;
-  }
-
-  await prisma.document.update({
-    where: { id: documentId },
-    data: {
-      content: { ...content, revisionStatuses } as Prisma.InputJsonValue,
-    },
+  const doc = await mutateDocumentContent<Record<string, unknown>>(documentId, (content) => {
+    const revisionStatuses = { ...((content.revisionStatuses ?? {}) as Record<string, string>) };
+    if (status === "") delete revisionStatuses[revisionIndex];
+    else revisionStatuses[revisionIndex] = status;
+    return { ...content, revisionStatuses };
   });
 
   revalidatePath(`/projects/${doc.projectId}/stage/${DESIGN_STAGE}`);

@@ -6,6 +6,7 @@ import { requireTeam, requireUser } from "@/lib/auth/session";
 import { notifyClient, notify } from "@/lib/notifications";
 import { mutateDoc } from "@/lib/intake/store";
 import { VERIFICATION_DOC, type VerificationQueue } from "@/lib/intake/types";
+import { parseVerificationContextId } from "@/lib/questions";
 import type { QuestionContext } from "@prisma/client";
 
 // Server actions for the generalized Question model. Team asks a client (open
@@ -115,11 +116,12 @@ export async function answerQuestion(questionId: string, answer: string): Promis
 
   // Verification questions: write the client's answer back onto the queue item so
   // it appears (with dates) in the Verification tab / Resolved history.
-  if (q.contextType === "VERIFICATION" && q.contextId && q.recipientId) {
-    const clientId = q.recipientId;
+  const verification = q.contextType === "VERIFICATION" ? parseVerificationContextId(q.contextId, q.recipientId) : null;
+  if (verification) {
+    const { clientId, itemId } = verification;
     try {
       await mutateDoc<VerificationQueue>(clientId, VERIFICATION_DOC, (queue) => {
-        const item = queue.items?.find((i) => i.item_id === q.contextId);
+        const item = queue.items?.find((i) => i.item_id === itemId);
         if (!item) return;
         item.client_answer = text;
         item.client_answered_at = new Date().toISOString();
@@ -140,7 +142,7 @@ export async function answerQuestion(questionId: string, answer: string): Promis
       q.contextType === "VERIFICATION"
         ? `A client answered a verification question.`
         : `A question was answered.`,
-    link: q.projectId ? `/projects/${q.projectId}` : q.contextType === "VERIFICATION" && q.recipientId ? `/clients/${q.recipientId}/data?tab=verify` : undefined,
+    link: q.projectId ? `/projects/${q.projectId}` : verification ? `/clients/${verification.clientId}/data?tab=verify` : undefined,
   });
   revalidateFor(q.projectId);
   return { ok: true };

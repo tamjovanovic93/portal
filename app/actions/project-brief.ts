@@ -2,9 +2,9 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireTeam } from "@/lib/auth/session";
+import { mutateDocumentContent } from "@/lib/documents/mutate";
 import { notifyClient } from "@/lib/notifications";
 import {
   BRIEF_DOC,
@@ -55,27 +55,28 @@ export async function renameBrief(briefDocId: string, name: string) {
   await requireTeam();
   const trimmed = name.trim();
   if (!trimmed) return { error: "Name required" };
-  await mutateBrief(briefDocId, (b) => ({ ...b, name: trimmed }));
-  await prisma.document.update({ where: { id: briefDocId }, data: { title: trimmed } });
+  await mutateBrief(briefDocId, (b) => ({ ...b, name: trimmed }), { title: trimmed });
   return { ok: true };
 }
 
 // ─── Mutation core (by brief Document id) ─────────────────────────────────────
+// Optimistically locked: a concurrent edit re-applies `fn` to the fresh brief.
 
-async function mutateBrief(briefDocId: string, fn: (b: ProjectBrief) => ProjectBrief) {
-  const existing = await prisma.document.findUnique({ where: { id: briefDocId } });
-  if (!existing) throw new Error("Brief not found");
-  const current = (existing.content as ProjectBrief) ?? {};
-  const next = fn({ ...current });
-  await prisma.document.update({
-    where: { id: briefDocId },
-    data: { content: next as unknown as Prisma.InputJsonValue },
-  });
-  if (existing.projectId) {
-    revalidatePath(`/projects/${existing.projectId}`);
-    revalidatePath(`/portal/brief/${existing.projectId}`);
+async function mutateBrief(
+  briefDocId: string,
+  fn: (b: ProjectBrief) => ProjectBrief,
+  extraData?: { title?: string }
+) {
+  const result = await mutateDocumentContent<ProjectBrief>(
+    briefDocId,
+    (current) => fn({ ...(current ?? {}) }),
+    extraData ? { extraData } : undefined
+  );
+  if (result.projectId) {
+    revalidatePath(`/projects/${result.projectId}`);
+    revalidatePath(`/portal/brief/${result.projectId}`);
   }
-  return existing.projectId;
+  return result.projectId;
 }
 
 // ─── Field / list mutators ───────────────────────────────────────────────────

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { markAllNotificationsRead, markNotificationSeen } from "@/app/actions/notifications";
+import { ATTENTION_TYPES as ATTENTION_LIST } from "@/lib/notification-types";
 
 export type NotificationItem = {
   id: string;
@@ -15,7 +16,7 @@ export type NotificationItem = {
 
 // Types that stay in an attention state until the underlying item is actually
 // viewed — opening the dropdown does not clear them.
-const ATTENTION_TYPES = new Set(["offer_question"]);
+const ATTENTION_TYPES = new Set<string>(ATTENTION_LIST);
 
 export default function Notifications({ items }: { items: NotificationItem[] }) {
   const [open, setOpen] = useState(false);

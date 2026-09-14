@@ -7,7 +7,7 @@ import { Eyebrow, Pill, StageBar, Health, Avatar, VAR, type Accent } from "@/com
 import { getTeamData, capacityColor } from "@/lib/team";
 import { getSessionUser } from "@/lib/auth/session";
 import { WAITING_CLIENT_STATUSES } from "@/lib/questions";
-import { listNotifications } from "@/lib/notifications";
+import { listNotifications, FEED_NOTIFICATION_TYPES } from "@/lib/notifications";
 import MyWork, { type WorkTask, type WorkMember } from "@/components/team/MyWork";
 import StatTiles, { type StatTile } from "@/components/team/StatTiles";
 import { STAGE_LABELS, STAGE_INFO, STAGE_COUNT, FINAL_STAGE, GATED_STAGES, WIREFRAME_STAGE } from "@/lib/stages";
@@ -418,15 +418,8 @@ export default async function DashboardPage() {
   // Client → team actions captured in the Notification table that the derived
   // feed above doesn't cover — chiefly answered questions, confirmations and
   // approved edits (the reported gap). Doc submissions are already covered above.
-  const FEED_NOTIF_TYPES = new Set([
-    "question_answered",
-    "question_confirmed",
-    "question_change_requested",
-    "edit_approved",
-    "offer_question",
-  ]);
   teamNotificationsRaw
-    .filter((n) => FEED_NOTIF_TYPES.has(n.type))
+    .filter((n) => FEED_NOTIFICATION_TYPES.has(n.type))
     .forEach((n) => {
       notifications.push({
         key: `notif-tbl-${n.id}`,

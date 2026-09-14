@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTeam } from "@/lib/auth/session";
 import { mutateDoc } from "@/lib/intake/store";
 import { notifyClient } from "@/lib/notifications";
+import { verificationContextId } from "@/lib/questions";
 import {
   PROFILE_DOC,
   STRATEGY_DOC,
@@ -279,7 +280,8 @@ export async function sendVerificationToClient(clientId: string, itemId: string)
     data: {
       projectId: null,
       contextType: "VERIFICATION",
-      contextId: itemId,
+      // Item ids restart per client, so scope the context id by client.
+      contextId: verificationContextId(clientId, itemId),
       kind: "ANSWER",
       recipientId: clientId,
       recipientRole: "CLIENT",

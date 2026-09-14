@@ -1,9 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth/session";
-import { markNotificationsRead, ATTENTION_TYPES } from "@/lib/notifications";
+import { markNotificationsRead, markNotificationSeen as markSeen, ATTENTION_TYPES } from "@/lib/notifications";
 
 export async function markAllNotificationsRead(): Promise<{ ok: boolean }> {
   const user = await getSessionUser();
@@ -17,17 +16,13 @@ export async function markAllNotificationsRead(): Promise<{ ok: boolean }> {
   return { ok: true };
 }
 
-// Mark a single team notification as seen (e.g. a client response handled from
-// the dashboard "From clients" card). Shared team inbox — once one member marks
-// it seen it clears for the whole team, so leave it if it isn't yours to handle.
+// Mark a single notification as seen for the current user only (each team
+// member has their own copy).
 export async function markNotificationSeen(notificationId: string): Promise<{ ok: boolean }> {
   const user = await getSessionUser();
-  if (!user || user.role !== "TEAM") return { ok: false };
+  if (!user) return { ok: false };
 
-  await prisma.notification.updateMany({
-    where: { id: notificationId, recipientRole: "TEAM", readAt: null },
-    data: { readAt: new Date() },
-  });
-  revalidatePath("/dashboard", "layout");
+  await markSeen(user.id, user.role, notificationId);
+  revalidatePath(user.role === "TEAM" ? "/dashboard" : "/portal", "layout");
   return { ok: true };
 }

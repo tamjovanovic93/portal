@@ -225,34 +225,39 @@ export async function approveSuggestion(id: string): Promise<{ ok?: boolean; pro
   const brief = (s.briefDraft as ProjectBrief) ?? {};
   const briefName = brief.name || s.name;
 
-  const project = await prisma.project.create({
-    data: {
-      name: s.name,
-      clientId: s.clientId,
-      type: toProjectType(s.projectType),
-      mode: "PROJECT",
-      currentStage: 1,
-      stages: {
-        create: Array.from({ length: STAGE_COUNT }, (_, i) => ({
-          stageNumber: i + 1,
-          status: i === 0 ? "IN_PROGRESS" : "NOT_STARTED",
-        })),
-      },
-      documents: {
-        create: {
-          stageNumber: 1,
-          templateType: BRIEF_DOC,
-          title: briefName,
-          content: { ...brief, name: briefName } as unknown as Prisma.InputJsonValue,
-          status: "DRAFT",
+  // Project + brief + suggestion status in one transaction so a double-click
+  // or a failure never leaves an approved suggestion without a project.
+  const project = await prisma.$transaction(async (tx) => {
+    const created = await tx.project.create({
+      data: {
+        name: s.name,
+        clientId: s.clientId,
+        type: toProjectType(s.projectType),
+        mode: "PROJECT",
+        currentStage: 1,
+        stages: {
+          create: Array.from({ length: STAGE_COUNT }, (_, i) => ({
+            stageNumber: i + 1,
+            status: i === 0 ? "IN_PROGRESS" : "NOT_STARTED",
+          })),
+        },
+        documents: {
+          create: {
+            stageNumber: 1,
+            templateType: BRIEF_DOC,
+            title: briefName,
+            content: { ...brief, name: briefName } as unknown as Prisma.InputJsonValue,
+            status: "DRAFT",
+          },
         },
       },
-    },
-  });
-
-  await prisma.suggestedProject.update({
-    where: { id },
-    data: { status: "APPROVED", approvedProjectId: project.id },
+    });
+    const claimed = await tx.suggestedProject.updateMany({
+      where: { id, status: { not: "APPROVED" } },
+      data: { status: "APPROVED", approvedProjectId: created.id },
+    });
+    if (claimed.count === 0) throw new Error("This suggestion was already approved.");
+    return created;
   });
 
   revalidatePath(`/clients/${s.clientId}`);

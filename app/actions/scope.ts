@@ -141,110 +141,120 @@ export async function syncScopeTasks(
     }
   }
 
-  // ── Task list containers (Cycles) ──
-  // PROJECT mode: one task list per scope item (named after the item).
-  // ONGOING mode: a single "— Scope" list (unchanged behaviour).
-  const cycleForItem = new Map<string, string>();
-  if (isProjectMode) {
-    const scopeCycles = { ...((content as { scopeCycles?: Record<string, string> }).scopeCycles ?? {}) };
-    let dirty = false;
-    for (const item of scope) {
-      let cid: string | undefined = scopeCycles[item.id];
-      if (cid) {
-        const exists = await prisma.cycle.findUnique({ where: { id: cid }, select: { id: true } });
-        if (!exists) cid = undefined;
+  // All DB writes happen in one transaction (the AI call above stays outside
+  // it). The brief's version guards against a scope edit that landed while the
+  // breakdown was running — in that case nothing is written.
+  const { created, updated, removed } = await prisma.$transaction(async (tx) => {
+    // ── Task list containers (Cycles) ──
+    // PROJECT mode: one task list per scope item (named after the item).
+    // ONGOING mode: a single "— Scope" list (unchanged behaviour).
+    const cycleForItem = new Map<string, string>();
+    let nextContent: Record<string, unknown> | null = null;
+
+    if (isProjectMode) {
+      const scopeCycles = { ...((content as { scopeCycles?: Record<string, string> }).scopeCycles ?? {}) };
+      let dirty = false;
+      for (const item of scope) {
+        let cid: string | undefined = scopeCycles[item.id];
+        if (cid) {
+          const exists = await tx.cycle.findUnique({ where: { id: cid }, select: { id: true } });
+          if (!exists) cid = undefined;
+        }
+        if (!cid) {
+          const cycle = await tx.cycle.create({
+            data: { projectId, name: item.text.slice(0, 120), startDate: new Date(), status: "ACTIVE" },
+          });
+          cid = cycle.id;
+          scopeCycles[item.id] = cid;
+          dirty = true;
+        } else {
+          // Keep the list name in sync with the (editable) scope item text.
+          await tx.cycle.update({ where: { id: cid }, data: { name: item.text.slice(0, 120) } });
+        }
+        cycleForItem.set(item.id, cid);
       }
-      if (!cid) {
-        const cycle = await prisma.cycle.create({
-          data: { projectId, name: item.text.slice(0, 120), startDate: new Date(), status: "ACTIVE" },
-        });
-        cid = cycle.id;
-        scopeCycles[item.id] = cid;
-        dirty = true;
-      } else {
-        // Keep the list name in sync with the (editable) scope item text.
-        await prisma.cycle.update({ where: { id: cid }, data: { name: item.text.slice(0, 120) } });
-      }
-      cycleForItem.set(item.id, cid);
-    }
-    if (dirty) {
-      await prisma.document.update({
-        where: { id: briefDocId },
-        data: { content: { ...content, scopeCycles } as unknown as Prisma.InputJsonValue },
-      });
-    }
-  } else {
-    let cycleId = (content as { scopeTaskGroupId?: string }).scopeTaskGroupId;
-    if (cycleId) {
-      const exists = await prisma.cycle.findUnique({ where: { id: cycleId }, select: { id: true } });
-      if (!exists) cycleId = undefined;
-    }
-    if (!cycleId) {
-      const name = `${content.name || doc.title || "Brief"} — Scope`;
-      const cycle = await prisma.cycle.create({
-        data: { projectId, name, startDate: new Date(), status: "ACTIVE" },
-      });
-      cycleId = cycle.id;
-      await prisma.document.update({
-        where: { id: briefDocId },
-        data: { content: { ...content, scopeTaskGroupId: cycleId } as unknown as Prisma.InputJsonValue },
-      });
-    }
-    for (const item of scope) cycleForItem.set(item.id, cycleId);
-  }
-
-  const existing = await prisma.task.findMany({ where: { sourceBriefId: briefDocId } });
-  const existingByKey = new Map(existing.map((t) => [t.scopeItemId ?? "", t]));
-  const desiredKeys = new Set(desired.map((d) => d.scopeItemId));
-
-  let created = 0, updated = 0, removed = 0;
-
-  for (const d of desired) {
-    const cycleId = cycleForItem.get(d.parentItemId);
-    if (!cycleId) continue;
-    const found = existingByKey.get(d.scopeItemId);
-    if (found) {
-      // Update name/dates/list — preserve status, assignee, description, and any
-      // stage the team manually set. Backfill the stage when it's still empty
-      // (e.g. tasks synced before staged tasks existed).
-      await prisma.task.update({
-        where: { id: found.id },
-        data: {
-          name: d.name,
-          startDate: d.startDate,
-          dueDate: d.dueDate,
-          cycleId,
-          ...(isProjectMode && found.stageNumber == null ? { stageNumber: d.stage } : {}),
-        },
-      });
-      updated++;
+      if (dirty) nextContent = { ...content, scopeCycles };
     } else {
-      await prisma.task.create({
-        data: {
-          cycleId,
-          name: d.name,
-          type: "DELIVERABLE",
-          status: "PLANNING",
-          sourceBriefId: briefDocId,
-          scopeItemId: d.scopeItemId,
-          startDate: d.startDate,
-          dueDate: d.dueDate,
-          stageNumber: isProjectMode ? d.stage : null,
-        },
-      });
-      created++;
+      let cycleId = (content as { scopeTaskGroupId?: string }).scopeTaskGroupId;
+      if (cycleId) {
+        const exists = await tx.cycle.findUnique({ where: { id: cycleId }, select: { id: true } });
+        if (!exists) cycleId = undefined;
+      }
+      if (!cycleId) {
+        const name = `${content.name || doc.title || "Brief"} — Scope`;
+        const cycle = await tx.cycle.create({
+          data: { projectId, name, startDate: new Date(), status: "ACTIVE" },
+        });
+        cycleId = cycle.id;
+        nextContent = { ...content, scopeTaskGroupId: cycleId };
+      }
+      for (const item of scope) cycleForItem.set(item.id, cycleId);
     }
-  }
 
-  // Remove generated tasks whose scope item is gone — only if still untouched.
-  for (const t of existing) {
-    if (t.scopeItemId && !desiredKeys.has(t.scopeItemId)) {
-      if (t.status === "PLANNING" && !t.assigneeId) {
-        await prisma.task.delete({ where: { id: t.id } });
-        removed++;
+    if (nextContent) {
+      const claimed = await tx.document.updateMany({
+        where: { id: briefDocId, version: doc.version },
+        data: { content: nextContent as Prisma.InputJsonValue, version: { increment: 1 } },
+      });
+      if (claimed.count === 0) throw new Error("The brief changed while syncing — please run the sync again.");
+    }
+
+    const existing = await tx.task.findMany({ where: { sourceBriefId: briefDocId } });
+    const existingByKey = new Map(existing.map((t) => [t.scopeItemId ?? "", t]));
+    const desiredKeys = new Set(desired.map((d) => d.scopeItemId));
+
+    let created = 0, updated = 0, removed = 0;
+
+    for (const d of desired) {
+      const cycleId = cycleForItem.get(d.parentItemId);
+      if (!cycleId) continue;
+      const found = existingByKey.get(d.scopeItemId);
+      if (found) {
+        // Update name/dates/list — preserve status, assignee, description, and any
+        // stage the team manually set. Backfill the stage when it's still empty
+        // (e.g. tasks synced before staged tasks existed).
+        await tx.task.update({
+          where: { id: found.id },
+          data: {
+            name: d.name,
+            startDate: d.startDate,
+            dueDate: d.dueDate,
+            cycleId,
+            ...(isProjectMode && found.stageNumber == null ? { stageNumber: d.stage } : {}),
+          },
+        });
+        updated++;
+      } else {
+        await tx.task.create({
+          data: {
+            cycleId,
+            name: d.name,
+            type: "DELIVERABLE",
+            status: "PLANNING",
+            sourceBriefId: briefDocId,
+            scopeItemId: d.scopeItemId,
+            startDate: d.startDate,
+            dueDate: d.dueDate,
+            stageNumber: isProjectMode ? d.stage : null,
+          },
+        });
+        created++;
       }
     }
-  }
+
+    // Remove generated tasks whose scope item is gone — only if still untouched.
+    const removable = existing.filter(
+      (t) => t.scopeItemId && !desiredKeys.has(t.scopeItemId) && t.status === "PLANNING" && !t.assigneeId
+    );
+    if (removable.length > 0) {
+      const ids = removable.map((t) => t.id);
+      await tx.question.deleteMany({ where: { contextType: "TASK", contextId: { in: ids } } });
+      const del = await tx.task.deleteMany({ where: { id: { in: ids } } });
+      removed = del.count;
+    }
+
+    return { created, updated, removed };
+  });
 
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/dashboard");

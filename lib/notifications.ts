@@ -1,15 +1,21 @@
 import { prisma } from "@/lib/prisma";
-import type { UserRole } from "@prisma/client";
+import type { Prisma, UserRole } from "@prisma/client";
+import { ATTENTION_TYPES, type NotificationType } from "./notification-types";
+
+export { ATTENTION_TYPES, NOTIFICATION_TYPES, FEED_NOTIFICATION_TYPES } from "./notification-types";
+export type { NotificationType } from "./notification-types";
 
 // ─── In-app notifications ────────────────────────────────────────────────────
 //
 // A client notification targets a specific profile (recipientId). A team
-// notification targets everyone on the team (recipientRole = "TEAM"). Written
-// by server actions at each onboarding hand-off; read by components/Notifications.
+// notification is fanned out to every active team member as its own row
+// (recipientId = member, recipientRole = TEAM) so each person has their own
+// read state. Legacy rows (recipientId null, recipientRole TEAM) are still
+// read until scripts/p4-fanout-legacy-notifications.mjs has run.
 
 type NotifyInput = {
   projectId?: string;
-  type: string;
+  type: NotificationType | string;
   message: string;
   link?: string;
 } & ({ toProfileId: string } | { toRole: UserRole });
@@ -21,12 +27,25 @@ export async function notify(input: NotifyInput): Promise<void> {
     message: input.message,
     link: input.link ?? null,
   };
-  const target =
-    "toProfileId" in input
-      ? { recipientId: input.toProfileId }
-      : { recipientRole: input.toRole };
   try {
-    await prisma.notification.create({ data: { ...base, ...target } });
+    if ("toProfileId" in input) {
+      await prisma.notification.create({ data: { ...base, recipientId: input.toProfileId } });
+      return;
+    }
+    if (input.toRole === "TEAM") {
+      const members = await prisma.profile.findMany({
+        where: { role: "TEAM", active: true },
+        select: { id: true },
+      });
+      const rows: Prisma.NotificationCreateManyInput[] = members.map((m) => ({
+        ...base,
+        recipientId: m.id,
+        recipientRole: "TEAM",
+      }));
+      if (rows.length > 0) await prisma.notification.createMany({ data: rows });
+      return;
+    }
+    await prisma.notification.create({ data: { ...base, recipientRole: input.toRole } });
   } catch (err) {
     // Notifications are best-effort — never let a failed insert break the
     // action that triggered it.
@@ -47,11 +66,16 @@ export function notifyClient(
   return notify({ ...input, toProfileId });
 }
 
-// List notifications for a user by their role. Team members see all TEAM
-// notifications; clients see their own.
+// Rows visible to a user: their own, plus (for team members) legacy shared rows.
+function recipientFilter(userId: string, role: UserRole): Prisma.NotificationWhereInput {
+  return role === "TEAM"
+    ? { OR: [{ recipientId: userId }, { recipientId: null, recipientRole: "TEAM" }] }
+    : { recipientId: userId };
+}
+
 export async function listNotifications(userId: string, role: UserRole, take = 20) {
   return prisma.notification.findMany({
-    where: role === "TEAM" ? { recipientRole: "TEAM" } : { recipientId: userId },
+    where: recipientFilter(userId, role),
     orderBy: { createdAt: "desc" },
     take,
   });
@@ -59,17 +83,9 @@ export async function listNotifications(userId: string, role: UserRole, take = 2
 
 export async function unreadCount(userId: string, role: UserRole): Promise<number> {
   return prisma.notification.count({
-    where: {
-      readAt: null,
-      ...(role === "TEAM" ? { recipientRole: "TEAM" } : { recipientId: userId }),
-    },
+    where: { readAt: null, ...recipientFilter(userId, role) },
   });
 }
-
-// Notification types that require someone to actually view the underlying item
-// before they clear — merely opening the notifications dropdown must NOT dismiss
-// them. They stay in an attention state and are cleared individually when viewed.
-export const ATTENTION_TYPES = ["offer_question"] as const;
 
 export async function markNotificationsRead(
   userId: string,
@@ -80,8 +96,18 @@ export async function markNotificationsRead(
     where: {
       readAt: null,
       ...(opts?.excludeTypes?.length ? { type: { notIn: [...opts.excludeTypes] } } : {}),
-      ...(role === "TEAM" ? { recipientRole: "TEAM" } : { recipientId: userId }),
+      ...recipientFilter(userId, role),
     },
     data: { readAt: new Date() },
   });
 }
+
+// Mark one of the user's own notifications as seen.
+export async function markNotificationSeen(userId: string, role: UserRole, notificationId: string): Promise<void> {
+  await prisma.notification.updateMany({
+    where: { id: notificationId, readAt: null, ...recipientFilter(userId, role) },
+    data: { readAt: new Date() },
+  });
+}
+
+export { ATTENTION_TYPES as attentionTypes };
