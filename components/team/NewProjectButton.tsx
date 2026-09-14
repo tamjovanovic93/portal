@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createProject, listClients } from "@/app/actions/projects";
 import { PROJECT_TYPE_OPTIONS } from "@/lib/constants/projects";
+import { STAGE_COUNT } from "@/lib/stages";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import { Input, Label, Select } from "@/components/ui/Field";
@@ -120,7 +121,7 @@ export default function NewProjectButton({
           <div>
             <Label>Mode</Label>
             <Select name="mode">
-              <option value="PROJECT">Project (stages 1–8)</option>
+              <option value="PROJECT">Project (stages 1–{STAGE_COUNT})</option>
               <option value="ONGOING">Ongoing / Retainer</option>
             </Select>
           </div>

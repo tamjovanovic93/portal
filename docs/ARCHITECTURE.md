@@ -42,7 +42,13 @@ scripts/                    one-off data scripts (archive/ for ones already run)
 4. `profiles.role` is the source of truth. `app_metadata.role` is a mirror
    written when a user is created (`lib/supabase/admin.ts`) so the proxy can
    route without a DB hit. `user_metadata` is never read.
-5. Storage is a private bucket. Files are served through `/api/download`
+5. A session whose `profiles` row is missing or `active = false` is ended
+   rather than redirected: the layouts send it to `/auth/signout`. Sending it
+   to `/login` would loop, because the proxy sees a valid token and sends it
+   straight back. `/auth/*` therefore bypasses the proxy's "already signed in"
+   redirect — those are mechanism routes (recovery callback, sign-out), not
+   pages.
+6. Storage is a private bucket. Files are served through `/api/download`
    (per-file access check + signed URL) or, for galleries, signed URLs created
    in the page render with `getSignedUrls` in `lib/storage.ts`.
 

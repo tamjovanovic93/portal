@@ -1,6 +1,7 @@
 -- ═══════════════════════════════════════════════════════════════
 -- Zero-Point Portal — Supabase setup
--- Run this in your Supabase SQL editor after running prisma migrate
+-- Run this in your Supabase SQL editor after running prisma migrate.
+-- Safe to re-run: every policy is dropped before it is created.
 -- ═══════════════════════════════════════════════════════════════
 
 -- ─── 1. Auto-create profile row on Supabase Auth signup ─────────
@@ -42,6 +43,7 @@ alter table public.project_assets   enable row level security;
 alter table public.material_items   enable row level security;
 alter table public.cycles           enable row level security;
 alter table public.tasks            enable row level security;
+alter table public.suggested_projects enable row level security;
 
 -- Client data (profile / verification queue / strategy) now lives in JSON
 -- Document rows, so there are no separate client-data tables to secure here.
@@ -66,24 +68,29 @@ $$;
 
 
 -- ─── 4. Policies — profiles ───────────────────────────────────────
+drop policy if exists "Team can see all profiles" on public.profiles;
 create policy "Team can see all profiles"
   on public.profiles for select
   using (is_team());
 
+drop policy if exists "Client can see own profile" on public.profiles;
 create policy "Client can see own profile"
   on public.profiles for select
   using (id = auth.uid());
 
+drop policy if exists "Team can update profiles" on public.profiles;
 create policy "Team can update profiles"
   on public.profiles for update
   using (is_team());
 
 
 -- ─── 5. Policies — projects ───────────────────────────────────────
+drop policy if exists "Team sees all projects" on public.projects;
 create policy "Team sees all projects"
   on public.projects for all
   using (is_team());
 
+drop policy if exists "Client sees own projects" on public.projects;
 create policy "Client sees own projects"
   on public.projects for select
   using (client_id = auth.uid());
@@ -105,32 +112,53 @@ as $$
 $$;
 
 -- project_stages
+drop policy if exists "Team all" on public.project_stages;
 create policy "Team all" on public.project_stages for all using (is_team());
+drop policy if exists "Client read own" on public.project_stages;
 create policy "Client read own" on public.project_stages for select using (client_owns_project(project_id));
 
 -- documents
+drop policy if exists "Team all" on public.documents;
 create policy "Team all" on public.documents for all using (is_team());
+drop policy if exists "Client read own" on public.documents;
 create policy "Client read own" on public.documents for select using (client_owns_project(project_id));
 
 -- approvals
+drop policy if exists "Team all" on public.approvals;
 create policy "Team all" on public.approvals for all using (is_team());
+drop policy if exists "Client read own" on public.approvals;
 create policy "Client read own" on public.approvals for select using (client_owns_project(project_id));
+drop policy if exists "Client insert own" on public.approvals;
 create policy "Client insert own" on public.approvals for insert with check (client_owns_project(project_id) and approved_by_id = auth.uid());
 
 -- project_assets — clients only see SHARED assets
+drop policy if exists "Team all" on public.project_assets;
 create policy "Team all" on public.project_assets for all using (is_team());
+drop policy if exists "Client read shared" on public.project_assets;
 create policy "Client read shared" on public.project_assets for select
   using (client_owns_project(project_id) and visibility = 'SHARED');
 
 -- material_items
+drop policy if exists "Team all" on public.material_items;
 create policy "Team all" on public.material_items for all using (is_team());
+drop policy if exists "Client read own" on public.material_items;
 create policy "Client read own" on public.material_items for select using (client_owns_project(project_id));
+drop policy if exists "Client update own" on public.material_items;
 create policy "Client update own" on public.material_items for update using (client_owns_project(project_id));
 
 -- cycles / tasks (ongoing)
+drop policy if exists "Team all" on public.cycles;
 create policy "Team all" on public.cycles for all using (is_team());
+drop policy if exists "Client read own" on public.cycles;
 create policy "Client read own" on public.cycles for select using (client_owns_project(project_id));
+drop policy if exists "Team all" on public.tasks;
 create policy "Team all" on public.tasks for all using (is_team());
+
+-- suggested_projects (client-scoped, generated from Client Data)
+drop policy if exists "Team all" on public.suggested_projects;
+create policy "Team all" on public.suggested_projects for all using (is_team());
+drop policy if exists "Client read own" on public.suggested_projects;
+create policy "Client read own" on public.suggested_projects for select using (client_id = auth.uid());
 
 -- Client data (profile / verification queue / strategy) is stored as JSON in the
 -- documents table — already covered by the documents policies above.

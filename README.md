@@ -57,7 +57,8 @@ Prerequisites: Node 20+, a Supabase project, an Anthropic API key.
 3. Apply the schema: `npm run db:migrate` (`prisma migrate deploy`).
 4. Run `supabase/setup.sql` in the Supabase SQL editor. It installs the
    signup trigger (creates a `profiles` row with the role from
-   `app_metadata`), row-level-security policies and the storage bucket policy.
+   `app_metadata`), row-level security on every table and the storage bucket.
+   Safe to re-run: every policy is dropped before it is created.
 5. Create the first team login in the Supabase Auth dashboard with
    `app_metadata` set to `{"role": "TEAM"}`. Every later team member is created
    from the `/team` page, every client from the `/clients` page.

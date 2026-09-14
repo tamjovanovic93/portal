@@ -11,7 +11,9 @@ export default async function TeamLayout({
 }) {
   const user = await getSessionUser();
 
-  if (!user) redirect("/login");
+  // Token is valid but the profile is missing or deactivated: end the session
+  // instead of bouncing to /login, which the proxy would send straight back.
+  if (!user) redirect("/auth/signout");
   if (user.role === "CLIENT") redirect("/portal");
 
   return (

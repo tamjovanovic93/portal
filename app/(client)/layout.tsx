@@ -11,7 +11,8 @@ export default async function ClientLayout({
 }) {
   const user = await getSessionUser();
 
-  if (!user) redirect("/login");
+  // See the note in app/(team)/layout.tsx.
+  if (!user) redirect("/auth/signout");
   if (user.role !== "CLIENT") redirect("/dashboard");
 
   return (

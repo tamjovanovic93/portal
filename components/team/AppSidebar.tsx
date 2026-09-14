@@ -36,7 +36,7 @@ export default function AppSidebar({ userEmail }: { userEmail: string }) {
             ZER0&nbsp;P0INT
           </div>
           <div className="tech" style={{ fontSize: 9.5, letterSpacing: "0.24em", color: "var(--text-3)", marginTop: 3 }}>
-            CLIENT PORTAL
+            TEAM PORTAL
           </div>
         </div>
       </div>

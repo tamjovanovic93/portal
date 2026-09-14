@@ -35,8 +35,16 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Public routes
-  if (pathname.startsWith("/login") || pathname.startsWith("/auth")) {
+  // /auth/* are mechanism routes (OAuth / recovery callback, sign-out), not
+  // pages. They must run even when a session already exists — bouncing them
+  // home would strand a user whose profile is missing or deactivated, and
+  // would swallow a password-recovery link for someone already signed in.
+  if (pathname.startsWith("/auth")) {
+    return supabaseResponse;
+  }
+
+  // Login bounces a signed-in user to their home.
+  if (pathname.startsWith("/login")) {
     if (claims) {
       return NextResponse.redirect(new URL(isClient ? "/portal" : "/dashboard", request.url));
     }
