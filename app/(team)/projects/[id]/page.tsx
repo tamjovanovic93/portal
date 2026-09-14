@@ -41,7 +41,7 @@ export default async function ProjectPage({
   const { tab: rawTab } = await searchParams;
   const activeTab = rawTab ?? "files";
 
-  // Retainers don't use the 8-stage path — render the cycle-based view instead.
+  // Retainers don't use the staged path — render the cycle-based view instead.
   const modeRow = await prisma.project.findUnique({
     where: { id },
     select: { mode: true },

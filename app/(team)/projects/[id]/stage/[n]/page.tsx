@@ -139,7 +139,7 @@ export default async function StagePage({
 
   const templateEntries = STAGE_TEMPLATES[stageNumber] ?? [];
 
-  // Stage 3: wireframe uploads + client feedback
+  // Sketch stage (WIREFRAME_STAGE): wireframe uploads + client feedback
   let wireframeAssets: { id: string; filename: string; uploadedAt: string }[] = [];
   let wireframeFeedback: {
     status: "none" | "pending" | "submitted";
@@ -182,7 +182,7 @@ export default async function StagePage({
     }
   }
 
-  // Stage 4: design mockup uploads + client feedback
+  // Make stage (DESIGN_STAGE): design mockup uploads + client feedback
   type MockupAssetRow = { id: string; filename: string; mimeType: string | null; storagePath: string; uploadedAt: string };
   type DesignFeedback = {
     status: "none" | "pending" | "submitted";

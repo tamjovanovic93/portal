@@ -205,7 +205,7 @@ model ProjectStage {
   id             String      @id @default(uuid()) @db.Uuid
   projectId      String      @map("project_id") @db.Uuid
   project        Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  stageNumber    Int         @map("stage_number") // 1–8
+  stageNumber    Int         @map("stage_number") // 1..STAGE_COUNT (lib/stages.ts)
   status         StageStatus @default(NOT_STARTED)
   gateApproved   Boolean     @default(false) @map("gate_approved")
   gateApprovedAt DateTime?   @map("gate_approved_at")
@@ -257,7 +257,7 @@ model Approval {
   id           String         @id @default(uuid()) @db.Uuid
   projectId    String         @map("project_id") @db.Uuid
   project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  stageNumber  Int?           @map("stage_number") // 3, 4, or 6 — null for task approvals
+  stageNumber  Int?           @map("stage_number") // a gated stage (GATED_STAGES in lib/stages.ts) — null for task approvals
   taskId       String?        @map("task_id") @db.Uuid // set for retainer deliverable approvals
   task         Task?          @relation(fields: [taskId], references: [id], onDelete: Cascade)
   approvedById String         @map("approved_by_id") @db.Uuid

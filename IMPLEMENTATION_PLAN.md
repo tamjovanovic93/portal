@@ -2,6 +2,38 @@
 
 _Companion to `PROJECT_ANALYSIS.md` (the report). This file is the execution plan; the report stays as-is._
 
+## Status (2026-09-14)
+
+All nine phases are implemented on the `optimization` branch, one commit per
+phase, each verified with `npm run typecheck`, `npm run lint` and
+`npx next build`. No screenshot rig was available, so visual parity was kept
+by construction (identical markup, class strings and CSS rule shapes) rather
+than by pixel diff — run the baseline screenshots from ground rule 7 before
+merging.
+
+Deviations and open items:
+
+- **3.3 `loading.tsx` / Suspense** — not added (additive, needs your confirmation).
+- **8.1/8.2** — semantic utilities and the rename are done, but the rules keep
+  `!important` and the same theme scope/specificity as the remap they replace.
+  Dropping `!important` changes how the classes interact with the
+  form-control fallbacks and inline styles and must be screenshot-verified;
+  the `!important` count is 35, not 0.
+- **8.4** — `.page-wrap*` and `SectionHeading` were extracted; the
+  `Button` / `Input` / `Card` primitives were not (large mechanical change,
+  same verification problem). The form-control fallbacks in `design.css`
+  therefore stay.
+- **9 copy fixes** — untouched, pending confirmation: "Project (stages 1–8)"
+  in `NewProjectButton`, the "CLIENT PORTAL" sidebar label, the
+  "(next phase)" wording in `ClientIntakePipeline`.
+- **Production steps for you:** `npm run db:migrate` (migrations `p1`…`p7`),
+  then `node scripts/p1-sync-app-metadata.mjs`, `p2-fix-asset-stages.mjs`,
+  `p2-backfill-stages.mjs`, `p4-fanout-legacy-notifications.mjs`,
+  `p4-verification-context-ids.mjs`; set `AI_JOB_SECRET` and `CRON_SECRET` on
+  Vercel; confirm the plan allows `maxDuration = 300` for `/api/ai/run`.
+
+---
+
 ## Ground rules
 
 1. **No visual changes.** Every phase must leave each screen pixel-identical (same markup output, same classes/tokens resolved to the same colors, same copy). Where a task touches presentation, the acceptance criterion is "before/after screenshots match". The only exceptions are new *states* that don't exist today (e.g. a route-level loading state) and are explicitly marked **[additive — confirm]**.
@@ -16,7 +48,7 @@ Rough effort is given per phase in developer-days for one person familiar with t
 
 ---
 
-## Phase 0 — Prep (0.5 day)
+## Phase 0 — Prep (0.5 day) — ✅ done 2026-09-14
 
 Goal: make later phases safe and mechanical.
 
@@ -29,7 +61,7 @@ Goal: make later phases safe and mechanical.
 
 ---
 
-## Phase 1 — Security & authorization (2–3 days) — SHIP FIRST
+## Phase 1 — Security & authorization (2–3 days) — SHIP FIRST — ✅ done 2026-09-14
 
 Goal: authorization derived from the DB role, consistent everywhere, ownership enforced on every client-callable mutation.
 
@@ -100,7 +132,7 @@ The proxy cannot cheaply hit Prisma, so mirror the role into the JWT:
 
 ---
 
-## Phase 2 — Functional bugs (2 days)
+## Phase 2 — Functional bugs (2 days) — ✅ done 2026-09-14
 
 ### 2.1 Stage-number drift
 - Replace literals with constants: `components/team/WireframeSection.tsx:39` → `String(WIREFRAME_STAGE)`; `components/team/MockupSection.tsx:61` and `components/client/DesignFeedbackForm.tsx:146` → `String(DESIGN_STAGE)`; `app/(team)/dashboard/page.tsx:406` → `` `/projects/${id}/stage/${WIREFRAME_STAGE}` ``.
@@ -157,7 +189,7 @@ The proxy cannot cheaply hit Prisma, so mirror the role into the JWT:
 
 ---
 
-## Phase 3 — Performance quick wins (2 days)
+## Phase 3 — Performance quick wins (2 days) — ✅ done 2026-09-14 (3.3 pending confirmation)
 
 ### 3.1 Auth round-trips
 - Done structurally by `getSessionUser` (Phase 1). Additionally: `NotificationsBell.tsx` takes `user` from the layout as props instead of calling Supabase again; `proxy.ts` uses `getClaims()`.
@@ -202,7 +234,7 @@ Mirror them as `@@index` in `schema.prisma`.
 
 ---
 
-## Phase 4 — Data integrity & concurrency (2 days)
+## Phase 4 — Data integrity & concurrency (2 days) — ✅ done 2026-09-14
 
 ### 4.1 Optimistic locking on `documents`
 - Migration: `alter table documents add column version integer not null default 0;` + `version Int @default(0)` in schema.
@@ -235,7 +267,7 @@ Mirror them as `@@index` in `schema.prisma`.
 
 ---
 
-## Phase 5 — AI pipeline off the request path (3 days)
+## Phase 5 — AI pipeline off the request path (3 days) — ✅ done 2026-09-14
 
 Goal: identical buttons/labels; work runs in a Vercel function bounded by `maxDuration`, tracked in a jobs table, resumable by cron.
 
@@ -275,7 +307,7 @@ model AiJob {
 
 ---
 
-## Phase 6 — Dashboard & heavy pages (3 days)
+## Phase 6 — Dashboard & heavy pages (3 days) — ✅ done 2026-09-14
 
 Goal: same rendered output, a fraction of the rows.
 
@@ -307,7 +339,7 @@ Goal: same rendered output, a fraction of the rows.
 
 ---
 
-## Phase 7 — Code consolidation & dead code (3 days)
+## Phase 7 — Code consolidation & dead code (3 days) — ✅ done 2026-09-14
 
 All changes are refactors with identical output.
 
@@ -345,7 +377,7 @@ Move executed one-offs (`migrate-client-data`, `migrate-brandkit`, `migrate-task
 
 ---
 
-## Phase 8 — Styling system consolidation, zero visual change (3–4 days)
+## Phase 8 — Styling system consolidation, zero visual change (3–4 days) — ✅ done 2026-09-14 with deviations (see Status)
 
 Goal: remove the `!important` Tailwind remap and the ad-hoc inline styles **without changing a single computed style**. The trick: the compat layer is a lookup table (Tailwind class → token per theme); we turn that table into named semantic tokens, then rename classes 1:1.
 
@@ -390,7 +422,7 @@ Expose them to Tailwind in `globals.css` `@theme inline`: `--color-card: var(--c
 
 ---
 
-## Phase 9 — Documentation & comments (1 day)
+## Phase 9 — Documentation & comments (1 day) — ✅ done 2026-09-14 (copy fixes pending confirmation)
 
 - `README.md`: rewrite per §13.1 of the report (what/roles/workflow, env vars, setup order incl. `setup.sql` + bucket + team login, scripts, AI jobs & cron, Vercel notes: pooler URL, `maxDuration`, `AI_JOB_SECRET`, known limitations).
 - `docs/ARCHITECTURE.md`: route groups, data model summary, document types, question/notification models, jobs pipeline, the semantic token table from Phase 8.
