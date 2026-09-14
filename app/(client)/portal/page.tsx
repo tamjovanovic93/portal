@@ -10,16 +10,14 @@ import DeliverableApproval from "@/components/client/DeliverableApproval";
 import { hasOpenClientItems, type FormContent } from "@/lib/forms/collab";
 import AnswerQuestions, { type ClientQuestion } from "@/components/client/AnswerQuestions";
 import { WIREFRAME_STAGE, DESIGN_STAGE, GATED_STAGES } from "@/lib/stages";
-
-// Collaborative client forms (approve/change/step-through).
-const CLIENT_COLLAB_FORMS = new Set(["initial_client_form", "intake_form"]);
+import { COLLAB_FORM_TYPES } from "@/lib/documents/types";
 
 // A document still needs the client's attention if it's been sent (fill/approve)
 // or it's an approved collab form with open team edits/questions. Everything
 // else (completed forms, approved offers) is history.
 function isDocActive(doc: { status: string; templateType: string; content: unknown }) {
   if (doc.status === "SENT") return true;
-  if (doc.status === "APPROVED" && CLIENT_COLLAB_FORMS.has(doc.templateType)) {
+  if (doc.status === "APPROVED" && COLLAB_FORM_TYPES.has(doc.templateType)) {
     return hasOpenClientItems((doc.content ?? {}) as FormContent);
   }
   return false;

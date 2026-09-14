@@ -10,6 +10,8 @@ import RevisionTracker from "@/components/team/RevisionTracker";
 import StageTasks, { type StageTask } from "@/components/team/project/StageTasks";
 import { getRoster } from "@/lib/team";
 import { STAGE_COUNT, WIREFRAME_STAGE, DESIGN_STAGE, stageLabel } from "@/lib/stages";
+import { DOC_STATUS_LABEL, DOC_STATUS_CLASS } from "@/lib/constants/documents";
+import { labelFromFilename } from "@/lib/format";
 
 const OVERALL_LABELS: Record<string, string> = {
   love_it: "Love it — let's go",
@@ -27,29 +29,6 @@ const REACTION_BADGE: Record<string, string> = {
   happy: "bg-green-100 text-green-800",
   tweaks: "bg-amber-100 text-amber-800",
   rethink: "bg-red-100 text-red-800",
-};
-
-function labelFromFilename(filename: string): string {
-  const name = filename
-    .replace(/\.[^.]+$/, "")
-    .replace(/[_-]/g, " ")
-    .replace(/^\d+\s*/, "")
-    .trim();
-  return name.replace(/\b\w/g, (c) => c.toUpperCase()) || filename;
-}
-
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT: "Draft",
-  SENT: "Sent to client",
-  APPROVED: "Approved",
-  REJECTED: "Rejected",
-};
-
-const STATUS_CLASS: Record<string, string> = {
-  DRAFT: "bg-neutral-100 text-neutral-500",
-  SENT: "bg-blue-50 text-blue-700",
-  APPROVED: "bg-green-50 text-green-700",
-  REJECTED: "bg-red-50 text-red-700",
 };
 
 async function CreateDocumentButton({
@@ -610,10 +589,10 @@ export default async function StagePage({
                         <div className="flex items-center gap-2">
                           <span
                             className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              STATUS_CLASS[doc.status] ?? "bg-neutral-100 text-neutral-500"
+                              DOC_STATUS_CLASS[doc.status] ?? "bg-neutral-100 text-neutral-500"
                             }`}
                           >
-                            {STATUS_LABEL[doc.status] ?? doc.status}
+                            {DOC_STATUS_LABEL[doc.status] ?? doc.status}
                           </span>
                           {doc.status === "DRAFT" && audience === "client" && (
                             <SendButton documentId={doc.id} />

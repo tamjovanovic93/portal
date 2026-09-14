@@ -23,6 +23,8 @@ import { askClient, askTeam } from "@/app/actions/questions";
 import { type QuestionRow } from "@/lib/questions";
 import type { RosterMember } from "@/lib/team";
 import QuestionsPanel from "@/components/team/QuestionsPanel";
+import { TASK_STATUSES, INTERNAL_TASK_STATUSES, KANBAN_COLUMNS, TASK_TYPE_LABEL, TASK_TYPE_CLASS } from "@/lib/constants/tasks";
+import { toDateInput, toDateInputOrToday } from "@/lib/format";
 
 type Task = {
   id: string;
@@ -52,54 +54,15 @@ type Cycle = {
   tasks: Task[];
 };
 
-const STATUSES: { key: TaskStatus; label: string }[] = [
-  { key: "PLANNING", label: "Planning" },
-  { key: "NEEDS_APPROVAL", label: "Needs approval" },
-  { key: "IN_PROGRESS", label: "In progress" },
-  { key: "WAITING_FINAL_APPROVAL", label: "Waiting final approval" },
-  { key: "DONE", label: "Done" },
-];
-
-// Internal tasks skip both approval steps.
-const INTERNAL_STATUSES = STATUSES.filter(
-  (s) => s.key !== "NEEDS_APPROVAL" && s.key !== "WAITING_FINAL_APPROVAL"
-);
-
-// Kanban columns. Both approval states collapse into one "Waiting Approval"
-// column — the underlying task status is unchanged, only how it's grouped.
-const COLUMNS: { key: string; label: string; statuses: TaskStatus[] }[] = [
-  { key: "PLANNING", label: "Planning", statuses: ["PLANNING"] },
-  { key: "IN_PROGRESS", label: "In Progress", statuses: ["IN_PROGRESS"] },
-  { key: "WAITING_APPROVAL", label: "Waiting Approval", statuses: ["NEEDS_APPROVAL", "WAITING_FINAL_APPROVAL"] },
-  { key: "DONE", label: "Done", statuses: ["DONE"] },
-];
-
-const TYPE_LABEL: Record<TaskType, string> = {
-  DELIVERABLE: "Deliverable",
-  INTERNAL: "Internal",
-  FIX_UPDATE: "Fix / Update",
-};
-
-const TYPE_CLASS: Record<TaskType, string> = {
-  DELIVERABLE: "bg-blue-50 text-blue-700",
-  INTERNAL: "bg-neutral-100 text-neutral-500",
-  FIX_UPDATE: "bg-amber-50 text-amber-700",
-};
-
 function orderFor(task: Task) {
-  return task.type === "INTERNAL" ? INTERNAL_STATUSES : STATUSES;
-}
-
-function toDateInputValue(d: Date | null): string {
-  const dt = d ? new Date(d) : new Date();
-  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+  return task.type === "INTERNAL" ? INTERNAL_TASK_STATUSES : TASK_STATUSES;
 }
 
 function TaskCard({ task, projectId, isActive, roster = [] }: { task: Task; projectId: string; isActive: boolean; roster?: RosterMember[] }) {
   const [isPending, startTransition] = useTransition();
   const [expanded, setExpanded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [unblockDate, setUnblockDate] = useState(() => toDateInputValue(null));
+  const [unblockDate, setUnblockDate] = useState(() => toDateInputOrToday(null));
 
   // Open-question badges for this task.
   const qs = task.questions ?? [];
@@ -204,8 +167,8 @@ function TaskCard({ task, projectId, isActive, roster = [] }: { task: Task; proj
         >
           {task.name}
         </button>
-        <span className={`shrink-0 text-xs px-1.5 py-0.5 rounded font-medium ${TYPE_CLASS[task.type]}`}>
-          {TYPE_LABEL[task.type]}
+        <span className={`shrink-0 text-xs px-1.5 py-0.5 rounded font-medium ${TASK_TYPE_CLASS[task.type]}`}>
+          {TASK_TYPE_LABEL[task.type]}
         </span>
       </div>
 
@@ -420,7 +383,7 @@ function AddTaskForm({ cycleId, projectId, onDone, roster = [] }: { cycleId: str
           <option value="FIX_UPDATE">Fix / Update</option>
         </select>
         <select name="status" defaultValue="PLANNING" className="text-sm text-neutral-900 rounded border border-neutral-300 px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-neutral-900">
-          {(type === "INTERNAL" ? INTERNAL_STATUSES : STATUSES).map((s) => (
+          {(type === "INTERNAL" ? INTERNAL_TASK_STATUSES : TASK_STATUSES).map((s) => (
             <option key={s.key} value={s.key}>{s.label}</option>
           ))}
         </select>
@@ -613,12 +576,6 @@ function CycleFocus({ cycle }: { cycle: Cycle }) {
   );
 }
 
-function toDateInput(d: Date | null): string {
-  if (!d) return "";
-  const dt = new Date(d);
-  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
-}
-
 function CycleEditForm({ cycle, onDone }: { cycle: Cycle; onDone: () => void }) {
   const [isPending, startTransition] = useTransition();
   const [name, setName] = useState(cycle.name);
@@ -739,7 +696,7 @@ export default function CycleBoard({
   const tasks = variant === "tasks";
 
   const tasksByStatus = Object.fromEntries(
-    STATUSES.map(({ key }) => [key, cycle.tasks.filter((t) => t.status === key)])
+    TASK_STATUSES.map(({ key }) => [key, cycle.tasks.filter((t) => t.status === key)])
   ) as Record<TaskStatus, Task[]>;
 
   const doneCount = tasksByStatus.DONE.length;
@@ -816,7 +773,7 @@ export default function CycleBoard({
           </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {COLUMNS.map(({ key, label, statuses }) => {
+            {KANBAN_COLUMNS.map(({ key, label, statuses }) => {
               const col = cycle.tasks.filter((t) => statuses.includes(t.status));
               const isDoneCol = key === "DONE";
               return (

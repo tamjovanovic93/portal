@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { hashAccent, type Accent } from "@/components/ui/kit";
+import { ACCENTS } from "@/lib/constants/ui";
 
 // Team members are TEAM Profiles — the single source of truth. Profile copy
 // (title, skills, bio, availability, accent, photo) lives on the row; capacity
@@ -7,9 +8,8 @@ import { hashAccent, type Accent } from "@/components/ui/kit";
 
 const CAPACITY_THRESHOLD = 6; // open assigned tasks that reads as "fully loaded"
 
-const ACCENTS: Accent[] = ["mint", "blue", "amber", "rose", "purple"];
 function toAccent(value: string | null, fallbackSeed: string): Accent {
-  if (value && (ACCENTS as string[]).includes(value)) return value as Accent;
+  if (value && (ACCENTS as readonly string[]).includes(value)) return value as Accent;
   return hashAccent(fallbackSeed);
 }
 

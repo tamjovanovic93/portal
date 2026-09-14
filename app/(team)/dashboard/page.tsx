@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ProjectType } from "@prisma/client";
 import NewClientButton from "@/components/team/NewClientButton";
 import Icon from "@/components/ui/Icon";
 import { Eyebrow, Pill, StageBar, Health, Avatar, VAR, type Accent } from "@/components/ui/kit";
@@ -20,11 +19,7 @@ import {
   healthAccent,
   timeAgo,
 } from "./derive";
-
-const TYPE_LABELS: Record<ProjectType, string> = {
-  WEBSITE: "Website", BRANDING: "Branding", MARKETING: "Marketing",
-  SOFTWARE_CRM: "Software / CRM", OTHER: "Other",
-};
+import { PROJECT_TYPE_LABELS } from "@/lib/constants/projects";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -129,7 +124,7 @@ export default async function DashboardPage() {
                 return (
                   <Link key={project.id} href={`/projects/${project.id}`} className="card block" style={{ padding: 18 }}>
                     <div className="flex items-center gap-2">
-                      <Pill>{TYPE_LABELS[project.type]}</Pill>
+                      <Pill>{PROJECT_TYPE_LABELS[project.type]}</Pill>
                       <Pill color={statusColor}><span className="dot" />{hasGate ? "Gate" : pending.actor === "client" ? "Client" : "Team"}</Pill>
                       <div className="flex-1" />
                       <span className="faint" style={{ fontSize: 11 }}>{days === 0 ? "today" : `${days}d ago`}</span>

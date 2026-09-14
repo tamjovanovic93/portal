@@ -6,6 +6,7 @@ import {
   submitWireframeFeedback,
   approveWireframesAndSubmit,
 } from "@/app/actions/wireframes";
+import { labelFromFilename } from "@/lib/format";
 
 type Asset = { id: string; filename: string; mimeType: string | null; previewUrl?: string | null };
 type Reaction = "happy" | "tweaks" | "rethink" | "";
@@ -44,15 +45,6 @@ const REACTIONS: {
       "border-neutral-300 text-neutral-600 hover:border-red-400 hover:text-red-700 hover:bg-red-50",
   },
 ];
-
-function labelFromFilename(filename: string): string {
-  const name = filename
-    .replace(/\.[^.]+$/, "")
-    .replace(/[_-]/g, " ")
-    .replace(/^\d+\s*/, "")
-    .trim();
-  return name.replace(/\b\w/g, (c) => c.toUpperCase()) || filename;
-}
 
 function FilePreview({ asset, label }: { asset: Asset; label: string }) {
   const isImage = asset.mimeType?.startsWith("image/") ?? false;

@@ -14,6 +14,8 @@ import {
 } from "@/app/actions/retainer";
 import type { TaskStatus } from "@prisma/client";
 import { STAGE_LABELS } from "@/lib/stages";
+import { STAGE_TASK_STATUS_OPTIONS, STAGE_CHOICES } from "@/lib/constants/tasks";
+import { toIsoDateInput } from "@/lib/format";
 
 export type StageTask = {
   id: string;
@@ -27,21 +29,6 @@ export type StageTask = {
   isBlocker: boolean;
   listName: string;
 };
-
-// Four statuses surfaced from Stage 2 onward (NEEDS_APPROVAL and
-// WAITING_FINAL_APPROVAL both read as "Waiting approval").
-const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
-  { value: "PLANNING", label: "Planning" },
-  { value: "IN_PROGRESS", label: "In progress" },
-  { value: "WAITING_FINAL_APPROVAL", label: "Waiting approval" },
-  { value: "DONE", label: "Done" },
-];
-
-const STAGE_CHOICES = [2, 3, 4, 5, 6, 7];
-
-function toDateInput(d: string | null): string {
-  return d ? new Date(d).toISOString().slice(0, 10) : "";
-}
 
 function TaskRow({
   task,
@@ -108,7 +95,7 @@ function TaskRow({
           Est.
           <input
             type="date"
-            defaultValue={toDateInput(task.estimateDate)}
+            defaultValue={toIsoDateInput(task.estimateDate)}
             onChange={(e) => run(() => updateTaskEstimate(task.id, projectId, e.target.value || null))}
             className="text-xs rounded border border-neutral-300 px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-neutral-900"
           />
@@ -122,7 +109,7 @@ function TaskRow({
             disabled={isPending}
             className="text-xs rounded border border-neutral-300 px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-neutral-900"
           >
-            {STATUS_OPTIONS.map((s) => (
+            {STAGE_TASK_STATUS_OPTIONS.map((s) => (
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>

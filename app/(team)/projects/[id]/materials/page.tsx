@@ -3,22 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import AddMaterialForm from "@/components/team/AddMaterialForm";
 import MaterialRow from "@/components/team/MaterialRow";
-
-const CATEGORIES = ["copy", "visuals", "info", "access", "approval"] as const;
-
-const STATUS_LABEL: Record<string, string> = {
-  pending: "Pending",
-  submitted: "Submitted",
-  received: "Received",
-  verified: "Verified",
-};
-
-const STATUS_STYLE: Record<string, string> = {
-  pending: "text-neutral-600",
-  submitted: "text-blue-600",
-  received: "text-amber-600",
-  verified: "text-green-600",
-};
+import { MATERIAL_CATEGORIES, MATERIAL_STATUS_LABEL, MATERIAL_STATUS_TEXT_CLASS } from "@/lib/constants/materials";
 
 export default async function MaterialsPage({
   params,
@@ -38,7 +23,7 @@ export default async function MaterialsPage({
     orderBy: [{ status: "asc" }, { createdAt: "asc" }],
   });
 
-  const byCategory = CATEGORIES.reduce(
+  const byCategory = MATERIAL_CATEGORIES.reduce(
     (acc, cat) => {
       acc[cat] = items.filter((i) => i.category === cat);
       return acc;
@@ -82,7 +67,7 @@ export default async function MaterialsPage({
         </p>
       ) : (
         <div className="space-y-8">
-          {CATEGORIES.map((cat) => {
+          {MATERIAL_CATEGORIES.map((cat) => {
             const catItems = byCategory[cat];
             if (catItems.length === 0) return null;
             return (
@@ -102,8 +87,8 @@ export default async function MaterialsPage({
                         notes: item.notes,
                         dueDate: item.dueDate?.toISOString() ?? null,
                       }}
-                      statusLabel={STATUS_LABEL[item.status] ?? item.status}
-                      statusStyle={STATUS_STYLE[item.status] ?? "text-neutral-500"}
+                      statusLabel={MATERIAL_STATUS_LABEL[item.status] ?? item.status}
+                      statusStyle={MATERIAL_STATUS_TEXT_CLASS[item.status] ?? "text-neutral-500"}
                     />
                   ))}
                 </div>

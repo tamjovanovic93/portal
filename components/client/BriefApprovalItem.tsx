@@ -2,18 +2,7 @@
 
 import { useState } from "react";
 import { respondToKeyMessage, respondToSlogan } from "@/app/actions/client-approvals";
-
-const TYPE_LABELS: Record<string, string> = {
-  headline: "Headline",
-  hook: "Hook",
-  body: "Body copy",
-  cta: "Call to action",
-  caption: "Caption",
-  tagline: "Tagline",
-  service_slogan: "Service slogan",
-  campaign: "Campaign line",
-  seasonal: "Seasonal copy",
-};
+import { MESSAGE_TYPE_LABELS } from "@/lib/constants/approvals";
 
 export default function BriefApprovalItem({
   projectId,
@@ -60,7 +49,7 @@ export default function BriefApprovalItem({
         <div className="flex-1 min-w-0">
           {type && (
             <p className="text-xs font-medium text-amber-700 uppercase tracking-wide mb-1">
-              {TYPE_LABELS[type] ?? type}
+              {MESSAGE_TYPE_LABELS[type] ?? type}
             </p>
           )}
           <p className="text-sm text-neutral-900 leading-relaxed">{text}</p>

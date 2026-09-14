@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { updateMaterialStatus, updateMaterialItem, deleteMaterialItem } from "@/app/actions/materials";
+import { MATERIAL_CATEGORIES, MATERIAL_STATUSES, MATERIAL_STATUS_LABEL } from "@/lib/constants/materials";
 
 type Item = {
   id: string;
@@ -10,15 +11,6 @@ type Item = {
   status: string;
   notes: string | null;
   dueDate: string | null;
-};
-
-const CATEGORIES = ["copy", "visuals", "info", "access", "approval"];
-const STATUSES = ["pending", "submitted", "received", "verified"] as const;
-const STATUS_LABELS: Record<string, string> = {
-  pending: "Pending",
-  submitted: "Submitted",
-  received: "Received",
-  verified: "Verified",
 };
 
 export default function MaterialRow({
@@ -83,7 +75,7 @@ export default function MaterialRow({
             onChange={(e) => setCategory(e.target.value)}
             className="w-32 px-2 py-1.5 border border-neutral-300 rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
           >
-            {CATEGORIES.map((c) => (
+            {MATERIAL_CATEGORIES.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
@@ -92,8 +84,8 @@ export default function MaterialRow({
             onChange={(e) => setStatus(e.target.value)}
             className="w-28 px-2 py-1.5 border border-neutral-300 rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
           >
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+            {MATERIAL_STATUSES.map((s) => (
+              <option key={s} value={s}>{MATERIAL_STATUS_LABEL[s]}</option>
             ))}
           </select>
         </div>
@@ -147,8 +139,8 @@ export default function MaterialRow({
           onChange={(e) => handleStatusChange(e.target.value)}
           className={`text-xs font-medium bg-transparent border-none cursor-pointer focus:outline-none ${statusStyle}`}
         >
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+          {MATERIAL_STATUSES.map((s) => (
+            <option key={s} value={s}>{MATERIAL_STATUS_LABEL[s]}</option>
           ))}
         </select>
       </div>

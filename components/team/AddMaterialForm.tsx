@@ -2,14 +2,7 @@
 
 import { useState, useRef } from "react";
 import { addMaterialItem } from "@/app/actions/materials";
-
-const CATEGORIES = [
-  { value: "copy", label: "Copy" },
-  { value: "visuals", label: "Visuals" },
-  { value: "info", label: "Info" },
-  { value: "access", label: "Access" },
-  { value: "approval", label: "Approval" },
-];
+import { MATERIAL_CATEGORY_OPTIONS } from "@/lib/constants/materials";
 
 export default function AddMaterialForm({ projectId }: { projectId: string }) {
   const [open, setOpen] = useState(false);
@@ -74,7 +67,7 @@ export default function AddMaterialForm({ projectId }: { projectId: string }) {
             className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
           >
             <option value="">Pick…</option>
-            {CATEGORIES.map((c) => (
+            {MATERIAL_CATEGORY_OPTIONS.map((c) => (
               <option key={c.value} value={c.value}>
                 {c.label}
               </option>

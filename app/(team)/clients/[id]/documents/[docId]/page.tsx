@@ -11,18 +11,11 @@ import OfferQuestionsAdmin from "@/components/team/project/OfferQuestionsAdmin";
 import IntakeBuilder from "@/components/team/project/IntakeBuilder";
 import { applyConfig, getConfig } from "@/lib/templates/config";
 import type { FormContent } from "@/lib/forms/collab";
+import { COLLAB_FORM_TYPES } from "@/lib/documents/types";
+import { DOC_STATUS_LABEL } from "@/lib/constants/documents";
 
 // Team-side editor for CLIENT-scoped onboarding documents (initial form, offer,
 // intake) — the client-level counterpart of the project stage document page.
-const COLLAB_FORMS = new Set(["initial_client_form", "intake_form"]);
-
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT: "Draft",
-  SENT: "Sent to client",
-  APPROVED: "Approved",
-  REJECTED: "Rejected",
-};
-
 export default async function ClientDocumentPage({
   params,
 }: {
@@ -50,7 +43,7 @@ export default async function ClientDocumentPage({
 
   const isOffer = doc.templateType === "financial_offer";
   const isIntake = doc.templateType === "intake_form";
-  const isCollab = COLLAB_FORMS.has(doc.templateType);
+  const isCollab = COLLAB_FORM_TYPES.has(doc.templateType);
   const effectiveTemplate = isCollab ? applyConfig(template, getConfig(content)) : template;
 
   // Client questions about the offer (client → team), answerable inline.
@@ -118,7 +111,7 @@ export default async function ClientDocumentPage({
           )}
         </div>
         <div className="flex items-center gap-3 shrink-0 ml-4">
-          <span className="text-xs text-neutral-600">{STATUS_LABEL[doc.status] ?? doc.status}</span>
+          <span className="text-xs text-neutral-600">{DOC_STATUS_LABEL[doc.status] ?? doc.status}</span>
           {doc.status === "DRAFT" && (
             <DeleteDocumentButton documentId={documentId} clientId={clientId} />
           )}

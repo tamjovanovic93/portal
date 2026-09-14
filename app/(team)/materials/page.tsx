@@ -2,19 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import Icon from "@/components/ui/Icon";
 import { Eyebrow, Pill, type Accent } from "@/components/ui/kit";
-
-const STATUS_COLOR: Record<string, Accent> = {
-  pending: "amber",
-  submitted: "blue",
-  received: "mint",
-  verified: "mint",
-};
-const STATUS_LABEL: Record<string, string> = {
-  pending: "Awaiting client",
-  submitted: "To review",
-  received: "Received",
-  verified: "Verified",
-};
+import { MATERIAL_QUEUE_STATUS_COLOR, MATERIAL_QUEUE_STATUS_LABEL } from "@/lib/constants/materials";
 
 function formatDue(d: Date | null) {
   if (!d) return null;
@@ -102,7 +90,7 @@ export default async function MaterialsPage() {
                       {due && (
                         <span className="tech" style={{ fontSize: 11, color: due.overdue ? "var(--rose)" : "var(--text-3)" }}>{due.text}</span>
                       )}
-                      <Pill color={STATUS_COLOR[m.status]}>{STATUS_LABEL[m.status] ?? m.status}</Pill>
+                      <Pill color={MATERIAL_QUEUE_STATUS_COLOR[m.status]}>{MATERIAL_QUEUE_STATUS_LABEL[m.status] ?? m.status}</Pill>
                     </div>
                   );
                 })}

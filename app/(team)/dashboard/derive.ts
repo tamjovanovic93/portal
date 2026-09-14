@@ -4,6 +4,8 @@ import type { WorkMember, WorkQuestion } from "@/components/team/MyWork";
 import { STAGE_LABELS, STAGE_INFO, FINAL_STAGE, GATED_STAGES, WIREFRAME_STAGE } from "@/lib/stages";
 import { FEED_NOTIFICATION_TYPES } from "@/lib/notification-types";
 import type { DashboardData, DashboardProject } from "./queries";
+import { daysSince, formatUpcomingDate } from "@/lib/format";
+export { timeAgo, formatUpcomingDate, daysSince } from "@/lib/format";
 
 // Pure derivations for the dashboard — no I/O. Every number here matches what
 // the page computed before the data layer moved to aggregates.
@@ -18,29 +20,6 @@ export const STAGE_DESCRIPTIONS: Record<number, string> = Object.fromEntries(
 
 export function healthAccent(h: number): Accent {
   return h > 0.75 ? "mint" : h > 0.5 ? "amber" : "rose";
-}
-
-export function timeAgo(date: Date, now: Date) {
-  const diff = now.getTime() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(diff / 3600000);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(diff / DAY);
-  return `${days}d ago`;
-}
-
-export function formatUpcomingDate(d: Date, now: Date) {
-  const startOfToday = new Date(now);
-  startOfToday.setHours(0, 0, 0, 0);
-  const diffDays = Math.floor((d.getTime() - startOfToday.getTime()) / DAY);
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Tomorrow";
-  return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-}
-
-export function daysSince(date: Date, now: Date) {
-  return Math.floor((now.getTime() - date.getTime()) / DAY);
 }
 
 export const clientName = (p: { client: { name: string | null; email: string } }) => p.client.name ?? p.client.email;

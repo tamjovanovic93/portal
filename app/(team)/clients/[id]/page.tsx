@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { ProjectType, StageStatus } from "@prisma/client";
+import { StageStatus } from "@prisma/client";
 import NewProjectButton from "@/components/team/NewProjectButton";
 import DeleteClientButton from "@/components/team/DeleteClientButton";
 import EditClientButton from "@/components/team/client/EditClientButton";
@@ -14,11 +14,7 @@ import ClientOnboardingPipeline from "@/components/team/client/ClientOnboardingP
 import ClientIntakePipeline from "@/components/team/client/ClientIntakePipeline";
 import { getProfile, getStrategy } from "@/lib/intake/store";
 import { findActiveJob } from "@/lib/ai/jobs";
-
-const TYPE_LABELS: Record<ProjectType, string> = {
-  WEBSITE: "Website", BRANDING: "Branding", MARKETING: "Marketing",
-  SOFTWARE_CRM: "Software / CRM", OTHER: "Other",
-};
+import { PROJECT_TYPE_LABELS } from "@/lib/constants/projects";
 
 function StagePips({ currentStage, stageStatuses }: {
   currentStage: number;
@@ -266,7 +262,7 @@ export default async function ClientStreamPage({
                     </div>
                   </div>
                   <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
-                    <span className="faint" style={{ fontSize: 12 }}>{TYPE_LABELS[p.type]}</span>
+                    <span className="faint" style={{ fontSize: 12 }}>{PROJECT_TYPE_LABELS[p.type]}</span>
                     <span className="tech" style={{ fontSize: 11, color: "var(--text-2)" }}>{STAGE_LABELS[p.currentStage]}</span>
                   </div>
                   <StagePips currentStage={p.currentStage} stageStatuses={p.stages} />
@@ -295,7 +291,7 @@ export default async function ClientStreamPage({
               <Link key={p.id} href={`/projects/${p.id}`} className="card block" style={{ padding: 16, opacity: 0.7 }}>
                 <div className="flex items-start justify-between gap-2">
                   <p className="muted truncate" style={{ fontSize: 14, fontWeight: 600 }}>{p.name}</p>
-                  <Pill>{p.mode === "ONGOING" ? "RETAINER" : TYPE_LABELS[p.type]}</Pill>
+                  <Pill>{p.mode === "ONGOING" ? "RETAINER" : PROJECT_TYPE_LABELS[p.type]}</Pill>
                 </div>
               </Link>
             ))}

@@ -10,17 +10,10 @@ import IntakeBuilder from "@/components/team/project/IntakeBuilder";
 import { applyConfig, getConfig } from "@/lib/templates/config";
 import type { FormContent } from "@/lib/forms/collab";
 import { stageLabel } from "@/lib/stages";
+import { COLLAB_FORM_TYPES } from "@/lib/documents/types";
+import { DOC_STATUS_LABEL } from "@/lib/constants/documents";
 
 // Onboarding forms use the collaborative prefill → review flow.
-const COLLAB_FORMS = new Set(["initial_client_form", "intake_form"]);
-
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT: "Draft",
-  SENT: "Sent to client",
-  APPROVED: "Approved",
-  REJECTED: "Rejected",
-};
-
 
 export default async function DocumentPage({
   params,
@@ -48,7 +41,7 @@ export default async function DocumentPage({
   // Decide how the team interacts with this document.
   const isOffer = doc.templateType === "financial_offer";
   const isIntake = doc.templateType === "intake_form";
-  const isCollab = COLLAB_FORMS.has(doc.templateType);
+  const isCollab = COLLAB_FORM_TYPES.has(doc.templateType);
   // Collaborative forms honor the team's builder config (removed/reordered).
   const effectiveTemplate = isCollab
     ? applyConfig(template, getConfig(content))
@@ -100,7 +93,7 @@ export default async function DocumentPage({
         </div>
         <div className="flex items-center gap-3 shrink-0 ml-4">
           <span className="text-xs text-neutral-600">
-            {STATUS_LABEL[doc.status] ?? doc.status}
+            {DOC_STATUS_LABEL[doc.status] ?? doc.status}
           </span>
           {doc.status === "DRAFT" && (
             <DeleteDocumentButton

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { createTeamMember, updateTeamMember } from "@/app/actions/team";
+import { ACCENTS } from "@/lib/constants/ui";
 
 // Add / edit a team member. Same modal pattern as NewProjectButton. When
 // `member` is provided it edits; otherwise it creates. Fields mirror the
@@ -18,8 +19,6 @@ type MemberInitial = {
   accent: string;
   availability: { hours: string; tz: string; note: string };
 };
-
-const ACCENTS = ["mint", "blue", "amber", "rose", "purple"];
 
 const inputCls =
   "w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900";

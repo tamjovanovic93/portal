@@ -14,20 +14,8 @@ import NewProjectButton from "@/components/team/NewProjectButton";
 import { createCycle } from "@/app/actions/retainer";
 import { getRoster } from "@/lib/team";
 import { listByTaskIds } from "@/lib/questions";
-
-const MATERIAL_CATEGORIES = ["copy", "visuals", "info", "access", "approval"] as const;
-const MATERIAL_STATUS_LABEL: Record<string, string> = {
-  pending: "Pending", submitted: "Submitted", received: "Received", verified: "Verified",
-};
-const MATERIAL_STATUS_STYLE: Record<string, string> = {
-  pending: "text-neutral-600", submitted: "text-blue-600",
-  received: "text-amber-600", verified: "text-green-600",
-};
-
-const TYPE_LABELS: Record<string, string> = {
-  WEBSITE: "Website", BRANDING: "Branding", MARKETING: "Marketing",
-  SOFTWARE_CRM: "Software / CRM", OTHER: "Other",
-};
+import { PROJECT_TYPE_LABELS } from "@/lib/constants/projects";
+import { MATERIAL_CATEGORIES, MATERIAL_STATUS_LABEL, MATERIAL_STATUS_TEXT_CLASS } from "@/lib/constants/materials";
 
 async function NewCycleForm({ projectId }: { projectId: string }) {
   async function handleCreate(formData: FormData) {
@@ -181,7 +169,7 @@ export default async function RetainerView({ projectId }: { projectId: string })
                 {project.client.name ?? project.client.email}
               </Link>
               <span className="text-neutral-700">·</span>
-              <span>{TYPE_LABELS[project.type] ?? project.type}</span>
+              <span>{PROJECT_TYPE_LABELS[project.type] ?? project.type}</span>
               <span className="text-neutral-700">·</span>
               <span>{openTasks} open task{openTasks !== 1 ? "s" : ""} across {activeCycles.length} active cycle{activeCycles.length !== 1 ? "s" : ""}</span>
             </div>
@@ -383,7 +371,7 @@ export default async function RetainerView({ projectId }: { projectId: string })
                           dueDate: item.dueDate?.toISOString() ?? null,
                         }}
                         statusLabel={MATERIAL_STATUS_LABEL[item.status] ?? item.status}
-                        statusStyle={MATERIAL_STATUS_STYLE[item.status] ?? "text-neutral-700"}
+                        statusStyle={MATERIAL_STATUS_TEXT_CLASS[item.status] ?? "text-neutral-700"}
                       />
                     ))}
                   </div>

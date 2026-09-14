@@ -1,17 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { ProjectType, StageStatus } from "@prisma/client";
+import { StageStatus } from "@prisma/client";
 import NewProjectButton from "@/components/team/NewProjectButton";
 import ProjectCardMenu from "@/components/team/ProjectCardMenu";
 import { STAGE_LABELS, STAGE_COUNT } from "@/lib/stages";
-
-const TYPE_LABELS: Record<ProjectType, string> = {
-  WEBSITE: "Website",
-  BRANDING: "Branding",
-  MARKETING: "Marketing",
-  SOFTWARE_CRM: "Software / CRM",
-  OTHER: "Other",
-};
+import { PROJECT_TYPE_LABELS } from "@/lib/constants/projects";
 
 function StagePips({
   currentStage,
@@ -161,7 +154,7 @@ export default async function ProjectsPage({
 
                   <div className="mt-3 flex items-center justify-between">
                     <span className="text-xs text-neutral-500">
-                      {TYPE_LABELS[project.type]}
+                      {PROJECT_TYPE_LABELS[project.type]}
                     </span>
                     <span className="text-xs font-medium text-neutral-700">
                       Stage {project.currentStage} —{" "}

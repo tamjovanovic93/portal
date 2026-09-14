@@ -3,16 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { createProject, listClients } from "@/app/actions/projects";
+import { PROJECT_TYPE_OPTIONS } from "@/lib/constants/projects";
 
 type ClientOption = { id: string; name: string | null; email: string };
-
-const PROJECT_TYPES = [
-  { value: "WEBSITE", label: "Website" },
-  { value: "BRANDING", label: "Branding" },
-  { value: "MARKETING", label: "Marketing" },
-  { value: "SOFTWARE_CRM", label: "Software / CRM" },
-  { value: "OTHER", label: "Other" },
-];
 
 export default function NewProjectButton({
   prefillEmail,
@@ -137,7 +130,7 @@ export default function NewProjectButton({
                   className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-white"
                 >
                   <option value="">Select type…</option>
-                  {PROJECT_TYPES.map((t) => (
+                  {PROJECT_TYPE_OPTIONS.map((t) => (
                     <option key={t.value} value={t.value}>
                       {t.label}
                     </option>

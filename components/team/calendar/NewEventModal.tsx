@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { createEvent, updateEvent, deleteEvent } from "@/app/actions/events";
+import { EVENT_TYPE_OPTIONS } from "@/lib/constants/events";
 
 type Project = { id: string; name: string };
 
@@ -15,14 +16,6 @@ type ExistingEvent = {
   description: string | null;
   projectId: string | null;
 };
-
-const EVENT_TYPES = [
-  { value: "MEETING", label: "Meeting" },
-  { value: "DEADLINE", label: "Deadline" },
-  { value: "APPROVAL_GATE", label: "Approval Gate" },
-  { value: "APPOINTMENT", label: "Appointment" },
-  { value: "MILESTONE", label: "Milestone" },
-];
 
 function toLocalDateTimeValue(d: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -168,7 +161,7 @@ export default function NewEventModal({
               defaultValue={event?.type ?? "APPOINTMENT"}
               className="w-full border border-neutral-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 bg-white"
             >
-              {EVENT_TYPES.map((t) => (
+              {EVENT_TYPE_OPTIONS.map((t) => (
                 <option key={t.value} value={t.value}>
                   {t.label}
                 </option>

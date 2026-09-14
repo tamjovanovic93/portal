@@ -10,9 +10,9 @@ import {
 } from "@prisma/client";
 import { STAGE_COUNT } from "@/lib/stages";
 import { checkbox, email, optionalDate, optionalText, requiredDate, requiredText, trimmed, uuid } from "./form";
+import { MATERIAL_CATEGORIES } from "@/lib/constants/materials";
+import { ACCENTS } from "@/lib/constants/ui";
 
-export const MATERIAL_CATEGORY_VALUES = ["copy", "visuals", "info", "access", "approval"] as const;
-export const ACCENT_VALUES = ["mint", "blue", "amber", "rose", "purple"] as const;
 
 const enumOf = <T extends Record<string, string>>(e: T, params?: { message?: string }) =>
   z.nativeEnum(e, params ? { errorMap: () => ({ message: params.message ?? "Invalid value." }) } : undefined);
@@ -21,7 +21,7 @@ const enumOf = <T extends Record<string, string>>(e: T, params?: { message?: str
 export const addMaterialSchema = z.object({
   projectId: uuid,
   label: requiredText("Label"),
-  category: z.enum(MATERIAL_CATEGORY_VALUES, { message: "Pick a category." }),
+  category: z.enum(MATERIAL_CATEGORIES, { message: "Pick a category." }),
   notes: optionalText,
   dueDate: optionalDate,
 });
@@ -29,7 +29,7 @@ export const addMaterialSchema = z.object({
 export const updateMaterialSchema = z.object({
   itemId: uuid,
   label: requiredText("Label"),
-  category: z.enum(MATERIAL_CATEGORY_VALUES, { message: "Pick a category." }),
+  category: z.enum(MATERIAL_CATEGORIES, { message: "Pick a category." }),
   notes: optionalText,
   dueDate: optionalDate,
   status: enumOf(MaterialItemStatus).optional(),
@@ -97,7 +97,7 @@ export const teamMemberSchema = z.object({
   ),
   bio: optionalText,
   photoUrl: optionalText,
-  accent: z.enum(ACCENT_VALUES).optional().catch(undefined),
+  accent: z.enum(ACCENTS).optional().catch(undefined),
   availHours: trimmed.optional().default(""),
   availTz: trimmed.optional().default(""),
   availNote: trimmed.optional().default(""),

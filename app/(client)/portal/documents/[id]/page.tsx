@@ -9,10 +9,9 @@ import OfferPricingView from "@/components/OfferPricingView";
 import AnswerFollowups, { type Followup } from "@/components/client/AnswerFollowups";
 import { getCollab, type FormContent } from "@/lib/forms/collab";
 import { applyConfig, getConfig } from "@/lib/templates/config";
+import { COLLAB_FORM_TYPES } from "@/lib/documents/types";
 
 // Forms that use the collaborative approve/change flow rather than a plain fill.
-const COLLAB_FORMS = new Set(["initial_client_form", "intake_form"]);
-
 export default async function ClientDocumentPage({
   params,
 }: {
@@ -98,7 +97,7 @@ export default async function ClientDocumentPage({
   }
 
   // ── Collaborative / plain forms ──
-  const isCollab = COLLAB_FORMS.has(doc.templateType);
+  const isCollab = COLLAB_FORM_TYPES.has(doc.templateType);
   const isIntake = doc.templateType === "intake_form";
   // Honor the team's builder config (removed / reordered sections & fields).
   const effectiveTemplate = isCollab ? applyConfig(template, getConfig(content)) : template;

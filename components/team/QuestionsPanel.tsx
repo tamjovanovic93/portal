@@ -13,6 +13,7 @@ import {
 import { ACTIVE_STATUSES, type QuestionRow } from "@/lib/questions";
 import type { RosterMember } from "@/lib/team";
 import type { QuestionContext } from "@prisma/client";
+import { formatWhen } from "@/lib/format";
 
 type Props = {
   projectId: string;
@@ -34,14 +35,6 @@ const STATUS_COLOR: Record<string, "amber" | "blue" | "mint" | "rose" | "purple"
   OPEN: "amber", WAITING_CLIENT: "amber", WAITING_TEAM: "blue",
   WAITING_CONFIRMATION: "purple", ANSWERED: "mint", RESOLVED: "mint",
 };
-
-// Full, unambiguous timestamp (e.g. "8 Sep 2026, 14:32") for the who/when detail.
-function formatWhen(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString(undefined, {
-    day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
-  });
-}
 
 export default function QuestionsPanel({ projectId, contextType, contextId, questions, roster }: Props) {
   const [pending, start] = useTransition();

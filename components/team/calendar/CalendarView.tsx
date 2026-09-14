@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import NewEventModal from "./NewEventModal";
+import { EVENT_TYPE_COLORS, EVENT_TYPE_LABEL } from "@/lib/constants/events";
 
 export type CalendarEvent = {
   id: string;
@@ -19,30 +20,6 @@ export type CalendarEvent = {
 };
 
 type Project = { id: string; name: string };
-
-const TYPE_COLORS: Record<string, string> = {
-  MEETING: "bg-blue-500",
-  DEADLINE: "bg-red-500",
-  APPROVAL_GATE: "bg-amber-500",
-  APPOINTMENT: "bg-purple-500",
-  MILESTONE: "bg-green-500",
-  TASK_DUE: "bg-neutral-400",
-  task: "bg-neutral-400",
-  material: "bg-red-400",
-  cycle: "bg-blue-600",
-};
-
-const TYPE_LABEL: Record<string, string> = {
-  MEETING: "Meeting",
-  DEADLINE: "Deadline",
-  APPROVAL_GATE: "Approval Gate",
-  APPOINTMENT: "Appointment",
-  MILESTONE: "Milestone",
-  TASK_DUE: "Task Due",
-  task: "Task",
-  material: "Material Due",
-  cycle: "Cycle Ends",
-};
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -232,7 +209,7 @@ export default function CalendarView({
                         openEdit(ev);
                       }}
                       className={`text-xs px-1 py-0.5 rounded text-white truncate cursor-pointer ${
-                        TYPE_COLORS[ev.sourceType === "manual" ? ev.type : ev.sourceType] ?? "bg-neutral-400"
+                        EVENT_TYPE_COLORS[ev.sourceType === "manual" ? ev.type : ev.sourceType] ?? "bg-neutral-400"
                       }`}
                     >
                       {ev.title}
@@ -251,11 +228,11 @@ export default function CalendarView({
 
         {/* Legend */}
         <div className="flex items-center gap-4 mt-4 flex-wrap">
-          {Object.entries(TYPE_LABEL).filter(([k]) =>
+          {Object.entries(EVENT_TYPE_LABEL).filter(([k]) =>
             ["MEETING", "DEADLINE", "APPROVAL_GATE", "APPOINTMENT", "MILESTONE", "TASK_DUE"].includes(k)
           ).map(([k, v]) => (
             <div key={k} className="flex items-center gap-1.5">
-              <div className={`w-2.5 h-2.5 rounded-full ${TYPE_COLORS[k]}`} />
+              <div className={`w-2.5 h-2.5 rounded-full ${EVENT_TYPE_COLORS[k]}`} />
               <span className="text-xs text-neutral-500">{v}</span>
             </div>
           ))}
@@ -293,7 +270,7 @@ export default function CalendarView({
                     <div className="flex items-start gap-2">
                       <div
                         className={`w-2.5 h-2.5 rounded-full mt-0.5 shrink-0 ${
-                          TYPE_COLORS[ev.sourceType === "manual" ? ev.type : ev.sourceType] ?? "bg-neutral-400"
+                          EVENT_TYPE_COLORS[ev.sourceType === "manual" ? ev.type : ev.sourceType] ?? "bg-neutral-400"
                         }`}
                       />
                       <div className="min-w-0">
@@ -305,7 +282,7 @@ export default function CalendarView({
                             ? "All day"
                             : formatTime(ev.startAt)}
                           {" · "}
-                          {TYPE_LABEL[ev.sourceType === "manual" ? ev.type : ev.sourceType] ?? ev.type}
+                          {EVENT_TYPE_LABEL[ev.sourceType === "manual" ? ev.type : ev.sourceType] ?? ev.type}
                         </p>
                         {ev.projectId && (
                           <Link

@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { approveAsset, deleteAsset } from "@/app/actions/assets";
+import { formatBytesKb } from "@/lib/format";
 
 export type FolderAsset = {
   id: string;
@@ -22,12 +23,6 @@ const FOLDERS: { key: string; label: string; match: string[] }[] = [
   { key: "copy", label: "Copy", match: ["copy"] },
   { key: "brief", label: "Brief & Data", match: ["brief"] },
 ];
-
-function formatBytes(bytes: number | null) {
-  if (!bytes) return "";
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function FolderIcon({ open }: { open: boolean }) {
   return (
@@ -60,7 +55,7 @@ function AssetRow({ asset }: { asset: FolderAsset }) {
           {asset.filename}
         </a>
         <p className="text-xs text-neutral-700 mt-0.5">
-          {formatBytes(asset.sizeBytes)}
+          {formatBytesKb(asset.sizeBytes)}
           {asset.sizeBytes ? " · " : ""}
           {new Date(asset.uploadedAt).toLocaleDateString()}
           {asset.isClientUpload && !approved && <span className="ml-2 text-amber-700 font-medium">Client · new</span>}

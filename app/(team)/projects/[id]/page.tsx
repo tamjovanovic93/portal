@@ -20,44 +20,10 @@ import NewProjectButton from "@/components/team/NewProjectButton";
 import ProjectFiles from "@/components/team/ProjectFiles";
 import ClientUploadAction from "@/components/team/ClientUploadAction";
 import { STAGE_LABELS, STAGE_INFO, STAGE_COUNT, WIREFRAME_STAGE, DESIGN_STAGE } from "@/lib/stages";
-
-const TYPE_LABELS: Record<string, string> = {
-  WEBSITE: "Website",
-  BRANDING: "Branding",
-  MARKETING: "Marketing",
-  SOFTWARE_CRM: "Software / CRM",
-  OTHER: "Other",
-};
-
-const MATERIAL_STATUS_LABEL: Record<string, string> = {
-  pending: "Pending",
-  submitted: "Submitted",
-  received: "Received",
-  verified: "Verified",
-};
-
-const MATERIAL_STATUS_STYLE: Record<string, string> = {
-  pending: "text-neutral-600",
-  submitted: "text-blue-600",
-  received: "text-amber-600",
-  verified: "text-green-600",
-};
-
-const MATERIAL_CATEGORIES = ["copy", "visuals", "info", "access", "approval"] as const;
-
-const APPROVAL_METHOD_LABEL: Record<string, string> = {
-  PORTAL: "Portal",
-  EMAIL: "Email",
-  VERBAL: "Verbal",
-  OTHER: "Other",
-};
-
-function formatBytes(bytes: number | null): string {
-  if (!bytes) return "";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+import { PROJECT_TYPE_LABELS } from "@/lib/constants/projects";
+import { MATERIAL_CATEGORIES, MATERIAL_STATUS_LABEL, MATERIAL_STATUS_TEXT_CLASS } from "@/lib/constants/materials";
+import { APPROVAL_METHOD_LABEL, MESSAGE_TYPE_LABELS } from "@/lib/constants/approvals";
+import { formatBytes } from "@/lib/format";
 
 const TABS = [
   { tabId: "files", label: "Files" },
@@ -187,13 +153,6 @@ export default async function ProjectPage({
   // Client-submitted forms awaiting review vs already reviewed (→ history).
   const docsToReview = submittedDocs.filter((d) => !d.handledAt);
   const docsHandled = submittedDocs.filter((d) => d.handledAt);
-
-  const MESSAGE_TYPE_LABELS: Record<string, string> = {
-    headline: "Headline", hook: "Hook", body: "Body copy",
-    cta: "Call to action", caption: "Caption",
-    tagline: "Tagline", service_slogan: "Service slogan",
-    campaign: "Campaign line", seasonal: "Seasonal copy",
-  };
 
   type ApprovalItem = { id: string; text: string; kind: string; itemKind: "message" | "slogan"; requested: boolean };
   // Only items not yet acknowledged by the team appear in the live lists.
@@ -382,7 +341,7 @@ export default async function ProjectPage({
                 {project.client.name ?? project.client.email}
               </Link>
               <span className="text-neutral-700">·</span>
-              <span>{TYPE_LABELS[project.type] ?? project.type}</span>
+              <span>{PROJECT_TYPE_LABELS[project.type] ?? project.type}</span>
               <span className="text-neutral-700">·</span>
               <span>
                 Stage {project.currentStage} — {STAGE_LABELS[project.currentStage]}
@@ -807,7 +766,7 @@ export default async function ProjectPage({
                           dueDate: item.dueDate?.toISOString() ?? null,
                         }}
                         statusLabel={MATERIAL_STATUS_LABEL[item.status] ?? item.status}
-                        statusStyle={MATERIAL_STATUS_STYLE[item.status] ?? "text-neutral-700"}
+                        statusStyle={MATERIAL_STATUS_TEXT_CLASS[item.status] ?? "text-neutral-700"}
                       />
                     ))}
                   </div>
