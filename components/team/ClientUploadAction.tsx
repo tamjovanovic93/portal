@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { approveAsset } from "@/app/actions/assets";
 
 export default function ClientUploadAction({
@@ -15,7 +14,6 @@ export default function ClientUploadAction({
   folder: string | null;
   uploadedAt: string;
 }) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [seen, setSeen] = useState(false);
 
@@ -23,7 +21,6 @@ export default function ClientUploadAction({
     setSeen(true);
     startTransition(async () => {
       await approveAsset(assetId);
-      router.refresh();
     });
   }
 

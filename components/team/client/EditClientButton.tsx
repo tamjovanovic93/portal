@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
 import { updateClient } from "@/app/actions/clients";
 
 // Edit a client's business name and email after creation.
@@ -15,7 +14,6 @@ export default function EditClientButton({
   name: string;
   email: string;
 }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -39,7 +37,6 @@ export default function EditClientButton({
     }
     setLoading(false);
     setOpen(false);
-    router.refresh();
   }
 
   return (

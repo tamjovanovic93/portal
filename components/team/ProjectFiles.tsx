@@ -37,7 +37,7 @@ function FolderIcon({ open }: { open: boolean }) {
   );
 }
 
-function AssetRow({ asset, projectId, router }: { asset: FolderAsset; projectId: string; router: ReturnType<typeof useRouter> }) {
+function AssetRow({ asset }: { asset: FolderAsset }) {
   const [loading, setLoading] = useState(false);
   const [approved, setApproved] = useState(!!asset.approvedAt);
 
@@ -46,13 +46,11 @@ function AssetRow({ asset, projectId, router }: { asset: FolderAsset; projectId:
     await approveAsset(asset.id);
     setApproved(true);
     setLoading(false);
-    router.refresh();
   }
   async function handleDelete() {
     if (!confirm(`Delete "${asset.filename}"?`)) return;
     setLoading(true);
     await deleteAsset(asset.id);
-    router.refresh();
   }
 
   return (
@@ -202,7 +200,7 @@ export default function ProjectFiles({
           ) : (
             <div className="divide-y divide-neutral-100">
               {assetsFor(open).map((a) => (
-                <AssetRow key={a.id} asset={a} projectId={projectId} router={router} />
+                <AssetRow key={a.id} asset={a} />
               ))}
             </div>
           )}

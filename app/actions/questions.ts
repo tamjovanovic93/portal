@@ -13,11 +13,8 @@ import type { QuestionContext } from "@prisma/client";
 // recipient answers / confirms; the team resolves. See lib/questions.ts.
 
 function revalidateFor(projectId: string | null) {
-  if (projectId) {
-    revalidatePath(`/projects/${projectId}`);
-    revalidatePath(`/projects/${projectId}/brief`);
-    revalidatePath(`/portal`);
-  }
+  if (projectId) revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/portal");
   revalidatePath("/dashboard");
 }
 

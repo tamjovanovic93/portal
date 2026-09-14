@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import WireframeFeedbackForm from "@/components/client/WireframeFeedbackForm";
 import { getFeedbackDoc } from "@/lib/documents/feedback";
+import { getSignedUrls } from "@/lib/storage";
 import { WIREFRAME_STAGE } from "@/lib/stages";
 
 export default async function WireframeReviewPage({
@@ -46,7 +47,11 @@ export default async function WireframeReviewPage({
 
   // Read-only: the feedback document is created by the save/submit actions and
   // reset by the upload route when newer wireframes arrive.
-  const feedbackDoc = await getFeedbackDoc(projectId, "wireframe_feedback");
+  // One signed-URL batch for image previews instead of an auth+DB round-trip per <img>.
+  const [feedbackDoc, previews] = await Promise.all([
+    getFeedbackDoc(projectId, "wireframe_feedback"),
+    getSignedUrls(project.assets.filter((a) => a.mimeType?.startsWith("image/")).map((a) => a.storagePath)),
+  ]);
   const isSubmitted = feedbackDoc?.status === "APPROVED";
   const existingContent = (feedbackDoc?.content ?? {}) as Record<string, unknown>;
 
@@ -82,6 +87,7 @@ export default async function WireframeReviewPage({
           id: a.id,
           filename: a.filename,
           mimeType: a.mimeType,
+          previewUrl: previews.get(a.storagePath) ?? null,
         }))}
         initialContent={existingContent}
         readOnly={isSubmitted}

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Pill } from "@/components/ui/kit";
 import {
   askClient,
@@ -45,7 +44,6 @@ function formatWhen(iso: string | null): string {
 }
 
 export default function QuestionsPanel({ projectId, contextType, contextId, questions, roster }: Props) {
-  const router = useRouter();
   const [pending, start] = useTransition();
   const [mode, setMode] = useState<"none" | "client" | "team">("none");
   const [text, setText] = useState("");
@@ -62,14 +60,14 @@ export default function QuestionsPanel({ projectId, contextType, contextId, ques
     if (!text.trim()) return;
     start(async () => {
       await askClient({ projectId, contextType, contextId, questionText: text, proposedAnswer: proposed || undefined });
-      reset(); router.refresh();
+      reset();
     });
   }
   function submitTeam() {
     if (!text.trim() || !teamMember) return;
     start(async () => {
       await askTeam({ projectId, contextType, contextId, recipientId: teamMember, questionText: text });
-      reset(); router.refresh();
+      reset();
     });
   }
 
@@ -112,7 +110,7 @@ export default function QuestionsPanel({ projectId, contextType, contextId, ques
       {/* Active questions */}
       {active.length > 0 && (
         <div className="space-y-2">
-          {active.map((q) => <QuestionCard key={q.id} q={q} router={router} canTeamAnswer={q.recipientRole === "TEAM"} />)}
+          {active.map((q) => <QuestionCard key={q.id} q={q} canTeamAnswer={q.recipientRole === "TEAM"} />)}
         </div>
       )}
 
@@ -124,7 +122,7 @@ export default function QuestionsPanel({ projectId, contextType, contextId, ques
           </button>
           {showResolved && (
             <div className="space-y-2" style={{ marginTop: 8 }}>
-              {history.map((q) => <QuestionCard key={q.id} q={q} router={router} canTeamAnswer={false} />)}
+              {history.map((q) => <QuestionCard key={q.id} q={q} canTeamAnswer={false} />)}
             </div>
           )}
         </div>
@@ -137,8 +135,7 @@ export default function QuestionsPanel({ projectId, contextType, contextId, ques
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function QuestionCard({ q, router, canTeamAnswer }: { q: QuestionRow; router: any; canTeamAnswer: boolean }) {
+function QuestionCard({ q, canTeamAnswer }: { q: QuestionRow; canTeamAnswer: boolean }) {
   const [pending, start] = useTransition();
   const [expanded, setExpanded] = useState(false);
   const [answering, setAnswering] = useState(false);
@@ -204,7 +201,7 @@ function QuestionCard({ q, router, canTeamAnswer }: { q: QuestionRow; router: an
                 <textarea className="zp-textarea" rows={2} value={answer} placeholder="Your answer…" onChange={(e) => setAnswer(e.target.value)} />
                 <div className="flex items-center gap-2">
                   <button type="button" disabled={pending || !answer.trim()} className="btn btn-sm btn-primary"
-                    onClick={() => start(async () => { await answerQuestion(q.id, answer); setAnswering(false); router.refresh(); })}>Submit answer</button>
+                    onClick={() => start(async () => { await answerQuestion(q.id, answer); setAnswering(false); })}>Submit answer</button>
                   <button type="button" onClick={() => setAnswering(false)} className="btn btn-sm btn-ghost">Cancel</button>
                 </div>
               </div>
@@ -215,11 +212,11 @@ function QuestionCard({ q, router, canTeamAnswer }: { q: QuestionRow; router: an
 
           <div className="flex items-center gap-2">
             {!resolved && <button type="button" disabled={pending} className="btn btn-sm btn-ghost"
-              onClick={() => start(async () => { await resolveQuestion(q.id); router.refresh(); })}>Mark resolved</button>}
+              onClick={() => start(async () => { await resolveQuestion(q.id); })}>Mark resolved</button>}
             {resolved && <button type="button" disabled={pending} className="btn btn-sm btn-ghost"
-              onClick={() => start(async () => { await reopenQuestion(q.id); router.refresh(); })}>Reopen</button>}
+              onClick={() => start(async () => { await reopenQuestion(q.id); })}>Reopen</button>}
             <button type="button" disabled={pending} className="faint" style={{ fontSize: 12 }}
-              onClick={() => { if (confirm("Delete this question?")) start(async () => { await deleteQuestion(q.id); router.refresh(); }); }}>Delete</button>
+              onClick={() => { if (confirm("Delete this question?")) start(async () => { await deleteQuestion(q.id); }); }}>Delete</button>
           </div>
         </div>
       )}

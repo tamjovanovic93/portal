@@ -9,15 +9,17 @@ import "./globals.css";
 
 // Design system fonts (Claude Design handoff): Fredoka = display titles,
 // Chakra Petch = eyebrows/numerals/wordmark, IBM Plex Sans = body, IBM Plex Mono = ids/code.
+// Only the weights the stylesheet actually uses are loaded (design.css / inline
+// fontWeight): Fredoka → .page-title 600; Chakra → 500/600/700.
 const fredoka = Fredoka({
   variable: "--font-fredoka",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["600"],
 });
 const chakra = Chakra_Petch({
   variable: "--font-chakra",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["500", "600", "700"],
 });
 const plexSans = IBM_Plex_Sans({
   variable: "--font-plex-sans",

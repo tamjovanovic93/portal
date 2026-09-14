@@ -208,6 +208,7 @@ model Project {
   // Document rows (templateType client_profile / verification_queue / strategy),
   // not relational tables. See lib/intake.
 
+  @@index([isArchived])
   @@map("projects")
 }
 
@@ -255,6 +256,9 @@ model Document {
 
   @@index([projectId])
   @@index([clientId])
+  @@index([clientId, templateType])
+  @@index([projectId, templateType])
+  @@index([status, completedAt])
   @@map("documents")
 }
 
@@ -319,6 +323,7 @@ model MaterialItem {
   updatedAt DateTime           @updatedAt @map("updated_at")
 
   @@index([projectId])
+  @@index([status, dueDate])
   @@map("material_items")
 }
 
@@ -381,6 +386,9 @@ model Task {
   @@index([cycleId])
   @@index([assigneeId, status])
   @@index([scopeItemId])
+  @@index([dueDate])
+  @@index([stageNumber])
+  @@index([sourceBriefId])
   @@map("tasks")
 }
 
@@ -403,6 +411,7 @@ model AppEvent {
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
   @@index([projectId])
+  @@index([startAt])
   @@map("app_events")
 }
 
@@ -439,6 +448,8 @@ model Notification {
 
   @@index([recipientId])
   @@index([recipientRole])
+  @@index([recipientRole, readAt])
+  @@index([recipientId, readAt])
   @@map("notifications")
 }
 

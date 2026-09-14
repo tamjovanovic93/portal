@@ -885,7 +885,6 @@ function RespondForm({
       await saveDocument(documentId, content);
       await completeForm(documentId);
       setSubmitted(true);
-      router.refresh();
     });
   }
 

@@ -7,7 +7,7 @@ import {
   approveWireframesAndSubmit,
 } from "@/app/actions/wireframes";
 
-type Asset = { id: string; filename: string; mimeType: string | null };
+type Asset = { id: string; filename: string; mimeType: string | null; previewUrl?: string | null };
 type Reaction = "happy" | "tweaks" | "rethink" | "";
 type PageFeedback = { reaction: Reaction; comment: string };
 type Content = {
@@ -57,13 +57,14 @@ function labelFromFilename(filename: string): string {
 function FilePreview({ asset, label }: { asset: Asset; label: string }) {
   const isImage = asset.mimeType?.startsWith("image/") ?? false;
   const downloadUrl = `/api/download?id=${asset.id}`;
+  const previewUrl = asset.previewUrl ?? downloadUrl;
 
   if (isImage) {
     return (
       <div className="relative group">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={downloadUrl}
+          src={previewUrl}
           alt={label}
           className="w-full rounded-md object-contain bg-neutral-100"
         />

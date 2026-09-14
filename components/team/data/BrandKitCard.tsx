@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { briefId, TYPE_PRESETS, type TypeStyle, type BrandColor } from "@/lib/brief/types";
 import {
   updateBrandTypography,
@@ -25,16 +24,15 @@ export default function BrandKitCard({ clientId, typography, colors, logos }: {
 }
 
 function LogoSection({ clientId, logos }: { clientId: string; logos: Logo[] }) {
-  const router = useRouter();
   const [pending, start] = useTransition();
   const [label, setLabel] = useState("");
   const [url, setUrl] = useState("");
   function add() {
     if (!url.trim()) return;
-    start(async () => { await addBrandLogoLink(clientId, label, url); setLabel(""); setUrl(""); router.refresh(); });
+    start(async () => { await addBrandLogoLink(clientId, label, url); setLabel(""); setUrl(""); });
   }
   function remove(id: string) {
-    start(async () => { await deleteBrandLogo(id, clientId); router.refresh(); });
+    start(async () => { await deleteBrandLogo(id, clientId); });
   }
   return (
     <div>
@@ -62,10 +60,9 @@ function LogoSection({ clientId, logos }: { clientId: string; logos: Logo[] }) {
 }
 
 function TypographyEditor({ clientId, items: initial }: { clientId: string; items: TypeStyle[] }) {
-  const router = useRouter();
   const [items, setItems] = useState<TypeStyle[]>(initial);
   const [, start] = useTransition();
-  function commit(next: TypeStyle[]) { setItems(next); start(async () => { await updateBrandTypography(clientId, next); router.refresh(); }); }
+  function commit(next: TypeStyle[]) { setItems(next); start(async () => { await updateBrandTypography(clientId, next); }); }
   function addPreset(label: string) { commit([...items, { id: briefId("t"), label, font: "", size: "", style: "" }]); }
   function remove(id: string) { commit(items.filter((i) => i.id !== id)); }
   function edit(id: string, key: keyof TypeStyle, val: string) { setItems(items.map((i) => (i.id === id ? { ...i, [key]: val } : i))); }
@@ -95,10 +92,9 @@ function TypographyEditor({ clientId, items: initial }: { clientId: string; item
 }
 
 function ColorsEditor({ clientId, items: initial }: { clientId: string; items: BrandColor[] }) {
-  const router = useRouter();
   const [items, setItems] = useState<BrandColor[]>(initial);
   const [, start] = useTransition();
-  function commit(next: BrandColor[]) { setItems(next); start(async () => { await updateBrandColors(clientId, next); router.refresh(); }); }
+  function commit(next: BrandColor[]) { setItems(next); start(async () => { await updateBrandColors(clientId, next); }); }
   function add() { commit([...items, { id: briefId("c"), name: "", hex: "#000000" }]); }
   function remove(id: string) { commit(items.filter((i) => i.id !== id)); }
   function edit(id: string, key: keyof BrandColor, val: string) { setItems(items.map((i) => (i.id === id ? { ...i, [key]: val } : i))); }

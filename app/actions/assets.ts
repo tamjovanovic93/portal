@@ -44,6 +44,7 @@ export async function approveAsset(assetId: string) {
   });
 
   revalidatePath(`/projects/${asset.projectId}`);
+  revalidatePath(`/projects/${asset.projectId}/files`);
   return { success: true };
 }
 

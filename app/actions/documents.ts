@@ -19,6 +19,7 @@ type OwnedDoc = {
 
 function revalidateDoc(doc: OwnedDoc) {
   if (doc.projectId) {
+    revalidatePath(`/projects/${doc.projectId}`);
     revalidatePath(`/projects/${doc.projectId}/stage/${doc.stageNumber}`);
   } else if (doc.clientId) {
     revalidatePath(`/clients/${doc.clientId}`);

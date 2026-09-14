@@ -8,7 +8,7 @@ import {
 } from "@/app/actions/design";
 import { DESIGN_STAGE } from "@/lib/stages";
 
-type Asset = { id: string; filename: string; mimeType: string | null; storagePath: string };
+type Asset = { id: string; filename: string; mimeType: string | null; storagePath: string; previewUrl?: string | null };
 type Revision = { pageScreen: string; whatToChange: string };
 type Verdict = "" | "approved" | "approved_with_revisions" | "revisions_required";
 
@@ -53,7 +53,7 @@ function AssetCard({ asset }: { asset: Asset }) {
       <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={`/api/download?id=${asset.id}`}
+          src={asset.previewUrl ?? `/api/download?id=${asset.id}`}
           alt={asset.filename}
           className="w-full object-contain bg-neutral-50 max-h-80"
         />

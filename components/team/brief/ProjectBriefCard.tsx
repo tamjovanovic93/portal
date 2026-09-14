@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Avatar } from "@/components/ui/kit";
 import Icon from "@/components/ui/Icon";
 import { Chip } from "@/components/team/data/ui";
@@ -48,16 +47,12 @@ type Props = {
   clientDefault: { name?: string; email?: string };
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Router = any;
-
 // Sections that can be re-added from the "Add section" menu if removed.
 const ADDABLE_DEFAULTS: BriefSectionKind[] = ["meta", "overview", "scope", "keyFunctions", "sitemap", "team"];
 
 export default function ProjectBriefCard(props: Props) {
   const { projectId, briefId: id, currentStageLabel, brief, publishedAt, roster } = props;
   const [expanded, setExpanded] = useState(false);
-  const router = useRouter();
   const [genPending, startGen] = useTransition();
   const [genError, setGenError] = useState<string | null>(null);
   const [busy, startBusy] = useTransition();
@@ -72,7 +67,7 @@ export default function ProjectBriefCard(props: Props) {
   const published = !!publishedAt;
 
   function persistSections(next: BriefSection[]) {
-    startBusy(async () => { await updateBriefSections(id, next); router.refresh(); });
+    startBusy(async () => { await updateBriefSections(id, next); });
   }
 
   function generate() {
@@ -83,7 +78,6 @@ export default function ProjectBriefCard(props: Props) {
     startGen(async () => {
       const res = await generateBriefDraft(id);
       if (res.error) setGenError(res.error);
-      router.refresh();
     });
   }
 
@@ -91,14 +85,13 @@ export default function ProjectBriefCard(props: Props) {
     startBusy(async () => {
       if (published) await unpublishBrief(id);
       else await publishBrief(id);
-      router.refresh();
     });
   }
 
   function rename() {
     const next = prompt("Rename brief", name);
     if (next && next.trim() && next.trim() !== name) {
-      startBusy(async () => { await renameBrief(id, next.trim()); router.refresh(); });
+      startBusy(async () => { await renameBrief(id, next.trim()); });
     }
   }
 
@@ -195,7 +188,7 @@ export default function ProjectBriefCard(props: Props) {
                 persistSections(getBriefSections(brief).filter((s) => s.key !== sec.key));
               } : undefined}
             >
-              <SectionBody section={sec} briefDocId={id} brief={brief} props={props} router={router}
+              <SectionBody section={sec} briefDocId={id} brief={brief} props={props}
                 onSaveText={(text) => {
                   persistSections(getBriefSections(brief).map((s) => (s.key === sec.key ? { ...s, text } : s)));
                 }} />
@@ -284,8 +277,8 @@ function AddSection({ brief, onAdd }: { brief: ProjectBrief; onAdd: (next: Brief
 }
 
 // ── Render the right editor for a section kind ──
-function SectionBody({ section, briefDocId, brief, props, router, onSaveText }: {
-  section: BriefSection; briefDocId: string; brief: ProjectBrief; props: Props; router: Router; onSaveText: (t: string) => void;
+function SectionBody({ section, briefDocId, brief, props, onSaveText }: {
+  section: BriefSection; briefDocId: string; brief: ProjectBrief; props: Props; onSaveText: (t: string) => void;
 }) {
   switch (section.kind) {
     case "meta":
@@ -293,35 +286,35 @@ function SectionBody({ section, briefDocId, brief, props, router, onSaveText }: 
         <div className="space-y-4">
           <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
             <SelectField label="Project Type" value={brief.projectType ?? ""} options={[...PROJECT_TYPES]}
-              onSave={(v) => saveBriefFields(briefDocId, { projectType: v })} router={router} />
+              onSave={(v) => saveBriefFields(briefDocId, { projectType: v })} />
             <SelectField label="Status" value={brief.status ?? ""} options={[...STATUSES]}
-              onSave={(v) => saveBriefFields(briefDocId, { status: v })} router={router} />
+              onSave={(v) => saveBriefFields(briefDocId, { status: v })} />
             <div>
               <label className="zp-label">Current Stage</label>
               <p style={{ fontSize: 13.5, padding: "7px 0" }}>{props.currentStageLabel} <span className="faint" style={{ fontSize: 11 }}>· from workflow</span></p>
             </div>
-            <OwnerSelect briefDocId={briefDocId} value={brief.ownerId ?? ""} roster={props.roster} router={router} />
+            <OwnerSelect briefDocId={briefDocId} value={brief.ownerId ?? ""} roster={props.roster} />
           </div>
-          <DatesEditor briefDocId={briefDocId} dates={brief.dates ?? {}} router={router} />
-          <ClientContact briefDocId={briefDocId} value={brief.clientContact ?? {}} clientDefault={props.clientDefault} dataContacts={props.dataContacts} router={router} />
+          <DatesEditor briefDocId={briefDocId} dates={brief.dates ?? {}} />
+          <ClientContact briefDocId={briefDocId} value={brief.clientContact ?? {}} clientDefault={props.clientDefault} dataContacts={props.dataContacts} />
         </div>
       );
     case "overview":
       return <TextField label="Project Overview" value={brief.overview ?? ""} placeholder="What are we building for this client?"
-        onSave={(v) => saveBriefFields(briefDocId, { overview: v })} router={router} />;
+        onSave={(v) => saveBriefFields(briefDocId, { overview: v })} />;
     case "scope":
       return (
         <div className="space-y-3">
-          <ScopeSyncBar briefDocId={briefDocId} router={router} />
-          <ScopeList briefDocId={briefDocId} items={brief.scope ?? []} router={router} />
+          <ScopeSyncBar briefDocId={briefDocId} />
+          <ScopeList briefDocId={briefDocId} items={brief.scope ?? []} />
         </div>
       );
     case "keyFunctions":
-      return <EditableList briefDocId={briefDocId} field="keyFunctions" items={brief.keyFunctions ?? []} placeholder="Add a function (e.g. Checkout)" router={router} />;
+      return <EditableList briefDocId={briefDocId} field="keyFunctions" items={brief.keyFunctions ?? []} placeholder="Add a function (e.g. Checkout)" />;
     case "sitemap":
-      return <SitemapEditor briefDocId={briefDocId} nodes={brief.sitemap ?? []} router={router} />;
+      return <SitemapEditor briefDocId={briefDocId} nodes={brief.sitemap ?? []} />;
     case "team":
-      return <TeamAssign briefDocId={briefDocId} team={brief.team ?? []} roster={props.roster} router={router} />;
+      return <TeamAssign briefDocId={briefDocId} team={brief.team ?? []} roster={props.roster} />;
     case "text":
       return <CustomText value={section.text ?? ""} onSave={onSaveText} />;
     default:
@@ -330,12 +323,12 @@ function SectionBody({ section, briefDocId, brief, props, router, onSaveText }: 
 }
 
 // ── Dates ──
-function DatesEditor({ briefDocId, dates, router }: { briefDocId: string; dates: { start?: string | null; end?: string | null }; router: Router }) {
+function DatesEditor({ briefDocId, dates }: { briefDocId: string; dates: { start?: string | null; end?: string | null } }) {
   const [start, setStart] = useState(dates.start ?? "");
   const [end, setEnd] = useState(dates.end ?? "");
   const [pending, start2] = useTransition();
   function save(s = start, e = end) {
-    start2(async () => { await updateBriefDates(briefDocId, { start: s || null, end: e || null }); router.refresh(); });
+    start2(async () => { await updateBriefDates(briefDocId, { start: s || null, end: e || null }); });
   }
   return (
     <div className="grid gap-3" style={{ gridTemplateColumns: "1fr 1fr" }}>
@@ -356,15 +349,15 @@ function CustomText({ value, onSave }: { value: string; onSave: (t: string) => v
 }
 
 // ── Select field (immediate save) ──
-function SelectField({ label, value, options, onSave, router }: {
-  label: string; value: string; options: string[]; onSave: (v: string) => Promise<unknown>; router: Router;
+function SelectField({ label, value, options, onSave }: {
+  label: string; value: string; options: string[]; onSave: (v: string) => Promise<unknown>;
 }) {
   const [pending, start] = useTransition();
   return (
     <div>
       <label className="zp-label">{label}</label>
       <select className="zp-select" value={value} disabled={pending}
-        onChange={(e) => { const v = e.target.value; start(async () => { await onSave(v); router.refresh(); }); }}>
+        onChange={(e) => { const v = e.target.value; start(async () => { await onSave(v); }); }}>
         <option value="">Select…</option>
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
@@ -373,8 +366,8 @@ function SelectField({ label, value, options, onSave, router }: {
 }
 
 // ── Owner select with avatar ──
-function OwnerSelect({ briefDocId, value, roster, router }: {
-  briefDocId: string; value: string; roster: RosterMember[]; router: Router;
+function OwnerSelect({ briefDocId, value, roster }: {
+  briefDocId: string; value: string; roster: RosterMember[];
 }) {
   const [pending, start] = useTransition();
   const owner = roster.find((m) => m.id === value);
@@ -384,7 +377,7 @@ function OwnerSelect({ briefDocId, value, roster, router }: {
       <div className="flex items-center gap-2">
         {owner && <Avatar name={owner.name} photo={owner.photo} size={22} />}
         <select className="zp-select" value={value} disabled={pending}
-          onChange={(e) => { const v = e.target.value; start(async () => { await saveBriefFields(briefDocId, { ownerId: v || undefined }); router.refresh(); }); }}>
+          onChange={(e) => { const v = e.target.value; start(async () => { await saveBriefFields(briefDocId, { ownerId: v || undefined }); }); }}>
           <option value="">Unassigned</option>
           {roster.map((m) => <option key={m.id} value={m.id}>{m.name} · {m.title}</option>)}
         </select>
@@ -394,15 +387,15 @@ function OwnerSelect({ briefDocId, value, roster, router }: {
 }
 
 // ── Client contact ──
-function ClientContact({ briefDocId, value, clientDefault, dataContacts, router }: {
+function ClientContact({ briefDocId, value, clientDefault, dataContacts }: {
   briefDocId: string; value: { name?: string; email?: string }; clientDefault: { name?: string; email?: string };
-  dataContacts: { label: string; value: string }[]; router: Router;
+  dataContacts: { label: string; value: string }[];
 }) {
   const [name, setName] = useState(value.name ?? clientDefault.name ?? "");
   const [email, setEmail] = useState(value.email ?? clientDefault.email ?? "");
   const [pending, start] = useTransition();
   function save(n = name, e = email) {
-    start(async () => { await saveBriefFields(briefDocId, { clientContact: { name: n, email: e } }); router.refresh(); });
+    start(async () => { await saveBriefFields(briefDocId, { clientContact: { name: n, email: e } }); });
   }
   return (
     <div>
@@ -423,8 +416,8 @@ function ClientContact({ briefDocId, value, clientDefault, dataContacts, router 
 }
 
 // ── Text field (save on blur) ──
-function TextField({ label, value, placeholder, onSave, router }: {
-  label: string; value: string; placeholder?: string; onSave: (v: string) => Promise<unknown>; router: Router;
+function TextField({ label, value, placeholder, onSave }: {
+  label: string; value: string; placeholder?: string; onSave: (v: string) => Promise<unknown>;
 }) {
   const [text, setText] = useState(value);
   const [pending, start] = useTransition();
@@ -433,13 +426,13 @@ function TextField({ label, value, placeholder, onSave, router }: {
       <label className="zp-label">{label}</label>
       <textarea className="zp-textarea" rows={2} value={text} placeholder={placeholder} disabled={pending}
         onChange={(e) => setText(e.target.value)}
-        onBlur={() => { if (text !== value) start(async () => { await onSave(text); router.refresh(); }); }} />
+        onBlur={() => { if (text !== value) start(async () => { await onSave(text); }); }} />
     </div>
   );
 }
 
 // ── Scope → Tasks sync bar ──
-function ScopeSyncBar({ briefDocId, router }: { briefDocId: string; router: Router }) {
+function ScopeSyncBar({ briefDocId }: { briefDocId: string }) {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   function sync() {
@@ -448,7 +441,6 @@ function ScopeSyncBar({ briefDocId, router }: { briefDocId: string; router: Rout
       const res = await syncScopeTasks(briefDocId);
       if (res.error) setMsg(res.error);
       else setMsg(`${res.created ?? 0} created · ${res.updated ?? 0} updated${res.removed ? ` · ${res.removed} removed` : ""}`);
-      router.refresh();
     });
   }
   return (
@@ -464,15 +456,15 @@ function ScopeSyncBar({ briefDocId, router }: { briefDocId: string; router: Rout
 }
 
 // ── Scope list with per-item dates (drives generated tasks) ──
-function ScopeList({ briefDocId, items: initial, router }: {
-  briefDocId: string; items: ScopeItem[]; router: Router;
+function ScopeList({ briefDocId, items: initial }: {
+  briefDocId: string; items: ScopeItem[];
 }) {
   const [items, setItems] = useState<ScopeItem[]>(initial);
   const [text, setText] = useState("");
   const [pending, start] = useTransition();
   function commit(next: ScopeItem[]) {
     setItems(next);
-    start(async () => { await updateBriefList(briefDocId, "scope", next); router.refresh(); });
+    start(async () => { await updateBriefList(briefDocId, "scope", next); });
   }
   function add() { const t = text.trim(); if (!t) return; commit([...items, { id: briefId("s"), text: t }]); setText(""); }
   function remove(id: string) { commit(items.filter((i) => i.id !== id)); }
@@ -506,15 +498,15 @@ function ScopeList({ briefDocId, items: initial, router }: {
 }
 
 // ── Editable ordered list (key functions) ──
-function EditableList({ briefDocId, field, items: initial, placeholder, router }: {
-  briefDocId: string; field: BriefListField; items: BriefItem[]; placeholder: string; router: Router;
+function EditableList({ briefDocId, field, items: initial, placeholder }: {
+  briefDocId: string; field: BriefListField; items: BriefItem[]; placeholder: string;
 }) {
   const [items, setItems] = useState<BriefItem[]>(initial);
   const [text, setText] = useState("");
   const [pending, start] = useTransition();
   function commit(next: BriefItem[]) {
     setItems(next);
-    start(async () => { await updateBriefList(briefDocId, field, next); router.refresh(); });
+    start(async () => { await updateBriefList(briefDocId, field, next); });
   }
   function add() { const t = text.trim(); if (!t) return; commit([...items, { id: briefId("i"), text: t }]); setText(""); }
   function remove(id: string) { commit(items.filter((i) => i.id !== id)); }
@@ -544,8 +536,8 @@ function EditableList({ briefDocId, field, items: initial, placeholder, router }
 }
 
 // ── Sitemap editor (pages + one level of children) ──
-function SitemapEditor({ briefDocId, nodes: initial, router }: {
-  briefDocId: string; nodes: SitemapNode[]; router: Router;
+function SitemapEditor({ briefDocId, nodes: initial }: {
+  briefDocId: string; nodes: SitemapNode[];
 }) {
   const [nodes, setNodes] = useState<SitemapNode[]>(initial);
   const [page, setPage] = useState("");
@@ -553,7 +545,7 @@ function SitemapEditor({ briefDocId, nodes: initial, router }: {
   const [pending, start] = useTransition();
   function commit(next: SitemapNode[]) {
     setNodes(next);
-    start(async () => { await updateBriefSitemap(briefDocId, next); router.refresh(); });
+    start(async () => { await updateBriefSitemap(briefDocId, next); });
   }
   function addPage() { const t = page.trim(); if (!t) return; commit([...nodes, { id: briefId("p"), name: t, children: [] }]); setPage(""); }
   function removePage(id: string) { commit(nodes.filter((n) => n.id !== id)); }
@@ -605,8 +597,8 @@ function SitemapEditor({ briefDocId, nodes: initial, router }: {
 }
 
 // ── Project team assignment ──
-function TeamAssign({ briefDocId, team: initial, roster, router }: {
-  briefDocId: string; team: BriefTeamMember[]; roster: RosterMember[]; router: Router;
+function TeamAssign({ briefDocId, team: initial, roster }: {
+  briefDocId: string; team: BriefTeamMember[]; roster: RosterMember[];
 }) {
   const [team, setTeam] = useState<BriefTeamMember[]>(initial);
   const [addId, setAddId] = useState("");
@@ -614,7 +606,7 @@ function TeamAssign({ briefDocId, team: initial, roster, router }: {
   const [pending, start] = useTransition();
   function commit(next: BriefTeamMember[]) {
     setTeam(next);
-    start(async () => { await updateBriefTeam(briefDocId, next); router.refresh(); });
+    start(async () => { await updateBriefTeam(briefDocId, next); });
   }
   const available = roster.filter((m) => !team.some((t) => t.memberId === m.id));
   function addMember() { if (!addId) return; commit([...team, { memberId: addId, roles: [addRole] }]); setAddId(""); }

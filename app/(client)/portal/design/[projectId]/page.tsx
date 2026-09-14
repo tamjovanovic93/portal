@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import DesignFeedbackForm from "@/components/client/DesignFeedbackForm";
 import { getFeedbackDoc } from "@/lib/documents/feedback";
+import { getSignedUrls } from "@/lib/storage";
 import { DESIGN_STAGE } from "@/lib/stages";
 
 export default async function DesignReviewPage({
@@ -46,7 +47,11 @@ export default async function DesignReviewPage({
 
   // Read-only: the feedback document is created by the save/submit actions and
   // reset by the upload route / design-link action when newer designs arrive.
-  const feedbackDoc = await getFeedbackDoc(projectId, "design_feedback");
+  // One signed-URL batch for image previews instead of an auth+DB round-trip per <img>.
+  const [feedbackDoc, previews] = await Promise.all([
+    getFeedbackDoc(projectId, "design_feedback"),
+    getSignedUrls(project.assets.filter((a) => a.mimeType?.startsWith("image/")).map((a) => a.storagePath)),
+  ]);
   const isSubmitted = feedbackDoc?.status === "APPROVED";
   const existingContent = (feedbackDoc?.content ?? {}) as Record<string, unknown>;
 
@@ -81,6 +86,7 @@ export default async function DesignReviewPage({
           filename: a.filename,
           mimeType: a.mimeType,
           storagePath: a.storagePath,
+          previewUrl: previews.get(a.storagePath) ?? null,
         }))}
         initialContent={existingContent}
         readOnly={isSubmitted}

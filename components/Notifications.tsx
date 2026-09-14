@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { markAllNotificationsRead, markNotificationSeen } from "@/app/actions/notifications";
 
 export type NotificationItem = {
@@ -21,7 +20,6 @@ const ATTENTION_TYPES = new Set(["offer_question"]);
 export default function Notifications({ items }: { items: NotificationItem[] }) {
   const [open, setOpen] = useState(false);
   const [, startTransition] = useTransition();
-  const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
 
   const unread = items.filter((n) => !n.readAt).length;
@@ -47,7 +45,6 @@ export default function Notifications({ items }: { items: NotificationItem[] }) 
     if (next && unread - attention > 0) {
       startTransition(async () => {
         await markAllNotificationsRead();
-        router.refresh();
       });
     }
   }
@@ -57,7 +54,6 @@ export default function Notifications({ items }: { items: NotificationItem[] }) 
     setOpen(false);
     startTransition(async () => {
       await markNotificationSeen(id);
-      router.refresh();
     });
   }
 

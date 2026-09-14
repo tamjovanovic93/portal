@@ -12,7 +12,8 @@ export async function markAllNotificationsRead(): Promise<{ ok: boolean }> {
   // Opening the dropdown clears ordinary notifications, but NOT attention items
   // (e.g. client offer questions) — those stay until the question is viewed.
   await markNotificationsRead(user.id, user.role, { excludeTypes: ATTENTION_TYPES });
-  revalidatePath("/", "layout");
+  // The bell lives in the (team)/(client) layouts — refresh those trees only.
+  revalidatePath(user.role === "TEAM" ? "/dashboard" : "/portal", "layout");
   return { ok: true };
 }
 
@@ -27,7 +28,6 @@ export async function markNotificationSeen(notificationId: string): Promise<{ ok
     where: { id: notificationId, recipientRole: "TEAM", readAt: null },
     data: { readAt: new Date() },
   });
-  revalidatePath("/", "layout");
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
   return { ok: true };
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { answerQuestion, respondConfirm } from "@/app/actions/questions";
 
 export type ClientQuestion = {
@@ -27,7 +26,6 @@ export default function AnswerQuestions({ questions }: { questions: ClientQuesti
 }
 
 function QuestionItem({ q }: { q: ClientQuestion }) {
-  const router = useRouter();
   const [pending, start] = useTransition();
   const [answer, setAnswer] = useState("");
   const [changeMode, setChangeMode] = useState(false);
@@ -35,13 +33,13 @@ function QuestionItem({ q }: { q: ClientQuestion }) {
 
   function submitAnswer() {
     if (!answer.trim()) return;
-    start(async () => { await answerQuestion(q.id, answer); router.refresh(); });
+    start(async () => { await answerQuestion(q.id, answer); });
   }
   function confirm() {
-    start(async () => { await respondConfirm(q.id, "confirm"); router.refresh(); });
+    start(async () => { await respondConfirm(q.id, "confirm"); });
   }
   function requestChange() {
-    start(async () => { await respondConfirm(q.id, "change", note); setChangeMode(false); router.refresh(); });
+    start(async () => { await respondConfirm(q.id, "change", note); setChangeMode(false); });
   }
 
   return (

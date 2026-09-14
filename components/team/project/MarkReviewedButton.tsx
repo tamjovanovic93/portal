@@ -1,7 +1,6 @@
 "use client";
 
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { markDocumentHandled } from "@/app/actions/documents";
 
 // Small "Mark as reviewed" control on client-submitted document cards. Handling
@@ -13,7 +12,6 @@ export default function MarkReviewedButton({
   documentId: string;
   className?: string;
 }) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   return (
@@ -24,7 +22,6 @@ export default function MarkReviewedButton({
         e.stopPropagation();
         startTransition(async () => {
           await markDocumentHandled(documentId);
-          router.refresh();
         });
       }}
       disabled={isPending}

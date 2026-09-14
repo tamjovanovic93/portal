@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PROJECT_TYPES, type ProjectBrief, briefId } from "@/lib/brief/types";
 import {
@@ -36,7 +35,6 @@ export default function SuggestedProjectsPanel({
   notReadyReason: string | null;
   suggestions: Suggestion[];
 }) {
-  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +48,6 @@ export default function SuggestedProjectsPanel({
     const res = await generateSuggestedProjects(clientId);
     if (res.error) setError(res.error);
     setBusy(false);
-    router.refresh();
   }
 
   if (!dataReady) {
@@ -86,7 +83,7 @@ export default function SuggestedProjectsPanel({
       {pending.length > 0 && (
         <Section title={`Pending review (${pending.length})`}>
           {pending.map((s) => (
-            <PendingCard key={s.id} s={s} onChanged={() => router.refresh()} />
+            <PendingCard key={s.id} s={s} />
           ))}
         </Section>
       )}
@@ -131,7 +128,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function PendingCard({ s, onChanged }: { s: Suggestion; onChanged: () => void }) {
+function PendingCard({ s }: { s: Suggestion }) {
   const [name, setName] = useState(s.name);
   const [type, setType] = useState(s.projectType ?? "");
   const [overview, setOverview] = useState(s.brief.overview);
@@ -159,7 +156,6 @@ function PendingCard({ s, onChanged }: { s: Suggestion; onChanged: () => void })
     const res = await updateSuggestionBrief(s.id, brief);
     setBusy(null);
     if (res.error) setError(res.error);
-    else onChanged();
   }
 
   async function approve() {
@@ -169,7 +165,6 @@ function PendingCard({ s, onChanged }: { s: Suggestion; onChanged: () => void })
     const res = await approveSuggestion(s.id);
     setBusy(null);
     if (res.error) setError(res.error);
-    else onChanged();
   }
 
   async function reject() {
@@ -178,7 +173,6 @@ function PendingCard({ s, onChanged }: { s: Suggestion; onChanged: () => void })
     const res = await rejectSuggestion(s.id);
     setBusy(null);
     if (res.error) setError(res.error);
-    else onChanged();
   }
 
   return (

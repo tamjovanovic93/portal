@@ -89,13 +89,11 @@ export default function MockupSection({
     setLinkLabel("");
     setLinkUrl("");
     setAddingLink(false);
-    router.refresh();
   }
 
   async function handleDelete(assetId: string) {
     if (!confirm("Remove this file or link?")) return;
     await deleteDesignAsset(assetId, projectId);
-    router.refresh();
   }
 
   const files = assets.filter((a) => a.mimeType !== "text/uri-list");
