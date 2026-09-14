@@ -1,7 +1,7 @@
 // Phase 2 one-off: uploads were tagged with the pre-renumber stage numbers
 // (wireframes = 3, mockups = 4) while every reader filters on the current
 // constants (wireframes = 2, mockups = 3). Re-tag existing rows. Idempotent.
-// Run: node --env-file=.env.local scripts/p2-fix-asset-stages.mjs
+// Run: node --env-file=.env scripts/p2-fix-asset-stages.mjs
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();

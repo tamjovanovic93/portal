@@ -2,7 +2,7 @@
 // (recipient_id null, recipient_role TEAM) with one read state for everyone.
 // Fan each legacy row out to every active team member, then delete the original.
 // Idempotent — a second run finds no legacy rows.
-// Run: node --env-file=.env.local scripts/p4-fanout-legacy-notifications.mjs
+// Run: node --env-file=.env scripts/p4-fanout-legacy-notifications.mjs
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();

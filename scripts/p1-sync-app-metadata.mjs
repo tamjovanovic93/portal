@@ -1,6 +1,6 @@
 // Phase 1 one-off: mirror profiles.role into auth.users.app_metadata.role so
 // the proxy can route from the JWT without a DB call. Idempotent — re-run safe.
-// Run: node --env-file=.env.local scripts/p1-sync-app-metadata.mjs
+// Run: node --env-file=.env scripts/p1-sync-app-metadata.mjs
 import { PrismaClient } from "@prisma/client";
 import { createClient } from "@supabase/supabase-js";
 

@@ -2,7 +2,7 @@
 // stageNumber into delivery stages (2–7) using the agent, and move each into a
 // per-scope-item task list (Cycle). Safe to re-run — only touches tasks whose
 // stageNumber is still null. Run with:
-//   node --env-file=.env.local --env-file=.env scripts/migrate-task-stages.mjs
+//   node --env-file=.env scripts/migrate-task-stages.mjs
 import { PrismaClient } from "@prisma/client";
 import Anthropic from "@anthropic-ai/sdk";
 

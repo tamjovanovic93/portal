@@ -79,7 +79,9 @@ under "Scripts" below, in order.
 
 ## Scripts
 
-Run with `node scripts/<name>.mjs` against the `DATABASE_URL` in `.env`.
+Run with `node --env-file=.env scripts/<name>.mjs`. The `--env-file` flag is
+required: a bare Node script does not load `.env` the way Next.js and the
+Prisma CLI do.
 
 | Script | Purpose |
 |--------|---------|

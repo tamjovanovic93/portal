@@ -1,7 +1,7 @@
 // Phase 4 one-off: VERIFICATION questions used the per-client item id
 // ("VQ_001") as contextId, which collides across clients. Prefix it with the
 // client id ("<clientId>:VQ_001"). Idempotent.
-// Run: node --env-file=.env.local scripts/p4-verification-context-ids.mjs
+// Run: node --env-file=.env scripts/p4-verification-context-ids.mjs
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();

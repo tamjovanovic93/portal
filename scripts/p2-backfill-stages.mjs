@@ -1,7 +1,7 @@
 // Phase 2 one-off: create the 7 ProjectStage rows for any project that has none
 // (retainers created before stages were tracked). Previously done lazily during
 // page render. Idempotent.
-// Run: node --env-file=.env.local scripts/p2-backfill-stages.mjs
+// Run: node --env-file=.env scripts/p2-backfill-stages.mjs
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
