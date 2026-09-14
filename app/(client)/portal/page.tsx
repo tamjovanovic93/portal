@@ -43,51 +43,75 @@ export default async function ClientPortalPage() {
   const profile = await getSessionUser();
   if (!profile) redirect("/login");
 
-  // A client can have multiple projects — load all
-  const projects = await prisma.project.findMany({
-    where: { clientId: profile.id, isArchived: false },
-    include: {
-      stages: { orderBy: { stageNumber: "asc" } },
-      assets: {
-        where: { visibility: "SHARED" },
-        orderBy: { uploadedAt: "desc" },
-      },
-      materials: {
-        orderBy: [{ status: "asc" }, { createdAt: "asc" }],
-      },
-      documents: {
-        where: { status: { in: ["SENT", "APPROVED"] } },
-        orderBy: { sentAt: "desc" },
-      },
-      cycles: {
-        orderBy: { startDate: "desc" },
-        include: {
-          tasks: {
-            orderBy: { createdAt: "asc" },
-            include: { _count: { select: { approvals: true } } },
+  // A client can have multiple projects — load all. Everything the page needs
+  // is fetched in parallel; clients never see INTERNAL tasks so those are
+  // filtered in the query rather than after loading.
+  const [projects, clientProfileDoc, questionRows, clientDocs, answeredQuestions] = await Promise.all([
+    prisma.project.findMany({
+      where: { clientId: profile.id, isArchived: false },
+      include: {
+        stages: { orderBy: { stageNumber: "asc" } },
+        assets: {
+          where: { visibility: "SHARED" },
+          orderBy: { uploadedAt: "desc" },
+        },
+        materials: {
+          orderBy: [{ status: "asc" }, { createdAt: "asc" }],
+        },
+        documents: {
+          where: { status: { in: ["SENT", "APPROVED"] } },
+          orderBy: { sentAt: "desc" },
+        },
+        cycles: {
+          orderBy: { startDate: "desc" },
+          include: {
+            tasks: {
+              where: { type: { not: "INTERNAL" } },
+              orderBy: { createdAt: "asc" },
+              include: { _count: { select: { approvals: true } } },
+            },
           },
         },
       },
-    },
-    orderBy: { updatedAt: "desc" },
-  });
+      orderBy: { updatedAt: "desc" },
+    }),
+    // Pending message/slogan approvals live in the client's single client_profile
+    // JSON (client-level). They're shared, so surface them under each project.
+    prisma.document.findFirst({
+      where: { clientId: profile.id, templateType: PROFILE_DOC },
+      select: { content: true },
+    }),
+    // Open questions addressed to this client (across their projects).
+    prisma.question.findMany({
+      where: { recipientId: profile.id, status: { in: ["WAITING_CLIENT", "WAITING_CONFIRMATION"] } },
+      select: { id: true, kind: true, questionText: true, proposedAnswer: true, project: { select: { name: true } } },
+      orderBy: { createdAt: "asc" },
+    }),
+    // Client-level onboarding forms (no project yet) awaiting the client's action.
+    prisma.document.findMany({
+      where: { clientId: profile.id, projectId: null, status: { in: ["SENT", "APPROVED"] } },
+      orderBy: { sentAt: "desc" },
+      select: { id: true, title: true, status: true, templateType: true, content: true },
+    }),
+    // Questions asked & answered involving this client (both directions).
+    prisma.question.findMany({
+      where: {
+        OR: [{ recipientId: profile.id }, { askedById: profile.id }],
+        answerText: { not: null },
+      },
+      orderBy: { answeredAt: "desc" },
+      take: 20,
+      select: { id: true, questionText: true, answerText: true },
+    }),
+  ]);
 
-  // Pending message/slogan approvals live in the client's single client_profile
-  // JSON (client-level). They're shared, so surface them under each project.
-  const clientProfileDoc = await prisma.document.findFirst({
-    where: { clientId: profile.id, templateType: PROFILE_DOC },
-    select: { content: true },
-  });
-  const pendingApprovalsByProject = new Map<
-    string,
-    { messages: ClientProfile["messaging"]["key_messages"]; slogans: ClientProfile["messaging"]["slogans"] }
-  >();
-  if (clientProfileDoc) {
+  const pendingApprovals = (() => {
+    if (!clientProfileDoc) return null;
     const content = clientProfileDoc.content as ClientProfile;
     // Copy is client-facing ONLY after a team member explicitly sends it for
     // approval (client_approval_requested_at). Agent-generated copy stays
     // internal — it never auto-appears in the client's approval flow.
-    const approvals = {
+    return {
       messages: (content.messaging?.key_messages ?? []).filter(
         (m) => !!m.client_approval_requested_at && (m.approved ?? "pending") === "pending"
       ),
@@ -95,26 +119,13 @@ export default async function ClientPortalPage() {
         (s) => !!s.client_approval_requested_at && (s.approved ?? "pending") === "pending"
       ),
     };
-    for (const p of projects) pendingApprovalsByProject.set(p.id, approvals);
-  }
+  })();
 
-  // Open questions addressed to this client (across their projects).
-  const questionRows = await prisma.question.findMany({
-    where: { recipientId: profile.id, status: { in: ["WAITING_CLIENT", "WAITING_CONFIRMATION"] } },
-    select: { id: true, kind: true, questionText: true, proposedAnswer: true, project: { select: { name: true } } },
-    orderBy: { createdAt: "asc" },
-  });
   const clientQuestions: ClientQuestion[] = questionRows.map((q) => ({
     id: q.id, kind: q.kind, questionText: q.questionText, proposedAnswer: q.proposedAnswer,
     projectName: q.project?.name ?? "Your project",
   }));
 
-  // Client-level onboarding forms (no project yet) awaiting the client's action.
-  const clientDocs = await prisma.document.findMany({
-    where: { clientId: profile.id, projectId: null, status: { in: ["SENT", "APPROVED"] } },
-    orderBy: { sentAt: "desc" },
-    select: { id: true, title: true, status: true, templateType: true, content: true },
-  });
   const clientActionDocs = clientDocs.filter(isDocActive);
 
   // Persistent mini-dashboard: the client's initial form, approved offer and
@@ -123,18 +134,7 @@ export default async function ClientPortalPage() {
     ["initial_client_form", "financial_offer", "intake_form"].includes(d.templateType)
   );
 
-  // Questions asked & answered involving this client (both directions).
-  const answeredQuestions = await prisma.question.findMany({
-    where: {
-      OR: [{ recipientId: profile.id }, { askedById: profile.id }],
-      answerText: { not: null },
-    },
-    orderBy: { answeredAt: "desc" },
-    take: 20,
-    select: { id: true, questionText: true, answerText: true },
-  });
-
-  const MiniDashboard = () =>
+  const miniDashboard =
     onboardingHistory.length > 0 || answeredQuestions.length > 0 ? (
       <section>
         <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
@@ -176,7 +176,7 @@ export default async function ClientPortalPage() {
       </section>
     ) : null;
 
-  const OnboardingForms = () =>
+  const onboardingForms =
     clientActionDocs.length > 0 ? (
       <section>
         <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">
@@ -204,13 +204,13 @@ export default async function ClientPortalPage() {
       <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
         <AnswerQuestions questions={clientQuestions} />
         {clientActionDocs.length > 0 ? (
-          <OnboardingForms />
+          onboardingForms
         ) : onboardingHistory.length === 0 && answeredQuestions.length === 0 ? (
           <p className="text-neutral-500 text-sm text-center">
             Your onboarding is being set up. Check back shortly.
           </p>
         ) : null}
-        <MiniDashboard />
+        {miniDashboard}
       </div>
     );
   }
@@ -218,17 +218,15 @@ export default async function ClientPortalPage() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-10 space-y-10">
       <AnswerQuestions questions={clientQuestions} />
-      <OnboardingForms />
-      <MiniDashboard />
+      {onboardingForms}
+      {miniDashboard}
       {projects.map((project) => {
         // ── Retainer (ONGOING) clients get a cycle/task view, not stages ──
         if (project.mode === "ONGOING") {
           const activeCycles = project.cycles.filter((c) => c.status === "ACTIVE");
           const closedCycles = project.cycles.filter((c) => c.status === "CLOSED");
-          // Clients never see internal tasks.
-          const visibleActiveTasks = activeCycles
-            .flatMap((c) => c.tasks)
-            .filter((t) => t.type !== "INTERNAL");
+          // Internal tasks are excluded in the query — clients never see them.
+          const visibleActiveTasks = activeCycles.flatMap((c) => c.tasks);
           const awaiting = visibleActiveTasks.filter(
             (t) =>
               t.type === "DELIVERABLE" &&
@@ -381,9 +379,7 @@ export default async function ClientPortalPage() {
                   </summary>
                   <div className="mt-3 space-y-3">
                     {closedCycles.map((c) => {
-                      const clientDone = c.tasks.filter(
-                        (t) => t.type !== "INTERNAL" && t.status === "DONE"
-                      );
+                      const clientDone = c.tasks.filter((t) => t.status === "DONE");
                       return (
                         <div key={c.id} className="border border-neutral-200 rounded-lg bg-white overflow-hidden">
                           <div className="px-4 py-2.5 border-b border-neutral-100 bg-neutral-50">
@@ -509,7 +505,7 @@ export default async function ClientPortalPage() {
 
             {/* Brief approvals — key messages and slogans pending client sign-off */}
             {(() => {
-              const ap = pendingApprovalsByProject.get(project.id);
+              const ap = pendingApprovals;
               const msgs = ap?.messages ?? [];
               const sls = ap?.slogans ?? [];
               if (msgs.length === 0 && sls.length === 0) return null;

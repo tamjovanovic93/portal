@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { hashAccent, type Accent } from "@/components/ui/kit";
 
-// Team members are TEAM Profiles — the single source of truth (replaces the old
-// static roster). Profile copy (title, skills, bio, availability, accent, photo)
-// lives on the row; capacity and current projects are derived from assigned tasks.
+// Team members are TEAM Profiles — the single source of truth. Profile copy
+// (title, skills, bio, availability, accent, photo) lives on the row; capacity
+// and current projects are derived from assigned tasks.
 
 const CAPACITY_THRESHOLD = 6; // open assigned tasks that reads as "fully loaded"
 
@@ -53,39 +53,50 @@ export async function getTeamData(): Promise<TeamMember[]> {
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }, { email: "asc" }],
   });
   if (profiles.length === 0) return [];
+  const ids = profiles.map((p) => p.id);
 
-  const tasks = await prisma.task.findMany({
-    where: { assigneeId: { in: profiles.map((p) => p.id) } },
-    select: {
-      assigneeId: true,
-      status: true,
-      cycle: {
-        select: {
-          project: {
-            select: { id: true, name: true, mode: true, client: { select: { name: true, email: true } } },
+  // Open-task counts per member and the distinct projects those tasks belong
+  // to — aggregated in the DB instead of loading every task row.
+  const [openCounts, openByCycle] = await Promise.all([
+    prisma.task.groupBy({
+      by: ["assigneeId"],
+      where: { assigneeId: { in: ids }, status: { not: "DONE" } },
+      _count: { _all: true },
+    }),
+    prisma.task.findMany({
+      where: { assigneeId: { in: ids }, status: { not: "DONE" } },
+      distinct: ["assigneeId", "cycleId"],
+      select: {
+        assigneeId: true,
+        cycle: {
+          select: {
+            project: {
+              select: { id: true, name: true, mode: true, client: { select: { name: true, email: true } } },
+            },
           },
         },
       },
-    },
-  });
+    }),
+  ]);
+  const openById = new Map(openCounts.map((r) => [r.assigneeId, r._count._all]));
+  const projectsById = new Map<string, Map<string, MemberProject>>();
+  for (const t of openByCycle) {
+    if (!t.assigneeId) continue;
+    const proj = t.cycle.project;
+    const map = projectsById.get(t.assigneeId) ?? new Map<string, MemberProject>();
+    if (!map.has(proj.id)) {
+      map.set(proj.id, {
+        id: proj.id,
+        name: proj.name,
+        clientName: proj.client.name ?? proj.client.email,
+        isRetainer: proj.mode === "ONGOING",
+      });
+    }
+    projectsById.set(t.assigneeId, map);
+  }
 
   return profiles.map((p) => {
-    const mine = tasks.filter((t) => t.assigneeId === p.id);
-    const open = mine.filter((t) => t.status !== "DONE");
-
-    const projMap = new Map<string, MemberProject>();
-    for (const t of open) {
-      const proj = t.cycle.project;
-      if (!projMap.has(proj.id)) {
-        projMap.set(proj.id, {
-          id: proj.id,
-          name: proj.name,
-          clientName: proj.client.name ?? proj.client.email,
-          isRetainer: proj.mode === "ONGOING",
-        });
-      }
-    }
-
+    const open = openById.get(p.id) ?? 0;
     const name = memberName(p);
     const avail = (p.availability as Availability) ?? null;
     return {
@@ -98,14 +109,14 @@ export async function getTeamData(): Promise<TeamMember[]> {
       skills: p.skills ?? [],
       overview: p.bio ?? "",
       quote: "",
-      capacity: Math.min(1, open.length / CAPACITY_THRESHOLD),
-      openTasks: open.length,
+      capacity: Math.min(1, open / CAPACITY_THRESHOLD),
+      openTasks: open,
       availability: {
         hours: avail?.hours ?? DEFAULT_AVAILABILITY.hours,
         tz: avail?.tz ?? DEFAULT_AVAILABILITY.tz,
         note: avail?.note ?? DEFAULT_AVAILABILITY.note,
       },
-      projects: [...projMap.values()],
+      projects: [...(projectsById.get(p.id)?.values() ?? [])],
     };
   });
 }

@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { Avatar, Pill, VAR, type Accent } from "@/components/ui/kit";
+import { listWorkTasks } from "@/app/actions/work";
 
 export type WorkTask = {
   id: string;
@@ -27,6 +28,8 @@ export type WorkQuestion = {
   projectName: string | null;
 };
 
+export type WorkloadCounts = { active: number; overdue: number; dueSoon: number; blocked: number };
+
 type StatusFilter = "active" | "due_soon" | "overdue" | "blocked" | "done" | "all";
 
 const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
@@ -39,6 +42,7 @@ const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
 ];
 
 const DAY = 86400000;
+const EMPTY_COUNTS: WorkloadCounts = { active: 0, overdue: 0, dueSoon: 0, blocked: 0 };
 
 function classify(t: WorkTask, now: number) {
   const due = t.dueDate ? new Date(t.dueDate).getTime() : null;
@@ -49,13 +53,18 @@ function classify(t: WorkTask, now: number) {
   return { done, overdue, dueSoon, blocked };
 }
 
+// `tasks` are the current member's tasks; other members and "Everyone" are
+// fetched on demand so the page does not ship every task up front. Per-member
+// workload counts come precomputed from the server.
 export default function MyWork({
   tasks,
+  workload,
   members,
   questions = [],
   currentUserId,
 }: {
   tasks: WorkTask[];
+  workload: Record<string, WorkloadCounts>;
   members: WorkMember[];
   questions?: WorkQuestion[];
   currentUserId: string;
@@ -64,27 +73,32 @@ export default function MyWork({
   // appears once a person is chosen (bubble / dropdown) or a category is picked.
   const [who, setWho] = useState<string>("");
   const [status, setStatus] = useState<StatusFilter | "">("");
-  const now = Date.now();
+  const [tasksByWho, setTasksByWho] = useState<Record<string, WorkTask[]>>(() =>
+    currentUserId ? { [currentUserId]: tasks } : {}
+  );
+  const [loading, startLoading] = useTransition();
+  const [now] = useState(() => Date.now());
 
   const showList = who !== "" || status !== "";
   const effectiveWho = who === "" ? "all" : who;
   const effectiveStatus: StatusFilter = status === "" ? "active" : status;
 
-  // Per-member workload counts (from the same task set — one source of truth).
-  const workload = useMemo(() => {
-    const map = new Map<string, { active: number; overdue: number; dueSoon: number; blocked: number }>();
-    for (const m of members) map.set(m.id, { active: 0, overdue: 0, dueSoon: 0, blocked: 0 });
-    for (const t of tasks) {
-      if (!t.assigneeId || !map.has(t.assigneeId)) continue;
-      const c = map.get(t.assigneeId)!;
-      const k = classify(t, now);
-      if (!k.done) c.active++;
-      if (k.overdue) c.overdue++;
-      if (k.dueSoon) c.dueSoon++;
-      if (k.blocked) c.blocked++;
-    }
-    return map;
-  }, [tasks, members, now]);
+  function ensureLoaded(key: string) {
+    if (tasksByWho[key]) return;
+    startLoading(async () => {
+      const rows = await listWorkTasks(key === "all" ? "all" : key);
+      setTasksByWho((prev) => ({ ...prev, [key]: rows }));
+    });
+  }
+  function selectWho(next: string) {
+    setWho(next);
+    const key = next === "" ? (status !== "" ? "all" : null) : next;
+    if (key) ensureLoaded(key);
+  }
+  function selectStatus(next: StatusFilter | "") {
+    setStatus(next);
+    if (next !== "" || who !== "") ensureLoaded(who === "" ? "all" : who);
+  }
 
   const questionsByMember = useMemo(() => {
     const map = new Map<string, WorkQuestion[]>();
@@ -103,7 +117,8 @@ export default function MyWork({
 
   const filtered = useMemo(() => {
     if (!showList) return [];
-    return tasks.filter((t) => {
+    const source = tasksByWho[effectiveWho] ?? [];
+    return source.filter((t) => {
       if (effectiveWho !== "all" && t.assigneeId !== effectiveWho) return false;
       const k = classify(t, now);
       switch (effectiveStatus) {
@@ -119,20 +134,20 @@ export default function MyWork({
       const db = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
       return da - db;
     });
-  }, [tasks, showList, effectiveWho, effectiveStatus, now]);
+  }, [tasksByWho, showList, effectiveWho, effectiveStatus, now]);
 
   return (
     <div className="card card-pad space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
         <span style={{ fontWeight: 600, fontSize: 14 }}>Tasks</span>
         <div className="flex-1" />
-        <select className="zp-select" style={{ width: "auto", fontSize: 12 }} value={who} onChange={(e) => setWho(e.target.value)}>
+        <select className="zp-select" style={{ width: "auto", fontSize: 12 }} value={who} onChange={(e) => selectWho(e.target.value)}>
           <option value="">Who…</option>
           <option value={currentUserId}>My tasks</option>
           <option value="all">Everyone</option>
           {members.filter((m) => m.id !== currentUserId).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
         </select>
-        <select className="zp-select" style={{ width: "auto", fontSize: 12 }} value={status} onChange={(e) => setStatus(e.target.value as StatusFilter | "")}>
+        <select className="zp-select" style={{ width: "auto", fontSize: 12 }} value={status} onChange={(e) => selectStatus(e.target.value as StatusFilter | "")}>
           <option value="">Category…</option>
           {STATUS_FILTERS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
         </select>
@@ -146,10 +161,10 @@ export default function MyWork({
       {/* Workload strip */}
       <div className="flex flex-wrap gap-2">
         {members.map((m) => {
-          const c = workload.get(m.id)!;
+          const c = workload[m.id] ?? EMPTY_COUNTS;
           const selected = who === m.id;
           return (
-            <button key={m.id} type="button" onClick={() => setWho(selected ? "" : m.id)}
+            <button key={m.id} type="button" onClick={() => selectWho(selected ? "" : m.id)}
               className="flex items-center gap-2" style={{ padding: "6px 10px", borderRadius: "var(--r-md)", border: `1px solid ${selected ? VAR[m.color] : "var(--border)"}`, background: selected ? "var(--feature-grad)" : "var(--surface-2)" }}>
               <Avatar name={m.name} color={m.color} size={22} />
               <span style={{ fontSize: 12.5, fontWeight: 500 }}>{m.name}</span>
@@ -190,7 +205,7 @@ export default function MyWork({
       {!showList ? (
         <p className="faint" style={{ fontSize: 12.5 }}>Pick a person above or choose a category to see their tasks.</p>
       ) : filtered.length === 0 ? (
-        <p className="faint" style={{ fontSize: 12.5 }}>No tasks match this filter.</p>
+        <p className="faint" style={{ fontSize: 12.5 }}>{loading && !tasksByWho[effectiveWho] ? "Loading…" : "No tasks match this filter."}</p>
       ) : (
         <div className="flex flex-col" style={{ gap: 2 }}>
           {filtered.slice(0, 40).map((t) => {

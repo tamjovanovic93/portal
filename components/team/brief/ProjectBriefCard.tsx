@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Avatar } from "@/components/ui/kit";
 import Icon from "@/components/ui/Icon";
 import { Chip } from "@/components/team/data/ui";
@@ -463,9 +463,19 @@ function ScopeList({ briefDocId, items: initial }: {
   const [items, setItems] = useState<ScopeItem[]>(initial);
   const [text, setText] = useState("");
   const [pending, start] = useTransition();
+  // Date inputs fire onChange per keystroke; batch those into one save.
+  const dateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (dateTimer.current) clearTimeout(dateTimer.current); }, []);
   function commit(next: ScopeItem[]) {
+    if (dateTimer.current) { clearTimeout(dateTimer.current); dateTimer.current = null; }
     setItems(next);
     start(async () => { await updateBriefList(briefDocId, "scope", next); });
+  }
+  function commitDate(id: string, patch: Partial<ScopeItem>) {
+    const next = items.map((i) => (i.id === id ? { ...i, ...patch } : i));
+    setItems(next);
+    if (dateTimer.current) clearTimeout(dateTimer.current);
+    dateTimer.current = setTimeout(() => { dateTimer.current = null; commit(next); }, 600);
   }
   function add() { const t = text.trim(); if (!t) return; commit([...items, { id: briefId("s"), text: t }]); setText(""); }
   function remove(id: string) { commit(items.filter((i) => i.id !== id)); }
@@ -480,9 +490,9 @@ function ScopeList({ briefDocId, items: initial }: {
             <input className="zp-input" style={{ flex: 1, minWidth: 160 }} value={it.text}
               onChange={(e) => edit(it.id, { text: e.target.value })} onBlur={() => commit(items)} disabled={pending} />
             <input type="date" className="zp-input" style={{ width: 140 }} title="Start" value={it.startDate ?? ""}
-              onChange={(e) => { const v = e.target.value || null; const next = items.map((i) => i.id === it.id ? { ...i, startDate: v } : i); commit(next); }} />
+              onChange={(e) => commitDate(it.id, { startDate: e.target.value || null })} onBlur={() => { if (dateTimer.current) commit(items); }} />
             <input type="date" className="zp-input" style={{ width: 140 }} title="Due" value={it.dueDate ?? ""}
-              onChange={(e) => { const v = e.target.value || null; const next = items.map((i) => i.id === it.id ? { ...i, dueDate: v } : i); commit(next); }} />
+              onChange={(e) => commitDate(it.id, { dueDate: e.target.value || null })} onBlur={() => { if (dateTimer.current) commit(items); }} />
             <button type="button" onClick={() => move(idx, -1)} disabled={idx === 0} className="btn btn-sm btn-ghost" style={{ padding: "2px 6px" }}>↑</button>
             <button type="button" onClick={() => move(idx, 1)} disabled={idx === items.length - 1} className="btn btn-sm btn-ghost" style={{ padding: "2px 6px" }}>↓</button>
             <button type="button" onClick={() => remove(it.id)} className="faint" style={{ fontSize: 12 }}>✕</button>

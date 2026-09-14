@@ -1,6 +1,8 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { mutateDocumentContent } from "@/lib/documents/mutate";
+import { CLIENT_DATA_TEMPLATE_TYPES, TEMPLATE_TYPES } from "@/lib/documents/types";
+import type { BrandKit } from "@/app/actions/brand-kit";
 import {
   PROFILE_DOC,
   STRATEGY_DOC,
@@ -57,6 +59,31 @@ export function getStrategy(clientId: string) {
 
 export function getVerificationQueue(clientId: string) {
   return getContent<VerificationQueue>(clientId, VERIFICATION_DOC);
+}
+
+export type ClientData = {
+  profile: ClientProfile | null;
+  strategy: Strategy | null;
+  verification: VerificationQueue | null;
+  brandKit: BrandKit;
+};
+
+// All shared Client Data docs for one client in a single query (profile,
+// strategy, verification queue, brand kit). Newest row per type wins, matching
+// getDoc(). Use this on pages that need several of them at once.
+export async function getClientData(clientId: string): Promise<ClientData> {
+  const docs = await prisma.document.findMany({
+    where: { clientId, templateType: { in: [...CLIENT_DATA_TEMPLATE_TYPES] } },
+    orderBy: { createdAt: "desc" },
+    select: { templateType: true, content: true },
+  });
+  const first = (type: string) => docs.find((d) => d.templateType === type)?.content ?? null;
+  return {
+    profile: first(PROFILE_DOC) as ClientProfile | null,
+    strategy: first(STRATEGY_DOC) as Strategy | null,
+    verification: first(VERIFICATION_DOC) as VerificationQueue | null,
+    brandKit: (first(TEMPLATE_TYPES.brandKit) as BrandKit | null) ?? {},
+  };
 }
 
 // Find-or-create + overwrite the content for one of the client-data docs

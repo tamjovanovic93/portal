@@ -16,8 +16,7 @@ import {
   PersonaCard,
   type ChipItem,
 } from "@/components/team/data/ui";
-import { getProfile, getStrategy, getVerificationQueue } from "@/lib/intake/store";
-import { getBrandKit, getBrandLogos } from "@/app/actions/brand-kit";
+import { getClientData } from "@/lib/intake/store";
 import { findActiveJob } from "@/lib/ai/jobs";
 import BrandKitCard from "@/components/team/data/BrandKitCard";
 import SuggestedProjectsPanel from "@/components/team/data/SuggestedProjectsPanel";
@@ -77,13 +76,18 @@ export default async function ClientDataPage({
   if (!client || client.role !== "CLIENT") notFound();
   const clientName = client.name ?? client.email;
 
-  const [profile, strategy, verification, brandKit, brandLogos] = await Promise.all([
-    getProfile(clientId),
-    getStrategy(clientId),
-    getVerificationQueue(clientId),
-    getBrandKit(clientId),
-    getBrandLogos(clientId),
-  ]);
+  // All four Client Data docs in one query; the Projects tab additionally
+  // loads suggestions. Other tabs only need the pending count for the badge.
+  const [{ profile, strategy, verification, brandKit }, suggestionRows, pendingSuggestionCount, activeSuggestionJob] =
+    await Promise.all([
+      getClientData(clientId),
+      tab === "projects"
+        ? prisma.suggestedProject.findMany({ where: { clientId }, orderBy: { createdAt: "asc" } })
+        : Promise.resolve([]),
+      prisma.suggestedProject.count({ where: { clientId, status: "PENDING" } }),
+      tab === "projects" ? findActiveJob("suggestions", clientId) : Promise.resolve(null),
+    ]);
+  const brandLogos = brandKit.logos ?? [];
   const company = (profile?.company ?? null) as Row | null;
   const verificationItems = verification?.items ?? [];
   const activeVerification = verificationItems.filter((i) => (i.status ?? "pending") === "pending");
@@ -112,10 +116,6 @@ export default async function ClientDataPage({
     : !strategy
     ? "Generate the strategy first."
     : null;
-  const [suggestionRows, activeSuggestionJob] = await Promise.all([
-    prisma.suggestedProject.findMany({ where: { clientId }, orderBy: { createdAt: "asc" } }),
-    findActiveJob("suggestions", clientId),
-  ]);
   const suggestions = suggestionRows.map((s) => {
     const b = (s.briefDraft as Record<string, unknown>) ?? {};
     const list = (v: unknown, key: string) =>
@@ -179,9 +179,7 @@ export default async function ClientDataPage({
     brand: (brandKit.typography?.length ?? 0) + (brandKit.colors?.length ?? 0) + brandLogos.length
       ? String((brandKit.typography?.length ?? 0) + (brandKit.colors?.length ?? 0) + brandLogos.length) : "",
     verify: "",
-    projects: suggestions.filter((s) => s.status === "PENDING").length
-      ? String(suggestions.filter((s) => s.status === "PENDING").length)
-      : "",
+    projects: pendingSuggestionCount ? String(pendingSuggestionCount) : "",
   };
 
   // Business snapshot bits
