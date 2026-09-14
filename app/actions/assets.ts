@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireTeam } from "@/lib/auth/session";
-import { createAdminClient, STORAGE_BUCKET } from "@/lib/supabase/admin";
+import { removeStorageObjects } from "@/lib/storage";
 
 async function teamOrError() {
   try {
@@ -53,12 +53,8 @@ export async function deleteAsset(assetId: string) {
   const asset = await prisma.projectAsset.findUnique({ where: { id: assetId } });
   if (!asset) return { error: "Not found" };
 
-  // Delete from storage
-  const adminClient = createAdminClient();
-  await adminClient.storage.from(STORAGE_BUCKET).remove([asset.storagePath]);
-
-  // Delete DB record
   await prisma.projectAsset.delete({ where: { id: assetId } });
+  if (asset.mimeType !== "text/uri-list") await removeStorageObjects([asset.storagePath]);
 
   revalidatePath(`/projects/${asset.projectId}/files`);
   revalidatePath(`/projects/${asset.projectId}`);

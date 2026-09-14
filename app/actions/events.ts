@@ -3,13 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireTeam } from "@/lib/auth/session";
-import { EventType } from "@prisma/client";
-
-const EVENT_TYPES = Object.values(EventType);
-
-function parseEventType(value: FormDataEntryValue | null): EventType {
-  return EVENT_TYPES.includes(value as EventType) ? (value as EventType) : "APPOINTMENT";
-}
+import { parseForm } from "@/lib/validation/form";
+import { eventSchema } from "@/lib/validation/schemas";
 
 async function teamOrError() {
   try {
@@ -23,25 +18,19 @@ export async function createEvent(formData: FormData) {
   const user = await teamOrError();
   if (!user) return { error: "Unauthorized" };
 
-  const title = (formData.get("title") as string)?.trim();
-  const startAtRaw = formData.get("startAt") as string;
-  const endAtRaw = formData.get("endAt") as string | null;
-  const type = parseEventType(formData.get("type"));
-  const description = (formData.get("description") as string)?.trim() || null;
-  const projectId = (formData.get("projectId") as string) || null;
-  const allDay = formData.get("allDay") === "true";
-
-  if (!title || !startAtRaw) return { error: "Title and start date are required." };
+  const parsed = parseForm(eventSchema, formData);
+  if (!parsed.ok) return { error: parsed.error };
+  const { title, startAt, endAt, type, description, projectId, allDay } = parsed.data;
 
   await prisma.appEvent.create({
     data: {
       title,
-      startAt: new Date(startAtRaw),
-      endAt: endAtRaw ? new Date(endAtRaw) : null,
+      startAt,
+      endAt,
       allDay,
       type,
       description,
-      projectId: projectId || null,
+      projectId,
       sourceType: "manual",
       createdBy: user.id,
     },
@@ -55,27 +44,13 @@ export async function createEvent(formData: FormData) {
 export async function updateEvent(id: string, formData: FormData) {
   if (!(await teamOrError())) return { error: "Unauthorized" };
 
-  const title = (formData.get("title") as string)?.trim();
-  const startAtRaw = formData.get("startAt") as string;
-  const endAtRaw = formData.get("endAt") as string | null;
-  const type = parseEventType(formData.get("type"));
-  const description = (formData.get("description") as string)?.trim() || null;
-  const projectId = (formData.get("projectId") as string) || null;
-  const allDay = formData.get("allDay") === "true";
-
-  if (!title || !startAtRaw) return { error: "Title and start date are required." };
+  const parsed = parseForm(eventSchema, formData);
+  if (!parsed.ok) return { error: parsed.error };
+  const { title, startAt, endAt, type, description, projectId, allDay } = parsed.data;
 
   await prisma.appEvent.update({
     where: { id },
-    data: {
-      title,
-      startAt: new Date(startAtRaw),
-      endAt: endAtRaw ? new Date(endAtRaw) : null,
-      allDay,
-      type,
-      description,
-      projectId: projectId || null,
-    },
+    data: { title, startAt, endAt, allDay, type, description, projectId },
   });
 
   revalidatePath("/calendar");

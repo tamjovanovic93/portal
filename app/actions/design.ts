@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { requireTeam } from "@/lib/auth/session";
-import { requireDocumentAccess } from "@/lib/auth/access";
-import { createAdminClient, STORAGE_BUCKET } from "@/lib/supabase/admin";
+import { requireProjectAccess } from "@/lib/auth/access";
+import { getOrCreateFeedbackDoc, resetFeedbackIfSubmitted } from "@/lib/documents/feedback";
+import { removeStorageObjects } from "@/lib/storage";
 import { DESIGN_STAGE } from "@/lib/stages";
 
 export async function saveDesignLink(projectId: string, label: string, url: string) {
@@ -23,7 +24,10 @@ export async function saveDesignLink(projectId: string, label: string, url: stri
       uploadedBy: user.id,
     },
   });
+  // A new design after a submitted review reopens the review round.
+  await resetFeedbackIfSubmitted(projectId, "design_feedback");
   revalidatePath(`/projects/${projectId}/stage/${DESIGN_STAGE}`);
+  revalidatePath("/portal");
 }
 
 export async function deleteDesignAsset(assetId: string, projectId: string) {
@@ -31,30 +35,28 @@ export async function deleteDesignAsset(assetId: string, projectId: string) {
   const asset = await prisma.projectAsset.findUnique({ where: { id: assetId } });
   if (!asset) return;
 
-  // Delete the file from Supabase storage if it's a real upload (not a link)
-  if (asset.mimeType !== "text/uri-list") {
-    const admin = createAdminClient();
-    await admin.storage.from(STORAGE_BUCKET).remove([asset.storagePath]);
-  }
-
   await prisma.projectAsset.delete({ where: { id: assetId } });
+  // Real uploads only (links are not storage objects).
+  if (asset.mimeType !== "text/uri-list") await removeStorageObjects([asset.storagePath]);
   revalidatePath(`/projects/${projectId}/stage/${DESIGN_STAGE}`);
 }
 
-export async function saveDesignFeedback(documentId: string, content: Record<string, unknown>) {
-  await requireDocumentAccess(documentId);
+export async function saveDesignFeedback(projectId: string, content: Record<string, unknown>) {
+  await requireProjectAccess(projectId);
+  const doc = await getOrCreateFeedbackDoc(projectId, "design_feedback");
   await prisma.document.update({
-    where: { id: documentId },
+    where: { id: doc.id },
     data: { content: content as Prisma.InputJsonValue },
   });
   revalidatePath("/portal");
 }
 
-export async function submitDesignFeedback(documentId: string, content: Record<string, unknown>) {
-  const { doc } = await requireDocumentAccess(documentId);
+export async function submitDesignFeedback(projectId: string, content: Record<string, unknown>) {
+  await requireProjectAccess(projectId);
+  const doc = await getOrCreateFeedbackDoc(projectId, "design_feedback");
 
   await prisma.document.update({
-    where: { id: documentId },
+    where: { id: doc.id },
     data: {
       content: content as Prisma.InputJsonValue,
       status: "APPROVED",
@@ -63,8 +65,8 @@ export async function submitDesignFeedback(documentId: string, content: Record<s
   });
 
   revalidatePath("/portal");
-  revalidatePath(`/projects/${doc.projectId}`);
-  revalidatePath(`/projects/${doc.projectId}/stage/${DESIGN_STAGE}`);
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/stage/${DESIGN_STAGE}`);
   revalidatePath("/dashboard");
   redirect("/portal");
 }
@@ -101,15 +103,12 @@ export async function updateRevisionStatus(
   revalidatePath(`/projects/${doc.projectId}/stage/${DESIGN_STAGE}`);
 }
 
-// The project is taken from the document itself — the caller-supplied
-// projectId is only accepted when it matches.
 export async function approveDesignAndSubmit(
-  documentId: string,
-  content: Record<string, unknown>,
-  projectId: string
+  projectId: string,
+  content: Record<string, unknown>
 ) {
-  const { user, doc } = await requireDocumentAccess(documentId);
-  if (!doc.projectId || doc.projectId !== projectId) throw new Error("Document does not belong to this project");
+  const { user } = await requireProjectAccess(projectId);
+  const doc = await getOrCreateFeedbackDoc(projectId, "design_feedback");
 
   const now = new Date();
   const verdict = content.verdict as string;
@@ -120,7 +119,7 @@ export async function approveDesignAndSubmit(
 
   await prisma.$transaction([
     prisma.document.update({
-      where: { id: documentId },
+      where: { id: doc.id },
       data: {
         content: content as Prisma.InputJsonValue,
         status: "APPROVED",

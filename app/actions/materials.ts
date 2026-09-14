@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { requireTeam } from "@/lib/auth/session";
 import { requireProjectAccess } from "@/lib/auth/access";
 import { MaterialItemStatus } from "@prisma/client";
+import { parseForm } from "@/lib/validation/form";
+import { addMaterialSchema, updateMaterialSchema } from "@/lib/validation/schemas";
 
 const MATERIAL_STATUSES = Object.values(MaterialItemStatus);
 function parseStatus(value: string | null): MaterialItemStatus | undefined {
@@ -25,25 +27,12 @@ async function teamOrError() {
 export async function addMaterialItem(formData: FormData) {
   if (!(await teamOrError())) return { error: "Unauthorized" };
 
-  const projectId = formData.get("projectId") as string;
-  const label = (formData.get("label") as string)?.trim();
-  const category = formData.get("category") as string;
-  const notes = (formData.get("notes") as string)?.trim() || null;
-  const dueDateRaw = formData.get("dueDate") as string;
-
-  if (!projectId || !label || !category) {
-    return { error: "Label and category are required." };
-  }
+  const parsed = parseForm(addMaterialSchema, formData);
+  if (!parsed.ok) return { error: parsed.error };
+  const { projectId, label, category, notes, dueDate } = parsed.data;
 
   await prisma.materialItem.create({
-    data: {
-      projectId,
-      label,
-      category,
-      notes,
-      dueDate: dueDateRaw ? new Date(dueDateRaw) : null,
-      status: "pending",
-    },
+    data: { projectId, label, category, notes, dueDate, status: "pending" },
   });
 
   revalidatePath(`/projects/${projectId}/materials`);
@@ -83,25 +72,16 @@ export async function updateMaterialStatus(
 export async function updateMaterialItem(formData: FormData) {
   if (!(await teamOrError())) return { error: "Unauthorized" };
 
-  const itemId = formData.get("itemId") as string;
-  const label = (formData.get("label") as string)?.trim();
-  const category = formData.get("category") as string;
-  const notes = (formData.get("notes") as string)?.trim() || null;
-  const dueDateRaw = formData.get("dueDate") as string;
-  const status = parseStatus(formData.get("status") as string | null);
+  const parsed = parseForm(updateMaterialSchema, formData);
+  if (!parsed.ok) return { error: parsed.error };
+  const { itemId, label, category, notes, dueDate, status } = parsed.data;
 
   const item = await prisma.materialItem.findUnique({ where: { id: itemId } });
   if (!item) return { error: "Item not found" };
 
   await prisma.materialItem.update({
     where: { id: itemId },
-    data: {
-      label,
-      category,
-      notes,
-      ...(status ? { status } : {}),
-      dueDate: dueDateRaw ? new Date(dueDateRaw) : null,
-    },
+    data: { label, category, notes, ...(status ? { status } : {}), dueDate },
   });
 
   revalidatePath(`/projects/${item.projectId}/materials`);

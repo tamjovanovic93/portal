@@ -7,6 +7,7 @@ type Props = {
   projectName: string;
   currentStageLabel: string;
   brief: BriefSummary | null;
+  publishedAt: string | null;
   roster: RosterMember[];
   dataContacts: { label: string; value: string }[];
   clientDefault: { name?: string; email?: string };
@@ -34,7 +35,7 @@ export default function BriefsSection(props: Props) {
           projectName={props.projectName}
           currentStageLabel={props.currentStageLabel}
           brief={brief.content}
-          publishedAt={brief.publishedAt}
+          publishedAt={props.publishedAt}
           roster={props.roster}
           dataContacts={props.dataContacts}
           clientDefault={props.clientDefault}

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import WireframeFeedbackForm from "@/components/client/WireframeFeedbackForm";
-import { Prisma } from "@prisma/client";
+import { getFeedbackDoc } from "@/lib/documents/feedback";
 import { WIREFRAME_STAGE } from "@/lib/stages";
 
 export default async function WireframeReviewPage({
@@ -44,41 +44,11 @@ export default async function WireframeReviewPage({
     );
   }
 
-  // Find or create the wireframe feedback document
-  let feedbackDoc = await prisma.document.findFirst({
-    where: { projectId, stageNumber: WIREFRAME_STAGE, templateType: "wireframe_feedback" },
-  });
-
-  if (!feedbackDoc) {
-    feedbackDoc = await prisma.document.create({
-      data: {
-        projectId,
-        stageNumber: WIREFRAME_STAGE,
-        templateType: "wireframe_feedback",
-        title: "Wireframe Feedback",
-        content: {} as Prisma.InputJsonValue,
-        status: "SENT",
-        sentAt: new Date(),
-      },
-    });
-  }
-
-  // If the team uploaded new wireframes after the client's last submission,
-  // reset the feedback doc so the client can review again.
-  if (feedbackDoc.status === "APPROVED" && feedbackDoc.completedAt) {
-    const hasNewerUploads = project.assets.some(
-      (a) => a.uploadedAt > feedbackDoc!.completedAt!
-    );
-    if (hasNewerUploads) {
-      feedbackDoc = await prisma.document.update({
-        where: { id: feedbackDoc.id },
-        data: { status: "SENT", completedAt: null, content: {} as Prisma.InputJsonValue },
-      });
-    }
-  }
-
-  const isSubmitted = feedbackDoc.status === "APPROVED";
-  const existingContent = (feedbackDoc.content ?? {}) as Record<string, unknown>;
+  // Read-only: the feedback document is created by the save/submit actions and
+  // reset by the upload route when newer wireframes arrive.
+  const feedbackDoc = await getFeedbackDoc(projectId, "wireframe_feedback");
+  const isSubmitted = feedbackDoc?.status === "APPROVED";
+  const existingContent = (feedbackDoc?.content ?? {}) as Record<string, unknown>;
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 space-y-8">
@@ -107,7 +77,6 @@ export default async function WireframeReviewPage({
 
       {/* Feedback form */}
       <WireframeFeedbackForm
-        documentId={feedbackDoc.id}
         projectId={projectId}
         assets={project.assets.map((a) => ({
           id: a.id,

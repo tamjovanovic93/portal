@@ -101,7 +101,12 @@ export async function deleteDocument(documentId: string) {
   const doc = await prisma.document.findUnique({ where: { id: documentId } });
   if (!doc) throw new Error("Document not found");
 
-  await prisma.document.delete({ where: { id: documentId } });
+  // Questions and notifications point at the document by id only (no FK).
+  await prisma.$transaction([
+    prisma.question.deleteMany({ where: { contextType: "BRIEF", contextId: documentId } }),
+    prisma.notification.deleteMany({ where: { link: { contains: documentId } } }),
+    prisma.document.delete({ where: { id: documentId } }),
+  ]);
 
   revalidateDoc(doc);
 }

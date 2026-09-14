@@ -5,6 +5,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { createAdminClient, STORAGE_BUCKET } from "@/lib/supabase/admin";
 import { STAGE_COUNT } from "@/lib/stages";
 import { isAllowedUpload, MAX_UPLOAD_BYTES, safeFilename } from "@/lib/uploads";
+import { feedbackKindForFolder, resetFeedbackIfSubmitted } from "@/lib/documents/feedback";
 
 export async function POST(req: NextRequest) {
   const user = await getSessionUser();
@@ -80,6 +81,10 @@ export async function POST(req: NextRequest) {
       notes,
     },
   });
+
+  // New wireframes/mockups after a submitted client review reopen the review.
+  const feedbackKind = feedbackKindForFolder(folder);
+  if (feedbackKind) await resetFeedbackIfSubmitted(projectId, feedbackKind);
 
   return NextResponse.json({ id: asset.id, storagePath });
 }

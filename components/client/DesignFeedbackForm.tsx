@@ -6,6 +6,7 @@ import {
   submitDesignFeedback,
   approveDesignAndSubmit,
 } from "@/app/actions/design";
+import { DESIGN_STAGE } from "@/lib/stages";
 
 type Asset = { id: string; filename: string; mimeType: string | null; storagePath: string };
 type Revision = { pageScreen: string; whatToChange: string };
@@ -90,13 +91,11 @@ function AssetCard({ asset }: { asset: Asset }) {
 }
 
 export default function DesignFeedbackForm({
-  documentId,
   projectId,
   assets,
   initialContent,
   readOnly,
 }: {
-  documentId: string;
   projectId: string;
   assets: Asset[];
   initialContent: Record<string, unknown>;
@@ -143,7 +142,7 @@ export default function DesignFeedbackForm({
         fd.append("file", file);
         fd.append("projectId", projectId);
         fd.append("folder", "design-feedback");
-        fd.append("stageNumber", "4");
+        fd.append("stageNumber", String(DESIGN_STAGE));
         const res = await fetch("/api/client-upload", { method: "POST", body: fd });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error ?? "Upload failed");
@@ -187,7 +186,7 @@ export default function DesignFeedbackForm({
 
   async function handleSave() {
     setSaving(true);
-    await saveDesignFeedback(documentId, buildContent());
+    await saveDesignFeedback(projectId, buildContent());
     setSavedDraft(true);
     setSaving(false);
   }
@@ -195,9 +194,9 @@ export default function DesignFeedbackForm({
   async function handleSubmit() {
     setSubmitting(true);
     if (isApproval) {
-      await approveDesignAndSubmit(documentId, buildContent(), projectId);
+      await approveDesignAndSubmit(projectId, buildContent());
     } else {
-      await submitDesignFeedback(documentId, buildContent());
+      await submitDesignFeedback(projectId, buildContent());
     }
   }
 

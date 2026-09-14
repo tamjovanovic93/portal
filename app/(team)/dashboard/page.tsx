@@ -10,7 +10,7 @@ import { WAITING_CLIENT_STATUSES } from "@/lib/questions";
 import { listNotifications } from "@/lib/notifications";
 import MyWork, { type WorkTask, type WorkMember } from "@/components/team/MyWork";
 import StatTiles, { type StatTile } from "@/components/team/StatTiles";
-import { STAGE_LABELS, STAGE_INFO, STAGE_COUNT, FINAL_STAGE, GATED_STAGES } from "@/lib/stages";
+import { STAGE_LABELS, STAGE_INFO, STAGE_COUNT, FINAL_STAGE, GATED_STAGES, WIREFRAME_STAGE } from "@/lib/stages";
 
 function healthAccent(h: number): Accent {
   return h > 0.75 ? "mint" : h > 0.5 ? "amber" : "rose";
@@ -402,7 +402,7 @@ export default async function DashboardPage() {
   });
   wireframeFeedbackDocs.forEach((doc) => {
     if (!doc.completedAt || !doc.project) return;
-    notifications.push({ key: `notif-wf-${doc.id}`, projectName: doc.project.name, label: "Wireframe feedback received", dot: "purple", at: doc.completedAt, href: `/projects/${doc.project.id}/stage/3` });
+    notifications.push({ key: `notif-wf-${doc.id}`, projectName: doc.project.name, label: "Wireframe feedback received", dot: "purple", at: doc.completedAt, href: `/projects/${doc.project.id}/stage/${WIREFRAME_STAGE}` });
   });
   clientSubmittedMaterials.forEach((mat) => {
     notifications.push({ key: `notif-mat-${mat.id}`, projectName: mat.project.name, label: `Client submitted — ${mat.label}`, dot: "amber", at: mat.updatedAt, href: `/projects/${mat.project.id}/materials` });

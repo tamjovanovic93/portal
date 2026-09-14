@@ -51,32 +51,6 @@ export async function getProjectBrief(projectId: string): Promise<BriefSummary |
   return doc ? toSummary(doc) : null;
 }
 
-// Find-or-create the project's single brief. Called at project creation and as
-// a safety net; never creates a second one.
-export async function ensureProjectBrief(
-  projectId: string,
-  name = "Project Brief"
-): Promise<{ id: string }> {
-  const existing = await prisma.document.findFirst({
-    where: { projectId, templateType: BRIEF_DOC },
-    orderBy: { createdAt: "asc" },
-    select: { id: true },
-  });
-  if (existing) return { id: existing.id };
-  const doc = await prisma.document.create({
-    data: {
-      projectId,
-      stageNumber: 1,
-      templateType: BRIEF_DOC,
-      title: name,
-      content: { name } as unknown as Prisma.InputJsonValue,
-      status: "DRAFT",
-    },
-  });
-  revalidatePath(`/projects/${projectId}`);
-  return { id: doc.id };
-}
-
 export async function renameBrief(briefDocId: string, name: string) {
   await requireTeam();
   const trimmed = name.trim();
@@ -158,6 +132,8 @@ export async function setSectionVisibility(briefDocId: string, key: string, visi
 }
 
 // ─── Publish to client ────────────────────────────────────────────────────────
+// Project.briefPublishedAt is the single source of truth for "the client can
+// see the brief & strategy"; content.publishedAt is kept as a timestamp mirror.
 
 export async function publishBrief(briefDocId: string): Promise<{ ok?: boolean; error?: string }> {
   await requireTeam();
@@ -168,19 +144,26 @@ export async function publishBrief(briefDocId: string): Promise<{ ok?: boolean; 
   if (!doc?.project) return { error: "Brief not found." };
   const content = (doc.content as ProjectBrief) ?? {};
   const name = content.name || doc.title || "Brief";
-  await mutateBrief(briefDocId, (b) => ({ ...b, publishedAt: new Date().toISOString() }));
+  const now = new Date();
+  await mutateBrief(briefDocId, (b) => ({ ...b, publishedAt: now.toISOString() }));
+  await prisma.project.update({ where: { id: doc.project.id }, data: { briefPublishedAt: now } });
   await notifyClient(doc.project.clientId, {
     projectId: doc.project.id,
     type: "brief_published",
     message: `${doc.project.name}: a new brief "${name}" is ready to view.`,
     link: `/portal/brief/${doc.project.id}`,
   });
+  revalidatePath("/portal");
   return { ok: true };
 }
 
 export async function unpublishBrief(briefDocId: string): Promise<{ ok?: boolean; error?: string }> {
   await requireTeam();
-  await mutateBrief(briefDocId, (b) => ({ ...b, publishedAt: null }));
+  const projectId = await mutateBrief(briefDocId, (b) => ({ ...b, publishedAt: null }));
+  if (projectId) {
+    await prisma.project.update({ where: { id: projectId }, data: { briefPublishedAt: null } });
+  }
+  revalidatePath("/portal");
   return { ok: true };
 }
 
@@ -217,11 +200,11 @@ export async function generateBriefDraft(
   });
   if (!project) return { error: "Project not found." };
 
-  // Approved project intake forms + shared client-level profile — read-only
-  // inputs for the draft.
+  // The client's approved onboarding forms + shared profile — read-only inputs
+  // for the draft. Onboarding docs are client-scoped.
   const [intakeDoc, initialDoc, profileDoc] = await Promise.all([
-    prisma.document.findFirst({ where: { projectId, templateType: "intake_form", status: "APPROVED" }, orderBy: { completedAt: "desc" } }),
-    prisma.document.findFirst({ where: { projectId, templateType: "initial_client_form", status: "APPROVED" }, orderBy: { completedAt: "desc" } }),
+    prisma.document.findFirst({ where: { clientId: project.clientId, templateType: "intake_form", status: "APPROVED" }, orderBy: { completedAt: "desc" } }),
+    prisma.document.findFirst({ where: { clientId: project.clientId, templateType: "initial_client_form", status: "APPROVED" }, orderBy: { completedAt: "desc" } }),
     prisma.document.findFirst({ where: { clientId: project.clientId, templateType: "client_profile" } }),
   ]);
 

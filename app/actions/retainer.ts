@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { requireTeam } from "@/lib/auth/session";
 import type { TaskStatus, TaskOwnerRole } from "@prisma/client";
 import { STAGE_COUNT } from "@/lib/stages";
+import { parseForm } from "@/lib/validation/form";
+import { addTaskSchema, createCycleSchema } from "@/lib/validation/schemas";
 
 const OWNER_ROLES: TaskOwnerRole[] = ["PROJECT_MANAGER", "DEV_TEAM", "DESIGN_TEAM", "CLIENT"];
 
@@ -35,22 +37,12 @@ export async function createTaskGroup(projectId: string, formData: FormData) {
 
 export async function createCycle(projectId: string, formData: FormData) {
   await requireTeam();
-  const name = formData.get("name");
-  const focus = formData.get("focus");
-  const startDate = formData.get("startDate");
-  const endDate = formData.get("endDate");
-  if (typeof name !== "string" || !name.trim()) throw new Error("Name required");
-  if (typeof startDate !== "string" || !startDate) throw new Error("Start date required");
+  const parsed = parseForm(createCycleSchema, formData);
+  if (!parsed.ok) throw new Error(parsed.error);
+  const { name, focus, startDate, endDate } = parsed.data;
 
   await prisma.cycle.create({
-    data: {
-      projectId,
-      name: name.trim(),
-      focus: typeof focus === "string" && focus.trim() ? focus.trim() : null,
-      startDate: new Date(startDate),
-      endDate: endDate && typeof endDate === "string" && endDate ? new Date(endDate) : null,
-      status: "ACTIVE",
-    },
+    data: { projectId, name, focus, startDate, endDate, status: "ACTIVE" },
   });
   revalidateProject(projectId);
 }
@@ -170,66 +162,35 @@ export async function addTask(
   formData: FormData
 ): Promise<{ id: string }> {
   await requireTeam();
-  const name = formData.get("name");
-  if (typeof name !== "string" || !name.trim()) throw new Error("Name required");
+  const parsed = parseForm(addTaskSchema, formData);
+  if (!parsed.ok) throw new Error(parsed.error);
+  const d = parsed.data;
 
-  const type = formData.get("type");
-  const description = formData.get("description");
-  const dueDate = formData.get("dueDate");
-  const ownerRoleRaw = formData.get("ownerRole");
-  const assigneeRaw = formData.get("assigneeId");
-  const statusRaw = formData.get("status");
-  const resolverRaw = formData.get("blockerResolver");
-  const requiresClientApproval = formData.get("requiresClientApproval") === "on";
-  const isBlocker = formData.get("isBlocker") === "on";
-
-  const taskType =
-    typeof type === "string" && ["DELIVERABLE", "INTERNAL", "FIX_UPDATE"].includes(type)
-      ? (type as "DELIVERABLE" | "INTERNAL" | "FIX_UPDATE")
-      : "DELIVERABLE";
-
-  const ownerRole =
-    typeof ownerRoleRaw === "string" && OWNER_ROLES.includes(ownerRoleRaw as TaskOwnerRole)
-      ? (ownerRoleRaw as TaskOwnerRole)
-      : null;
-
+  const ownerRole: TaskOwnerRole | null = d.ownerRole ?? null;
   // Resolver defaults to the task owner when not explicitly chosen.
-  const blockerResolver = isBlocker
-    ? typeof resolverRaw === "string" && OWNER_ROLES.includes(resolverRaw as TaskOwnerRole)
-      ? (resolverRaw as TaskOwnerRole)
-      : ownerRole
-    : null;
+  const blockerResolver = d.isBlocker ? (d.blockerResolver ?? ownerRole) : null;
 
-  const ALL_STATUSES: TaskStatus[] = ["PLANNING", "NEEDS_APPROVAL", "IN_PROGRESS", "WAITING_FINAL_APPROVAL", "DONE"];
   // Internal tasks have no approval steps.
-  const allowedStatuses =
-    taskType === "INTERNAL"
-      ? ALL_STATUSES.filter((s) => s !== "NEEDS_APPROVAL" && s !== "WAITING_FINAL_APPROVAL")
-      : ALL_STATUSES;
-  const status =
-    typeof statusRaw === "string" && allowedStatuses.includes(statusRaw as TaskStatus)
-      ? (statusRaw as TaskStatus)
-      : "PLANNING";
-
-  // Assignee is a specific team member (TEAM Profile). Empty = unassigned.
-  const assigneeId =
-    typeof assigneeRaw === "string" && assigneeRaw.trim() ? assigneeRaw.trim() : null;
+  const status: TaskStatus =
+    d.type === "INTERNAL" && (d.status === "NEEDS_APPROVAL" || d.status === "WAITING_FINAL_APPROVAL")
+      ? "PLANNING"
+      : d.status;
 
   const task = await prisma.task.create({
     data: {
       cycleId,
-      name: name.trim(),
-      type: taskType,
+      name: d.name,
+      type: d.type,
       status,
       completedAt: status === "DONE" ? new Date() : null,
-      description: typeof description === "string" && description.trim() ? description.trim() : null,
-      dueDate: dueDate && typeof dueDate === "string" && dueDate ? new Date(dueDate) : null,
-      assigneeId,
+      description: d.description,
+      dueDate: d.dueDate,
+      assigneeId: d.assigneeId,
       ownerRole,
-      isBlocker,
+      isBlocker: d.isBlocker,
       blockerResolver,
       // Only deliverables can require client approval.
-      requiresClientApproval: taskType === "DELIVERABLE" ? requiresClientApproval : false,
+      requiresClientApproval: d.type === "DELIVERABLE" ? d.requiresClientApproval : false,
     },
     select: { id: true },
   });
@@ -367,7 +328,11 @@ export async function toggleRequiresApproval(
 
 export async function deleteTask(taskId: string, projectId: string) {
   await requireTeam();
-  await prisma.task.delete({ where: { id: taskId } });
+  await prisma.$transaction([
+    // Task questions reference the task by id only (no FK).
+    prisma.question.deleteMany({ where: { contextType: "TASK", contextId: taskId } }),
+    prisma.task.delete({ where: { id: taskId } }),
+  ]);
   revalidateProject(projectId);
 }
 

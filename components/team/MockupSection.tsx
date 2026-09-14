@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { saveDesignLink, deleteDesignAsset } from "@/app/actions/design";
+import { DESIGN_STAGE } from "@/lib/stages";
 
 type MockupAsset = {
   id: string;
@@ -58,7 +59,7 @@ export default function MockupSection({
           const fd = new FormData();
           fd.append("file", file);
           fd.append("projectId", projectId);
-          fd.append("stageNumber", "4");
+          fd.append("stageNumber", String(DESIGN_STAGE));
           fd.append("visibility", "SHARED");
           fd.append("folder", "mockup");
           const res = await fetch("/api/upload", { method: "POST", body: fd });

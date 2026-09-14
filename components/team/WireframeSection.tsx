@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { WIREFRAME_STAGE } from "@/lib/stages";
 
 type WireframeAsset = {
   id: string;
@@ -36,7 +37,7 @@ export default function WireframeSection({
           const fd = new FormData();
           fd.append("file", file);
           fd.append("projectId", projectId);
-          fd.append("stageNumber", "3");
+          fd.append("stageNumber", String(WIREFRAME_STAGE));
           fd.append("visibility", "SHARED");
           fd.append("folder", "wireframes");
           const res = await fetch("/api/upload", { method: "POST", body: fd });

@@ -6,7 +6,9 @@ import { prisma } from "@/lib/prisma";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSessionUser, requireTeam } from "@/lib/auth/session";
 import { generateTempPassword } from "@/lib/auth/passwords";
-import { ProjectMode, ProjectType, ProjectHealth } from "@prisma/client";
+import { removeStorageObjects } from "@/lib/storage";
+import { parseForm } from "@/lib/validation/form";
+import { createProjectSchema } from "@/lib/validation/schemas";
 import { STAGE_COUNT } from "@/lib/stages";
 
 async function teamOrError() {
@@ -17,16 +19,9 @@ async function teamOrError() {
 export async function createProject(formData: FormData) {
   if (!(await teamOrError())) return { error: "Unauthorized" };
 
-  const name = (formData.get("name") as string)?.trim();
-  const clientChoice = (formData.get("clientChoice") as string) ?? "new";
-  const existingClientId = (formData.get("existingClientId") as string)?.trim();
-  const clientEmail = (formData.get("clientEmail") as string)?.trim().toLowerCase();
-  const type = formData.get("type") as ProjectType;
-  const mode = (formData.get("mode") as ProjectMode) ?? "PROJECT";
-
-  if (!name || !type) {
-    return { error: "Project name and type are required." };
-  }
+  const parsed = parseForm(createProjectSchema, formData);
+  if (!parsed.ok) return { error: parsed.error };
+  const { name, clientChoice, existingClientId, clientEmail, type, mode } = parsed.data;
 
   // Resolve the client: an existing profile, or a newly-created one.
   let clientProfile;
@@ -126,19 +121,6 @@ export async function restoreProject(id: string) {
   revalidatePath("/dashboard");
 }
 
-export async function setProjectHealth(id: string, health: ProjectHealth) {
-  if (!(await teamOrError())) return { error: "Unauthorized" };
-  const project = await prisma.project.update({
-    where: { id },
-    data: { health },
-    select: { clientId: true },
-  });
-  revalidatePath(`/clients/${project.clientId}`);
-  revalidatePath(`/projects/${id}`);
-  revalidatePath("/dashboard");
-  return { ok: true };
-}
-
 export async function deleteProject(id: string) {
   if (!(await teamOrError())) return { error: "Unauthorized" };
 
@@ -146,6 +128,14 @@ export async function deleteProject(id: string) {
     where: { id },
     select: { clientId: true },
   });
+
+  // Storage objects are not cascaded by the DB — collect paths before deleting.
+  const assetPaths = (
+    await prisma.projectAsset.findMany({
+      where: { projectId: id, mimeType: { not: "text/uri-list" } },
+      select: { storagePath: true },
+    })
+  ).map((a) => a.storagePath);
 
   // app_events.project_id and activity_log.project_id are ON DELETE SET NULL, so
   // a plain delete would leave the project's calendar events and activity behind
@@ -155,6 +145,8 @@ export async function deleteProject(id: string) {
     await tx.activityLog.deleteMany({ where: { projectId: id } });
     await tx.project.delete({ where: { id } });
   });
+
+  await removeStorageObjects(assetPaths);
 
   revalidatePath("/projects");
   revalidatePath("/dashboard");
@@ -197,6 +189,16 @@ export async function deleteClient(clientId: string) {
   });
   const clientDocIds = clientDocs.map((d) => d.id);
 
+  const assetPaths =
+    projectIds.length > 0
+      ? (
+          await prisma.projectAsset.findMany({
+            where: { projectId: { in: projectIds }, mimeType: { not: "text/uri-list" } },
+            select: { storagePath: true },
+          })
+        ).map((a) => a.storagePath)
+      : [];
+
   // One transaction: any failure rolls back so the client is never left in a
   // half-deleted state.
   await prisma.$transaction(async (tx) => {
@@ -225,6 +227,8 @@ export async function deleteClient(clientId: string) {
     // verification_queue / strategy / brand_kit) and the client's notifications.
     await tx.profile.delete({ where: { id: clientId } });
   });
+
+  await removeStorageObjects(assetPaths);
 
   // Remove the client's Supabase Auth login so no orphaned auth user remains and
   // the email can be reused. Best-effort — the data is already gone by here.

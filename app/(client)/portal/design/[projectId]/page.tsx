@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import DesignFeedbackForm from "@/components/client/DesignFeedbackForm";
-import { Prisma } from "@prisma/client";
+import { getFeedbackDoc } from "@/lib/documents/feedback";
 import { DESIGN_STAGE } from "@/lib/stages";
 
 export default async function DesignReviewPage({
@@ -44,40 +44,11 @@ export default async function DesignReviewPage({
     );
   }
 
-  // Find or create the design feedback document
-  let feedbackDoc = await prisma.document.findFirst({
-    where: { projectId, stageNumber: DESIGN_STAGE, templateType: "design_feedback" },
-  });
-
-  if (!feedbackDoc) {
-    feedbackDoc = await prisma.document.create({
-      data: {
-        projectId,
-        stageNumber: DESIGN_STAGE,
-        templateType: "design_feedback",
-        title: "Design Feedback",
-        content: {} as Prisma.InputJsonValue,
-        status: "SENT",
-        sentAt: new Date(),
-      },
-    });
-  }
-
-  // If new mockup assets were uploaded after the last submission, reset for another round
-  if (feedbackDoc.status === "APPROVED" && feedbackDoc.completedAt) {
-    const hasNewerAssets = project.assets.some(
-      (a) => a.uploadedAt > feedbackDoc!.completedAt!
-    );
-    if (hasNewerAssets) {
-      feedbackDoc = await prisma.document.update({
-        where: { id: feedbackDoc.id },
-        data: { status: "SENT", completedAt: null, content: {} as Prisma.InputJsonValue },
-      });
-    }
-  }
-
-  const isSubmitted = feedbackDoc.status === "APPROVED";
-  const existingContent = (feedbackDoc.content ?? {}) as Record<string, unknown>;
+  // Read-only: the feedback document is created by the save/submit actions and
+  // reset by the upload route / design-link action when newer designs arrive.
+  const feedbackDoc = await getFeedbackDoc(projectId, "design_feedback");
+  const isSubmitted = feedbackDoc?.status === "APPROVED";
+  const existingContent = (feedbackDoc?.content ?? {}) as Record<string, unknown>;
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-10 space-y-8">
@@ -104,7 +75,6 @@ export default async function DesignReviewPage({
       </div>
 
       <DesignFeedbackForm
-        documentId={feedbackDoc.id}
         projectId={projectId}
         assets={project.assets.map((a) => ({
           id: a.id,

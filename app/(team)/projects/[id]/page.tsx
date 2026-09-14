@@ -3,10 +3,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import StageProgressBar from "@/components/team/project/StageProgressBar";
 import ClientLoginLink from "@/components/team/project/ClientLoginLink";
-import IntakePipeline from "@/components/team/project/IntakePipeline";
-import OnboardingPipeline from "@/components/team/project/OnboardingPipeline";
 import { getProfile, getStrategy } from "@/lib/intake/store";
-import { getProjectBrief, ensureProjectBrief } from "@/app/actions/project-brief";
+import { getProjectBrief } from "@/app/actions/project-brief";
 import BriefsSection from "@/components/team/brief/BriefsSection";
 import { getRoster } from "@/lib/team";
 import ProjectStageTasks from "@/components/team/project/ProjectStageTasks";
@@ -115,31 +113,12 @@ export default async function ProjectPage({
 
   if (!project) notFound();
 
-  // Onboarding docs (Initial Client Form, Offer, Intake) — any status.
-  const onboardingDocs = await prisma.document.findMany({
-    where: {
-      projectId: id,
-      templateType: { in: ["initial_client_form", "financial_offer", "intake_form"] },
-    },
-    orderBy: { createdAt: "desc" },
-    select: { id: true, templateType: true, status: true },
-  });
-  const initialFormDoc =
-    onboardingDocs.find((d) => d.templateType === "initial_client_form") ?? null;
-  const offerDoc = onboardingDocs.find((d) => d.templateType === "financial_offer") ?? null;
-  const intakeDoc = onboardingDocs.find((d) => d.templateType === "intake_form") ?? null;
-
   // Client Data (profile + strategy) is shared at the CLIENT level; the Brief
-  // is the project's single brief (guaranteed to exist).
+  // is the project's single brief (created with the project).
   const clientId = project.clientId;
-  const [profile, strategy, roster] = await Promise.all([
-    getProfile(clientId), getStrategy(clientId), getRoster(),
+  const [profile, strategy, roster, brief] = await Promise.all([
+    getProfile(clientId), getStrategy(clientId), getRoster(), getProjectBrief(id),
   ]);
-  let brief = await getProjectBrief(id);
-  if (!brief) {
-    await ensureProjectBrief(id);
-    brief = await getProjectBrief(id);
-  }
   const company = profile?.company ?? null;
 
   // Data contacts offered as a convenience for the Brief's client-contact picker.
@@ -251,13 +230,20 @@ export default async function ProjectPage({
   // Recently completed items that used to be action items.
   const hasCompleted = docsHandled.length > 0 || clientApproved.length > 0;
 
-  const intakeSubmitted = project.documents.some((d) => d.templateType === "intake_form");
-  const intakeApproved = project.documents.some(
-    (d) => d.templateType === "intake_form" && d.status === "APPROVED"
-  );
-  // Onboarding + brief pipelines belong to the setup stage only. Setup is done
-  // once the brief is published or the project has moved past Strategy (stage 1).
+  // Onboarding and Client Data now happen at the client level; this card only
+  // marks the project as past its setup stage.
   const setupComplete = !!project.briefPublishedAt || project.currentStage >= 2;
+
+  const assetRows = project.assets.map((a) => ({
+    id: a.id,
+    filename: a.filename,
+    folder: a.folder,
+    sizeBytes: a.sizeBytes,
+    uploadedAt: a.uploadedAt.toISOString(),
+    approvedAt: a.approvedAt?.toISOString() ?? null,
+    visibility: a.visibility as string,
+    isClientUpload: a.uploadedBy === project.clientId,
+  }));
 
   // Tasks / to-do lists (reused Cycle+Task) — available from Strategy (stage 1).
   const activeCycles = project.cycles.filter((c) => c.status === "ACTIVE");
@@ -433,6 +419,7 @@ export default async function ProjectPage({
           projectName={project.name}
           currentStageLabel={STAGE_LABELS[project.currentStage] ?? `Stage ${project.currentStage}`}
           brief={brief}
+          publishedAt={project.briefPublishedAt?.toISOString() ?? null}
           roster={roster}
           dataContacts={dataContacts}
           clientDefault={{ name: project.client.name ?? undefined, email: project.client.email }}
@@ -494,8 +481,8 @@ export default async function ProjectPage({
         </div>
       </div>
 
-      {/* ── Project setup: onboarding + brief pipelines (only while in setup) ─── */}
-      {setupComplete ? (
+      {/* ── Project setup — completed card (onboarding lives on the client) ──── */}
+      {setupComplete && (
         <div className="mb-6 bg-white border border-neutral-200 rounded-lg px-5 py-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-green-600 text-white text-[11px] font-semibold flex items-center justify-center">✓</span>
@@ -515,55 +502,6 @@ export default async function ProjectPage({
             </Link>
           )}
         </div>
-      ) : (
-        <>
-          {/* Onboarding (Initial Form → Offer → Intake) — hidden once intake is done */}
-          {initialFormDoc && !intakeApproved && (
-            <div className="mb-6 bg-white border border-neutral-200 rounded-lg px-5 py-4 space-y-4">
-              <div>
-                <p className="text-sm font-semibold text-neutral-900">Onboarding</p>
-                <p className="text-xs text-neutral-700 mt-0.5">
-                  Initial form, offer, and intake — before the brief pipeline.
-                </p>
-              </div>
-              <OnboardingPipeline
-                projectId={id}
-                initialForm={initialFormDoc}
-                offer={offerDoc}
-                intake={intakeDoc}
-              />
-            </div>
-          )}
-
-          {/* Brief pipeline (Agent 1 → verify → Agent 2 → publish) */}
-          {intakeSubmitted && (
-            <div className="mb-6 bg-white border border-neutral-200 rounded-lg px-5 py-4 space-y-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-neutral-900">Intake pipeline</p>
-                  <p className="text-xs text-neutral-700 mt-0.5">
-                    {company?.company_name ?? project.client.name ?? "Client"} · profile, verification queue, and strategy.
-                  </p>
-                </div>
-                {databaseGenerated && (
-                  <Link
-                    href={`/clients/${project.clientId}/data`}
-                    className="text-sm text-neutral-900 font-medium border border-neutral-400 px-4 py-2 rounded-md hover:bg-neutral-50 transition-colors shrink-0"
-                  >
-                    Data →
-                  </Link>
-                )}
-              </div>
-              <IntakePipeline
-                projectId={id}
-                hasApprovedIntake={intakeSubmitted}
-                profileStatus={profileStatus}
-                hasStrategy={hasStrategy}
-                briefPublished={!!project.briefPublishedAt}
-              />
-            </div>
-          )}
-        </>
       )}
 
       {/* ── Stage progress bar ───────────────────────────────────────────────── */}
@@ -885,20 +823,7 @@ export default async function ProjectPage({
         <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-3">
           Files
         </p>
-        <ProjectFiles
-          projectId={id}
-          briefGenerated={databaseGenerated}
-          assets={project.assets.map((a) => ({
-            id: a.id,
-            filename: a.filename,
-            folder: a.folder,
-            sizeBytes: a.sizeBytes,
-            uploadedAt: a.uploadedAt.toISOString(),
-            approvedAt: a.approvedAt?.toISOString() ?? null,
-            visibility: a.visibility as string,
-            isClientUpload: a.uploadedBy === project.clientId,
-          }))}
-        />
+        <ProjectFiles projectId={id} briefGenerated={databaseGenerated} assets={assetRows} />
       </div>
 
       {/* ── Latest uploads + Brief snapshot + Activity log ───────────────────── */}
@@ -1084,20 +1009,7 @@ export default async function ProjectPage({
 
         {/* Files tab — folders */}
         {activeTab === "files" && (
-          <ProjectFiles
-            projectId={id}
-            briefGenerated={databaseGenerated}
-            assets={project.assets.map((a) => ({
-              id: a.id,
-              filename: a.filename,
-              folder: a.folder,
-              sizeBytes: a.sizeBytes,
-              uploadedAt: a.uploadedAt.toISOString(),
-              approvedAt: a.approvedAt?.toISOString() ?? null,
-              visibility: a.visibility as string,
-              isClientUpload: a.uploadedBy === project.clientId,
-            }))}
-          />
+          <ProjectFiles projectId={id} briefGenerated={databaseGenerated} assets={assetRows} />
         )}
 
         {/* Approvals tab */}

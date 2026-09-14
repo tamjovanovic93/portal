@@ -104,13 +104,11 @@ function FilePreview({ asset, label }: { asset: Asset; label: string }) {
 }
 
 export default function WireframeFeedbackForm({
-  documentId,
   projectId,
   assets,
   initialContent,
   readOnly,
 }: {
-  documentId: string;
   projectId: string;
   assets: Asset[];
   initialContent: Record<string, unknown>;
@@ -146,7 +144,7 @@ export default function WireframeFeedbackForm({
 
   async function handleSave() {
     setSaving(true);
-    await saveWireframeFeedback(documentId, buildContent());
+    await saveWireframeFeedback(projectId, buildContent());
     setSavedDraft(true);
     setSaving(false);
   }
@@ -154,9 +152,9 @@ export default function WireframeFeedbackForm({
   async function handleSubmit() {
     setSubmitting(true);
     if (allHappy) {
-      await approveWireframesAndSubmit(documentId, buildContent(), projectId);
+      await approveWireframesAndSubmit(projectId, buildContent());
     } else {
-      await submitWireframeFeedback(documentId, buildContent());
+      await submitWireframeFeedback(projectId, buildContent());
     }
     // Both actions redirect server-side
   }

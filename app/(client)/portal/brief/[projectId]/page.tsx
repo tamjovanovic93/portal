@@ -35,13 +35,13 @@ export default async function ClientBriefPage({
     prisma.document.findMany({ where: { projectId, templateType: BRIEF_DOC }, orderBy: { createdAt: "asc" } }),
     getRoster(),
   ]);
-  const publishedBriefs = briefDocs
-    .map((d) => ({ id: d.id, content: (d.content as ProjectBrief) ?? {} }))
-    .filter((b) => !!b.content.publishedAt);
-
+  // Project.briefPublishedAt is the single publish gate for briefs + strategy.
   const strategyPublished = !!project.briefPublishedAt;
+  const publishedBriefs = strategyPublished
+    ? briefDocs.map((d) => ({ id: d.id, content: (d.content as ProjectBrief) ?? {} }))
+    : [];
 
-  if (publishedBriefs.length === 0 && !strategyPublished) {
+  if (!strategyPublished) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-20 text-center">
         <p className="text-neutral-500 text-sm">

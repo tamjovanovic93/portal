@@ -6,9 +6,7 @@ import RetainerStageBar from "@/components/team/retainer/RetainerStageBar";
 import BlockerUnblockControl from "@/components/team/retainer/BlockerUnblockControl";
 import { OWNER_ROLE_LABEL } from "@/lib/retainer-labels";
 import ClientLoginLink from "@/components/team/project/ClientLoginLink";
-import IntakePipeline from "@/components/team/project/IntakePipeline";
-import { getProfile, getStrategy } from "@/lib/intake/store";
-import { STAGE_COUNT } from "@/lib/stages";
+import { getProfile } from "@/lib/intake/store";
 import ProjectFiles from "@/components/team/ProjectFiles";
 import MaterialRow from "@/components/team/MaterialRow";
 import AddMaterialForm from "@/components/team/AddMaterialForm";
@@ -78,11 +76,6 @@ export default async function RetainerView({ projectId }: { projectId: string })
     where: { id: projectId },
     include: {
       client: { select: { name: true, email: true } },
-      stages: { select: { stageNumber: true }, orderBy: { stageNumber: "asc" } },
-      documents: {
-        select: { id: true, templateType: true, title: true, status: true, stageNumber: true },
-        orderBy: { createdAt: "asc" },
-      },
       materials: { orderBy: [{ status: "asc" }, { createdAt: "asc" }] },
       assets: { orderBy: { uploadedAt: "desc" } },
       cycles: {
@@ -99,18 +92,6 @@ export default async function RetainerView({ projectId }: { projectId: string })
 
   if (!project) notFound();
 
-  // Backfill stages for retainers created before stages were tracked.
-  if (project.stages.length === 0) {
-    await prisma.projectStage.createMany({
-      data: Array.from({ length: STAGE_COUNT }, (_, i) => ({
-        projectId,
-        stageNumber: i + 1,
-        status: i === 0 ? ("IN_PROGRESS" as const) : ("NOT_STARTED" as const),
-      })),
-      skipDuplicates: true,
-    });
-  }
-
   const cycles = project.cycles;
   const activeCycles = project.cycles.filter((c) => c.status === "ACTIVE");
   const closedCycles = project.cycles.filter((c) => c.status === "CLOSED");
@@ -119,20 +100,15 @@ export default async function RetainerView({ projectId }: { projectId: string })
     (n, c) => n + c.tasks.filter((t) => t.status !== "DONE").length, 0
   );
 
-  const intakeDoc = project.documents.find((d) => d.templateType === "intake_form");
-  const intakeSubmitted = intakeDoc?.status === "APPROVED";
   // Team roster (for person-based assignment + questions) and task-level
   // questions (one grouped query for the whole project — no N+1).
   const allTaskIds = cycles.flatMap((c) => c.tasks.map((t) => t.id));
-  const [profile, strategy, roster, questionsByTask] = await Promise.all([
+  const [profile, roster, questionsByTask] = await Promise.all([
     getProfile(project.clientId),
-    getStrategy(project.clientId),
     getRoster(),
     listByTaskIds(allTaskIds),
   ]);
   const databaseGenerated = !!profile;
-  const profileStatus = profile?._meta?.status ?? null;
-  const hasStrategy = !!strategy;
 
   function toBoardCycle(c: (typeof cycles)[number]) {
     return {
@@ -342,32 +318,6 @@ export default async function RetainerView({ projectId }: { projectId: string })
             ))}
           </div>
         </section>
-      )}
-
-      {/* Onboarding: review the submitted intake, then run the intake pipeline */}
-      {intakeSubmitted && intakeDoc && (
-        <div className="bg-white border border-neutral-200 rounded-lg px-5 py-4 space-y-4">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-neutral-900">Intake pipeline</p>
-              <p className="text-xs text-neutral-700 mt-0.5">
-                Review the client&apos;s answers, then run the pipeline.
-              </p>
-            </div>
-            <Link
-              href={`/projects/${projectId}/stage/${intakeDoc.stageNumber}/documents/${intakeDoc.id}`}
-              className="text-sm text-neutral-700 border border-neutral-300 px-4 py-2 rounded-md hover:bg-neutral-50 transition-colors shrink-0"
-            >
-              Review brief →
-            </Link>
-          </div>
-          <IntakePipeline
-            projectId={projectId}
-            hasApprovedIntake={intakeSubmitted}
-            profileStatus={profileStatus}
-            hasStrategy={hasStrategy}
-          />
-        </div>
       )}
 
       {/* New cycle */}

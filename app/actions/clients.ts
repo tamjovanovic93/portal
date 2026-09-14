@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireTeam } from "@/lib/auth/session";
 import { generateTempPassword } from "@/lib/auth/passwords";
+import { parseForm } from "@/lib/validation/form";
+import { createClientSchema } from "@/lib/validation/schemas";
 
 // Client-first creation. A Client no longer needs an initial Project — intake and
 // Client Data happen at the Client level (Projects come later, from approved
@@ -21,12 +23,10 @@ export async function createClientAccount(
 ): Promise<{ clientId?: string; tempPassword?: string; error?: string }> {
   await requireTeam();
 
-  const email = (formData.get("email") as string)?.trim().toLowerCase();
-  const name = (formData.get("name") as string)?.trim() || null;
-  const modeRaw = (formData.get("mode") as string)?.trim();
-  const mode: ProjectMode = modeRaw === "ONGOING" ? "ONGOING" : "PROJECT";
-  if (!name) return { error: "Business name is required." };
-  if (!email) return { error: "Client email is required." };
+  const parsed = parseForm(createClientSchema, formData);
+  if (!parsed.ok) return { error: parsed.error };
+  const { name, email } = parsed.data;
+  const mode: ProjectMode = parsed.data.mode;
 
   // Reuse an existing profile with this email, otherwise provision a login.
   let clientProfile = await prisma.profile.findUnique({ where: { email } });

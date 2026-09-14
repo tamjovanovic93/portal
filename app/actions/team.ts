@@ -2,52 +2,31 @@
 
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
+import type { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireTeam } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { parseForm } from "@/lib/validation/form";
+import { teamMemberSchema } from "@/lib/validation/schemas";
 
 // Team-member management. Team members are TEAM Profiles (the single source of
 // truth — see lib/team.ts). Add / edit reuse that structure; "remove" is a safe
 // soft-deactivate (active=false) so existing references — approvals, task
 // assignments, activity history, brief team refs — are preserved.
 
-const ACCENTS = ["mint", "blue", "amber", "rose", "purple"];
-
-function parseSkills(raw: FormDataEntryValue | null): string[] {
-  return String(raw ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-function str(fd: FormData, key: string): string {
-  return String(fd.get(key) ?? "").trim();
-}
-
-function accentOrNull(fd: FormData): string | null {
-  const a = str(fd, "accent");
-  return a && ACCENTS.includes(a) ? a : null;
-}
-
-function availabilityOf(fd: FormData): Prisma.InputJsonValue {
-  return {
-    hours: str(fd, "availHours"),
-    tz: str(fd, "availTz"),
-    note: str(fd, "availNote"),
-  };
-}
+type MemberInput = z.infer<typeof teamMemberSchema>;
 
 // Fields shared by create + edit. Email is create-only (it is the unique key,
-// and may back a login), so it is not part of the edit payload.
-function profileFieldsFrom(fd: FormData) {
+// and backs the login), so it is not part of the edit payload.
+function profileFieldsFrom(d: MemberInput) {
   return {
-    name: str(fd, "name") || null,
-    title: str(fd, "title") || null,
-    skills: parseSkills(fd.get("skills")),
-    bio: str(fd, "bio") || null,
-    photoUrl: str(fd, "photoUrl") || null,
-    accent: accentOrNull(fd),
-    availability: availabilityOf(fd),
+    name: d.name,
+    title: d.title,
+    skills: d.skills,
+    bio: d.bio,
+    photoUrl: d.photoUrl,
+    accent: d.accent ?? null,
+    availability: { hours: d.availHours, tz: d.availTz, note: d.availNote } as Prisma.InputJsonValue,
   };
 }
 
@@ -56,7 +35,9 @@ export async function createTeamMember(
 ): Promise<{ ok?: boolean; error?: string }> {
   await requireTeam();
 
-  const email = str(formData, "email").toLowerCase();
+  const parsed = parseForm(teamMemberSchema, formData);
+  if (!parsed.ok) return { error: parsed.error };
+  const email = parsed.data.email;
   if (!email) return { error: "Email is required." };
 
   const existing = await prisma.profile.findUnique({ where: { email } });
@@ -81,7 +62,7 @@ export async function createTeamMember(
         email,
         role: "TEAM",
         active: true,
-        ...profileFieldsFrom(formData),
+        ...profileFieldsFrom(parsed.data),
       },
     });
   } catch (err) {
@@ -106,9 +87,12 @@ export async function updateTeamMember(
   });
   if (!member || member.role !== "TEAM") return { error: "Team member not found." };
 
+  const parsed = parseForm(teamMemberSchema, formData);
+  if (!parsed.ok) return { error: parsed.error };
+
   await prisma.profile.update({
     where: { id },
-    data: profileFieldsFrom(formData),
+    data: profileFieldsFrom(parsed.data),
   });
 
   revalidatePath("/team");
