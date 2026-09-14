@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClientAccount } from "@/app/actions/clients";
 import Modal from "@/components/ui/Modal";
+import Button from "@/components/ui/Button";
+import { Input, Label, Select } from "@/components/ui/Field";
 
 // Create a Client without a Project. Only business name, email and mode are
 // captured here — projects (and their types) are proposed later by the agent.
@@ -56,124 +58,95 @@ export default function NewClientButton({
       </button>
 
       <Modal open={open}>
-              {created ? (
-                <>
-                  <h2 className="text-base font-semibold text-ink mb-1">Client created</h2>
-                  <p className="text-sm text-ink-3 mb-5">
-                    Share these login credentials with the client. The password is shown{" "}
-                    <strong>once</strong> — copy it now.
+        {created ? (
+          <>
+            <h2 className="text-base font-semibold text-ink mb-1">Client created</h2>
+            <p className="text-sm text-ink-3 mb-5">
+              Share these login credentials with the client. The password is shown{" "}
+              <strong>once</strong> — copy it now.
+            </p>
+            <div className="rounded-md border border-line bg-page p-4 space-y-3">
+              <div>
+                <p className="text-xs text-ink-3">Email</p>
+                <p className="text-sm font-medium text-ink break-all">{created.email}</p>
+              </div>
+              <div>
+                <p className="text-xs text-ink-3">Temporary password</p>
+                {created.tempPassword ? (
+                  <p className="text-sm font-mono font-medium text-ink">{created.tempPassword}</p>
+                ) : (
+                  <p className="text-sm text-ink-3">
+                    Existing login reused — use “Reset password” on the client page if needed.
                   </p>
-                  <div className="rounded-md border border-line bg-page p-4 space-y-3">
-                    <div>
-                      <p className="text-xs text-ink-3">Email</p>
-                      <p className="text-sm font-medium text-ink break-all">{created.email}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-ink-3">Temporary password</p>
-                      {created.tempPassword ? (
-                        <p className="text-sm font-mono font-medium text-ink">{created.tempPassword}</p>
-                      ) : (
-                        <p className="text-sm text-ink-3">
-                          Existing login reused — use “Reset password” on the client page if needed.
-                        </p>
-                      )}
-                    </div>
-                    {created.tempPassword && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(
-                            `Email: ${created.email}\nPassword: ${created.tempPassword}`
-                          );
-                          setCopied(true);
-                        }}
-                        className="text-xs px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 transition-colors"
-                      >
-                        {copied ? "Copied ✓" : "Copy credentials"}
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex gap-3 pt-5">
-                    <button
-                      type="button"
-                      onClick={reset}
-                      className="flex-1 py-2 border border-line-2 text-sm rounded-md hover:bg-surface-2 transition-colors"
-                    >
-                      Close
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const id = created.clientId;
-                        reset();
-                        router.push(`/clients/${id}`);
-                      }}
-                      className="flex-1 py-2 bg-neutral-900 text-white text-sm rounded-md hover:bg-neutral-800 transition-colors"
-                    >
-                      Open client →
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <h2 className="text-base font-semibold text-ink mb-1">New client</h2>
-                  <p className="text-sm text-ink-3 mb-5">
-                    A login is provisioned and the Initial Client Form is created. No project is needed yet.
-                  </p>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-ink-2 mb-1">Business name</label>
-                      <input
-                        name="name"
-                        type="text"
-                        required
-                        placeholder="e.g. ALEM Store"
-                        className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-ink-2 mb-1">Email</label>
-                      <input
-                        name="email"
-                        type="email"
-                        required
-                        placeholder="client@example.com"
-                        className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-ink-2 mb-1">Mode</label>
-                      <select
-                        name="mode"
-                        defaultValue="PROJECT"
-                        className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-surface"
-                      >
-                        <option value="PROJECT">Project</option>
-                        <option value="ONGOING">Ongoing / Retainer</option>
-                      </select>
-                    </div>
-
-                    {error && <p className="text-sm text-rose">{error}</p>}
-
-                    <div className="flex gap-3 pt-1">
-                      <button
-                        type="button"
-                        onClick={reset}
-                        className="flex-1 py-2 border border-line-2 text-sm rounded-md hover:bg-surface-2 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="flex-1 py-2 bg-neutral-900 text-white text-sm rounded-md hover:bg-neutral-800 disabled:opacity-50 transition-colors"
-                      >
-                        {loading ? "Creating…" : "Create client"}
-                      </button>
-                    </div>
-                  </form>
-                </>
+                )}
+              </div>
+              {created.tempPassword && (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      `Email: ${created.email}\nPassword: ${created.tempPassword}`
+                    );
+                    setCopied(true);
+                  }}
+                >
+                  {copied ? "Copied ✓" : "Copy credentials"}
+                </Button>
               )}
+            </div>
+            <div className="flex gap-3 pt-5">
+              <Button variant="outline" size="block" className="flex-1" onClick={reset}>
+                Close
+              </Button>
+              <Button
+                size="block"
+                className="flex-1"
+                onClick={() => {
+                  const id = created.clientId;
+                  reset();
+                  router.push(`/clients/${id}`);
+                }}
+              >
+                Open client →
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="text-base font-semibold text-ink mb-1">New client</h2>
+            <p className="text-sm text-ink-3 mb-5">
+              A login is provisioned and the Initial Client Form is created. No project is needed yet.
+            </p>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label>Business name</Label>
+                <Input name="name" type="text" required placeholder="e.g. ALEM Store" />
+              </div>
+              <div>
+                <Label>Email</Label>
+                <Input name="email" type="email" required placeholder="client@example.com" />
+              </div>
+              <div>
+                <Label>Mode</Label>
+                <Select name="mode" defaultValue="PROJECT">
+                  <option value="PROJECT">Project</option>
+                  <option value="ONGOING">Ongoing / Retainer</option>
+                </Select>
+              </div>
+
+              {error && <p className="text-sm text-rose">{error}</p>}
+
+              <div className="flex gap-3 pt-1">
+                <Button variant="outline" size="block" className="flex-1" onClick={reset}>
+                  Cancel
+                </Button>
+                <Button type="submit" size="block" className="flex-1" disabled={loading}>
+                  {loading ? "Creating…" : "Create client"}
+                </Button>
+              </div>
+            </form>
+          </>
+        )}
       </Modal>
     </>
   );

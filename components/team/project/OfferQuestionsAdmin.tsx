@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { answerQuestion } from "@/app/actions/questions";
+import { Textarea } from "@/components/ui/Field";
 
 export type OfferQuestion = {
   id: string;
@@ -35,12 +36,12 @@ function QuestionRow({ q }: { q: OfferQuestion }) {
         <p className="text-sm text-ink-2">↳ {q.answerText}</p>
       ) : (
         <div className="flex items-start gap-2">
-          <textarea
+          <Textarea fullWidth={false} className="flex-1"
             value={answer}
             onChange={(e) => { setAnswer(e.target.value); setSaved(false); }}
             rows={2}
             placeholder="Reply to the client…"
-            className="flex-1 rounded-md border border-line-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+           
           />
           <button
             type="button"

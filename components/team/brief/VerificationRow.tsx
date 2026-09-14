@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { resolveVerificationItem, sendVerificationToClient } from "@/app/actions/brief";
+import Button from "@/components/ui/Button";
 
 type Status = "pending" | "confirmed" | "rejected";
 
@@ -103,17 +104,17 @@ export default function VerificationRow({
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <button onClick={() => resolve("confirmed")} disabled={isPending} className="btn btn-sm btn-primary">
+        <Button variant="primary" size="sm" onClick={() => resolve("confirmed")} disabled={isPending}>
           {isPending ? "Saving…" : "Confirm with this answer"}
-        </button>
-        <button onClick={() => resolve("rejected")} disabled={isPending} className="btn btn-sm">Reject</button>
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => resolve("rejected")} disabled={isPending}>Reject</Button>
         {current === "pending" && !sent && (
-          <button onClick={send} disabled={isPending} className="btn btn-sm btn-ghost">
+          <Button variant="ghost" size="sm" onClick={send} disabled={isPending}>
             Send to client for verification
-          </button>
+          </Button>
         )}
         {current !== "pending" && (
-          <button onClick={() => resolve("pending")} disabled={isPending} className="btn btn-sm btn-ghost">Reset</button>
+          <Button variant="ghost" size="sm" onClick={() => resolve("pending")} disabled={isPending}>Reset</Button>
         )}
         {dateResolved && current !== "pending" && (
           <span className="faint" style={{ fontSize: 11, marginLeft: "auto" }}>

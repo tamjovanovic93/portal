@@ -8,6 +8,7 @@ import { completeForm } from "@/app/actions/onboarding";
 import { getCollab, clientApprovePrefill, clientReplace, type FormContent, type CollabMap } from "@/lib/forms/collab";
 import { FieldRenderer, displayValue } from "./fields";
 import type { DocumentFormProps } from "./types";
+import Button from "@/components/ui/Button";
 
 // ─── respond — client approves/changes pre-filled answers, fills the rest ────
 
@@ -198,10 +199,10 @@ export default function RespondForm({
         <div key={field.key} className="rounded-md border border-green-200 bg-green-50/50 px-4 py-3">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-ink">{field.label}</p>
-            <button type="button" onClick={() => beginChange(field.key)}
-              className="text-xs text-ink-3 hover:text-neutral-800">
+            <Button variant="link" size="xs" type="button" onClick={() => beginChange(field.key)}
+             >
               Change
-            </button>
+            </Button>
           </div>
           <p className="text-sm text-ink mt-1 whitespace-pre-wrap">
             {displayValue(field, content[field.key])}
@@ -314,23 +315,23 @@ export default function RespondForm({
               Save &amp; finish later
             </button>
             {isLast ? (
-              <button
+              <Button size="xl"
                 type="button"
                 onClick={submit}
                 disabled={isPending}
-                className="px-5 py-2 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-700 disabled:opacity-50 transition-colors"
+               
               >
                 {isPending ? "Submitting…" : "Submit Intake Form"}
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button size="xl"
                 type="button"
                 onClick={() => { setError(null); setStep(idx + 1); }}
                 disabled={isPending}
-                className="px-5 py-2 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-700 disabled:opacity-50 transition-colors"
+               
               >
                 Next →
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -359,22 +360,22 @@ export default function RespondForm({
       ))}
 
       <div className="flex items-center gap-3 pt-2">
-        <button
+        <Button variant="outline"
           type="button"
           onClick={() => startTransition(async () => { await saveDocument(documentId, content); })}
           disabled={isPending}
-          className="px-4 py-2 rounded-md border border-line-2 text-sm font-medium text-ink-2 hover:bg-surface-2 disabled:opacity-50 transition-colors"
+         
         >
           {isPending ? "Saving…" : "Save draft"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={submit}
           disabled={isPending}
-          className="px-4 py-2 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-700 disabled:opacity-50 transition-colors"
+         
         >
           Submit
-        </button>
+        </Button>
       </div>
       {unresolvedNotice}
       {error && <p className="text-sm text-rose">{error}</p>}

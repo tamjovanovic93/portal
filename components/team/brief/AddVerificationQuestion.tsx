@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { addCustomVerification } from "@/app/actions/brief";
+import Button from "@/components/ui/Button";
 
 // Add a custom (team-authored) verification question to the queue. It can then be
 // resolved directly or sent to the client for verification.
@@ -12,9 +13,9 @@ export default function AddVerificationQuestion({ clientId }: { clientId: string
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="btn btn-sm btn-ghost">
+      <Button variant="ghost" size="sm" type="button" onClick={() => setOpen(true)}>
         + Add custom question
-      </button>
+      </Button>
     );
   }
 
@@ -29,7 +30,7 @@ export default function AddVerificationQuestion({ clientId }: { clientId: string
         className="zp-textarea"
       />
       <div className="flex items-center gap-2">
-        <button
+        <Button variant="primary" size="sm"
           type="button"
           disabled={isPending || !value.trim()}
           onClick={() =>
@@ -39,13 +40,13 @@ export default function AddVerificationQuestion({ clientId }: { clientId: string
               setOpen(false);
             })
           }
-          className="btn btn-sm btn-primary"
+         
         >
           {isPending ? "Adding…" : "Add question"}
-        </button>
-        <button type="button" onClick={() => { setOpen(false); setValue(""); }} className="btn btn-sm btn-ghost">
+        </Button>
+        <Button variant="ghost" size="sm" type="button" onClick={() => { setOpen(false); setValue(""); }}>
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );

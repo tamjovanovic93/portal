@@ -35,6 +35,7 @@ import {
   type BriefSectionKind,
 } from "@/lib/brief/types";
 import type { RosterMember } from "@/lib/team";
+import Button from "@/components/ui/Button";
 
 type Props = {
   projectId: string;
@@ -145,12 +146,12 @@ export default function ProjectBriefCard(props: Props) {
         </div>
 
         <div className="flex items-center gap-3" style={{ marginTop: 12 }}>
-          <button type="button" onClick={() => setExpanded((v) => !v)} className="btn btn-sm">
+          <Button variant="secondary" size="sm" type="button" onClick={() => setExpanded((v) => !v)}>
             {expanded ? "Hide Brief ↑" : "View / Edit Brief ↓"}
-          </button>
-          <button type="button" onClick={generate} disabled={genPending} className="btn btn-sm btn-ghost">
+          </Button>
+          <Button variant="ghost" size="sm" type="button" onClick={generate} disabled={genPending}>
             {genPending ? "Generating…" : "Generate draft (AI)"}
-          </button>
+          </Button>
           <div className="flex-1" />
           {genError && <span style={{ fontSize: 12, color: "var(--rose)" }}>{genError}</span>}
         </div>
@@ -212,13 +213,13 @@ function SectionFrame({ section, first, last, children, onToggleVisible, onHide,
     <div className="card" style={{ padding: "12px 14px" }}>
       <div className="flex items-center gap-2" style={{ marginBottom: 10 }}>
         <span style={{ fontSize: 13.5, fontWeight: 600 }}>{section.label}</span>
-        <button type="button" onClick={onToggleVisible} title={section.visibleToClient ? "Visible to client" : "Internal only"}
-          className="btn btn-sm btn-ghost" style={{ padding: "2px 8px", color: section.visibleToClient ? "var(--mint)" : "var(--text-3)" }}>
+        <Button variant="ghost" size="sm" type="button" onClick={onToggleVisible} title={section.visibleToClient ? "Visible to client" : "Internal only"}
+          style={{ padding: "2px 8px", color: section.visibleToClient ? "var(--mint)" : "var(--text-3)" }}>
           <Icon name={section.visibleToClient ? "eye" : "eyeOff"} size={14} /> {section.visibleToClient ? "Client" : "Internal"}
-        </button>
+        </Button>
         <div className="flex-1" />
-        <button type="button" onClick={() => onMove(-1)} disabled={first} className="btn btn-sm btn-ghost" style={{ padding: "2px 6px" }}>↑</button>
-        <button type="button" onClick={() => onMove(1)} disabled={last} className="btn btn-sm btn-ghost" style={{ padding: "2px 6px" }}>↓</button>
+        <Button variant="ghost" size="sm" type="button" onClick={() => onMove(-1)} disabled={first} style={{ padding: "2px 6px" }}>↑</Button>
+        <Button variant="ghost" size="sm" type="button" onClick={() => onMove(1)} disabled={last} style={{ padding: "2px 6px" }}>↓</Button>
         {onRemove
           ? <button type="button" onClick={onRemove} className="faint" style={{ fontSize: 12 }}>Remove</button>
           : <button type="button" onClick={onHide} className="faint" style={{ fontSize: 12 }}>Hide</button>}
@@ -258,10 +259,10 @@ function AddSection({ brief, onAdd }: { brief: ProjectBrief; onAdd: (next: Brief
         <span className="zp-label" style={{ marginBottom: 0 }}>Add section:</span>
         {missingDefaults.map((k) => {
           const def = DEFAULT_BRIEF_SECTIONS.find((d) => d.kind === k)!;
-          return <button key={k} type="button" onClick={() => addMissingDefault(k)} className="btn btn-sm btn-ghost">+ {def.label}</button>;
+          return <Button variant="ghost" size="sm" key={k} type="button" onClick={() => addMissingDefault(k)}>+ {def.label}</Button>;
         })}
         {removable.map((s) => (
-          <button key={s.key} type="button" onClick={() => readd(s.key)} className="btn btn-sm btn-ghost">+ {s.label} (hidden)</button>
+          <Button variant="ghost" size="sm" key={s.key} type="button" onClick={() => readd(s.key)}>+ {s.label} (hidden)</Button>
         ))}
         {presentKinds.size === 0 && removable.length === 0 && missingDefaults.length === 0 && (
           <span className="faint" style={{ fontSize: 12 }}>All default sections in use.</span>
@@ -271,7 +272,7 @@ function AddSection({ brief, onAdd }: { brief: ProjectBrief; onAdd: (next: Brief
         <input className="zp-input" style={{ flex: 1 }} placeholder="Custom section title…" value={customLabel}
           onChange={(e) => setCustomLabel(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustom(); } }} />
-        <button type="button" onClick={addCustom} className="btn btn-sm btn-primary">+ Custom</button>
+        <Button variant="primary" size="sm" type="button" onClick={addCustom}>+ Custom</Button>
       </div>
     </div>
   );
@@ -446,9 +447,9 @@ function ScopeSyncBar({ briefDocId }: { briefDocId: string }) {
   }
   return (
     <div className="flex items-center gap-3" style={{ padding: "8px 10px", borderRadius: "var(--r-md)", background: "var(--surface)", border: "1px solid var(--border)" }}>
-      <button type="button" onClick={sync} disabled={pending} className="btn btn-sm btn-primary">
+      <Button variant="primary" size="sm" type="button" onClick={sync} disabled={pending}>
         {pending ? "Syncing…" : "Sync tasks from Scope"}
-      </button>
+      </Button>
       <span className="faint" style={{ fontSize: 12 }}>
         {msg ?? "Generates / updates project tasks from these items (dates carry over; your edits are kept)."}
       </span>
@@ -493,8 +494,8 @@ function ScopeList({ briefDocId, items: initial }: {
               onChange={(e) => commitDate(it.id, { startDate: e.target.value || null })} onBlur={() => { if (dateTimer.current) commit(items); }} />
             <input type="date" className="zp-input" style={{ width: 140 }} title="Due" value={it.dueDate ?? ""}
               onChange={(e) => commitDate(it.id, { dueDate: e.target.value || null })} onBlur={() => { if (dateTimer.current) commit(items); }} />
-            <button type="button" onClick={() => move(idx, -1)} disabled={idx === 0} className="btn btn-sm btn-ghost" style={{ padding: "2px 6px" }}>↑</button>
-            <button type="button" onClick={() => move(idx, 1)} disabled={idx === items.length - 1} className="btn btn-sm btn-ghost" style={{ padding: "2px 6px" }}>↓</button>
+            <Button variant="ghost" size="sm" type="button" onClick={() => move(idx, -1)} disabled={idx === 0} style={{ padding: "2px 6px" }}>↑</Button>
+            <Button variant="ghost" size="sm" type="button" onClick={() => move(idx, 1)} disabled={idx === items.length - 1} style={{ padding: "2px 6px" }}>↓</Button>
             <button type="button" onClick={() => remove(it.id)} className="faint" style={{ fontSize: 12 }}>✕</button>
           </div>
         ))}
@@ -502,7 +503,7 @@ function ScopeList({ briefDocId, items: initial }: {
       <div className="flex items-center gap-2" style={{ marginTop: 8 }}>
         <input className="zp-input" style={{ flex: 1 }} value={text} placeholder="Add a deliverable (e.g. Homepage design)"
           onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} />
-        <button type="button" onClick={add} className="btn btn-sm btn-primary">+ Add</button>
+        <Button variant="primary" size="sm" type="button" onClick={add}>+ Add</Button>
       </div>
     </div>
   );
@@ -531,8 +532,8 @@ function EditableList({ briefDocId, field, items: initial, placeholder }: {
             <span className="faint" style={{ fontSize: 11, width: 14 }}>{idx + 1}.</span>
             <input className="zp-input" style={{ flex: 1 }} value={it.text}
               onChange={(e) => editText(it.id, e.target.value)} onBlur={() => commit(items)} disabled={pending} />
-            <button type="button" onClick={() => move(idx, -1)} disabled={idx === 0} className="btn btn-sm btn-ghost" style={{ padding: "2px 6px" }}>↑</button>
-            <button type="button" onClick={() => move(idx, 1)} disabled={idx === items.length - 1} className="btn btn-sm btn-ghost" style={{ padding: "2px 6px" }}>↓</button>
+            <Button variant="ghost" size="sm" type="button" onClick={() => move(idx, -1)} disabled={idx === 0} style={{ padding: "2px 6px" }}>↑</Button>
+            <Button variant="ghost" size="sm" type="button" onClick={() => move(idx, 1)} disabled={idx === items.length - 1} style={{ padding: "2px 6px" }}>↓</Button>
             <button type="button" onClick={() => remove(it.id)} className="faint" style={{ fontSize: 12 }}>✕</button>
           </div>
         ))}
@@ -540,7 +541,7 @@ function EditableList({ briefDocId, field, items: initial, placeholder }: {
       <div className="flex items-center gap-2" style={{ marginTop: 8 }}>
         <input className="zp-input" style={{ flex: 1 }} value={text} placeholder={placeholder}
           onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} />
-        <button type="button" onClick={add} className="btn btn-sm btn-primary">+ Add</button>
+        <Button variant="primary" size="sm" type="button" onClick={add}>+ Add</Button>
       </div>
     </div>
   );
@@ -577,8 +578,8 @@ function SitemapEditor({ briefDocId, nodes: initial }: {
         <div key={n.id} className="card" style={{ padding: "10px 12px" }}>
           <div className="flex items-center gap-2">
             <input className="zp-input" style={{ flex: 1 }} value={n.name} onChange={(e) => renamePage(n.id, e.target.value)} onBlur={() => commit(nodes)} disabled={pending} />
-            <button type="button" onClick={() => movePage(idx, -1)} disabled={idx === 0} className="btn btn-sm btn-ghost" style={{ padding: "2px 6px" }}>↑</button>
-            <button type="button" onClick={() => movePage(idx, 1)} disabled={idx === nodes.length - 1} className="btn btn-sm btn-ghost" style={{ padding: "2px 6px" }}>↓</button>
+            <Button variant="ghost" size="sm" type="button" onClick={() => movePage(idx, -1)} disabled={idx === 0} style={{ padding: "2px 6px" }}>↑</Button>
+            <Button variant="ghost" size="sm" type="button" onClick={() => movePage(idx, 1)} disabled={idx === nodes.length - 1} style={{ padding: "2px 6px" }}>↓</Button>
             <button type="button" onClick={() => removePage(n.id)} className="faint" style={{ fontSize: 12 }}>✕</button>
           </div>
           <div style={{ paddingLeft: 16, marginTop: 6 }} className="space-y-1.5">
@@ -593,7 +594,7 @@ function SitemapEditor({ briefDocId, nodes: initial }: {
               <input className="zp-input" style={{ flex: 1 }} placeholder="Add child page" value={childInput[n.id] ?? ""}
                 onChange={(e) => setChildInput({ ...childInput, [n.id]: e.target.value })}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addChild(n.id); } }} />
-              <button type="button" onClick={() => addChild(n.id)} className="btn btn-sm btn-ghost">+ Child</button>
+              <Button variant="ghost" size="sm" type="button" onClick={() => addChild(n.id)}>+ Child</Button>
             </div>
           </div>
         </div>
@@ -601,7 +602,7 @@ function SitemapEditor({ briefDocId, nodes: initial }: {
       <div className="flex items-center gap-2">
         <input className="zp-input" style={{ flex: 1 }} placeholder="Add page (e.g. Home)" value={page}
           onChange={(e) => setPage(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPage(); } }} />
-        <button type="button" onClick={addPage} className="btn btn-sm btn-primary">+ Page</button>
+        <Button variant="primary" size="sm" type="button" onClick={addPage}>+ Page</Button>
       </div>
     </div>
   );
@@ -665,7 +666,7 @@ function TeamAssign({ briefDocId, team: initial, roster }: {
           <select className="zp-select" style={{ width: "auto" }} value={addRole} onChange={(e) => setAddRole(e.target.value)}>
             {TEAM_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
-          <button type="button" onClick={addMember} disabled={!addId || pending} className="btn btn-sm btn-primary">Add</button>
+          <Button variant="primary" size="sm" type="button" onClick={addMember} disabled={!addId || pending}>Add</Button>
         </div>
       )}
     </div>

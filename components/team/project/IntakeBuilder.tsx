@@ -6,6 +6,8 @@ import { saveDocument } from "@/app/actions/documents";
 import { sendFormToClient } from "@/app/actions/onboarding";
 import { getConfig, type FormConfig, type AddedField } from "@/lib/templates/config";
 import { teamPrefill, getCollab, type FormContent } from "@/lib/forms/collab";
+import Button from "@/components/ui/Button";
+import { Input, Select } from "@/components/ui/Field";
 
 // Team-side "building blocks" editor for the full intake form: remove fields or
 // whole sections, reorder sections, and pre-fill answers. Pre-filled answers are
@@ -162,10 +164,10 @@ export default function IntakeBuilder({
                   className="w-6 h-6 rounded border border-line-2 text-ink-2 disabled:opacity-30 hover:bg-surface-2">↑</button>
                 <button type="button" onClick={() => moveSection(key, 1)} disabled={idx === order.length - 1}
                   className="w-6 h-6 rounded border border-line-2 text-ink-2 disabled:opacity-30 hover:bg-surface-2">↓</button>
-                <button type="button" onClick={() => toggleSection(key)}
-                  className="text-xs px-2 py-1 rounded border border-line-2 text-ink-2 hover:bg-surface-2">
+                <Button variant="outline" size="xs" type="button" onClick={() => toggleSection(key)}
+                 >
                   {removed ? "Restore section" : "✕ Remove section"}
-                </button>
+                </Button>
               </div>
             </div>
             {!removed && (
@@ -242,14 +244,14 @@ export default function IntakeBuilder({
       })}
 
       <div className="flex items-center gap-3 pt-1">
-        <button type="button" onClick={saveDraft} disabled={isPending}
-          className="px-4 py-2 rounded-md border border-line-2 text-sm font-medium text-ink-2 hover:bg-surface-2 disabled:opacity-50">
+        <Button variant="outline" type="button" onClick={saveDraft} disabled={isPending}
+         >
           {isPending ? "Saving…" : "Save draft"}
-        </button>
-        <button type="button" onClick={send} disabled={isPending}
-          className="px-4 py-2 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-700 disabled:opacity-50">
+        </Button>
+        <Button type="button" onClick={send} disabled={isPending}
+         >
           Send intake form to client
-        </button>
+        </Button>
         {saved && !isPending && <span className="text-xs text-ink-2">Saved</span>}
       </div>
     </div>
@@ -316,25 +318,25 @@ function AddFieldForm({ onAdd }: { onAdd: (label: string, type: Field["type"]) =
     <div className="flex items-end gap-2 border border-line rounded-md p-2.5 bg-page">
       <div className="flex-1">
         <label className="block text-[11px] text-ink-3 mb-1">New field label</label>
-        <input
+        <Input size="sm"
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="e.g. Preferred CMS"
-          className="w-full rounded-md border border-line-2 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+         
         />
       </div>
       <div>
         <label className="block text-[11px] text-ink-3 mb-1">Type</label>
-        <select
+        <Select size="sm" fullWidth={false}
           value={type}
           onChange={(e) => setType(e.target.value as Field["type"])}
-          className="rounded-md border border-line-2 px-2 py-1.5 text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-neutral-900"
+         
         >
           <option value="text">Short text</option>
           <option value="textarea">Long text</option>
           <option value="date">Date</option>
-        </select>
+        </Select>
       </div>
       <button
         type="button"

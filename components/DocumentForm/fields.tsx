@@ -2,6 +2,8 @@
 
 import type { Section, Field } from "@/lib/templates/types";
 import { isVisible } from "@/lib/templates/visibility";
+import Button from "@/components/ui/Button";
+import { Input, Select, Textarea } from "@/components/ui/Field";
 
 // ─── Field renderers ───────────────────────────────────────────────────────
 
@@ -17,14 +19,14 @@ function TextareaField({
   disabled: boolean;
 }) {
   return (
-    <textarea
+    <Textarea
       id={field.key}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={field.placeholder}
       rows={field.rows ?? 4}
       disabled={disabled}
-      className="w-full rounded-md border border-line-2 px-3 py-2 text-sm text-ink placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:bg-neutral-50 disabled:text-neutral-500 resize-y"
+      resize="y"
     />
   );
 }
@@ -41,12 +43,11 @@ function SelectField({
   disabled: boolean;
 }) {
   return (
-    <select
+    <Select
       id={field.key}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
-      className="w-full rounded-md border border-line-2 px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:bg-neutral-50 disabled:text-neutral-500 bg-surface"
     >
       <option value="">Select…</option>
       {field.options?.map((opt) => (
@@ -54,7 +55,7 @@ function SelectField({
           {opt.label}
         </option>
       ))}
-    </select>
+    </Select>
   );
 }
 
@@ -188,13 +189,13 @@ function ChecklistItemField({
         ))}
       </div>
       {value.result === "fail" && (
-        <input
+        <Input
           type="text"
+          size="sm"
           value={value.note}
           onChange={(e) => onChange({ ...value, note: e.target.value })}
           placeholder="Note what failed…"
           disabled={disabled}
-          className="w-full rounded-md border border-line-2 px-3 py-1.5 text-sm text-ink placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:bg-neutral-50"
         />
       )}
     </div>
@@ -310,13 +311,9 @@ function RepeatableField({
         </div>
       )}
       {!disabled && (
-        <button
-          type="button"
-          onClick={addRow}
-          className="text-xs text-ink-3 hover:text-ink border border-dashed border-line-2 hover:border-line-3 rounded-md px-3 py-1.5 transition-colors"
-        >
+        <Button variant="dashed" size="sm" onClick={addRow}>
           + Add row
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -337,23 +334,21 @@ function SignatureField({
     <div className="flex gap-4">
       <div className="flex-1">
         <label className="block text-xs text-ink-3 mb-1">Full name</label>
-        <input
+        <Input
           type="text"
           value={value.name}
           onChange={(e) => onChange({ ...value, name: e.target.value })}
           placeholder="Your full name"
           disabled={disabled}
-          className="w-full rounded-md border border-line-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:bg-neutral-50 disabled:text-neutral-500"
         />
       </div>
       <div className="w-40">
         <label className="block text-xs text-ink-3 mb-1">Date</label>
-        <input
+        <Input
           type="date"
           value={value.date}
           onChange={(e) => onChange({ ...value, date: e.target.value })}
           disabled={disabled}
-          className="w-full rounded-md border border-line-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:bg-neutral-50 disabled:text-neutral-500"
         />
       </div>
     </div>
@@ -411,14 +406,13 @@ export function FieldRenderer({
     case "date":
       return (
         <FieldWrapper field={field}>
-          <input
+          <Input
             id={field.key}
             type={field.type}
             value={value ?? ""}
             onChange={(e) => onChange(e.target.value)}
             placeholder={field.placeholder}
             disabled={disabled}
-            className="w-full rounded-md border border-line-2 px-3 py-2 text-sm text-ink placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:bg-neutral-50 disabled:text-neutral-500"
           />
         </FieldWrapper>
       );

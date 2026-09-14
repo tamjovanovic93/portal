@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Button from "@/components/ui/Button";
 
 export type ColumnDef = {
   key: string;
@@ -65,9 +66,9 @@ export default function BriefTable({
           <h3 style={{ fontSize: 14, fontWeight: 600 }}>{title}</h3>
           {description && <p className="faint" style={{ fontSize: 12, marginTop: 2 }}>{description}</p>}
         </div>
-        <button type="button" onClick={() => setShowAdd((v) => !v)} className="btn btn-sm">
+        <Button variant="secondary" size="sm" type="button" onClick={() => setShowAdd((v) => !v)}>
           {showAdd ? "Cancel" : "+ Add"}
-        </button>
+        </Button>
       </div>
 
       {showAdd && (
@@ -97,9 +98,9 @@ export default function BriefTable({
               </div>
             ))}
           </div>
-          <button type="submit" disabled={isPending} className="btn btn-sm btn-primary">
+          <Button variant="primary" size="sm" type="submit" disabled={isPending}>
             {isPending ? "Saving…" : "Save"}
-          </button>
+          </Button>
         </form>
       )}
 

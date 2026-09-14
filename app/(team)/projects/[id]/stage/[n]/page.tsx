@@ -12,6 +12,7 @@ import { getRoster } from "@/lib/team";
 import { STAGE_COUNT, WIREFRAME_STAGE, DESIGN_STAGE, stageLabel } from "@/lib/stages";
 import { DOC_STATUS_LABEL, DOC_STATUS_CLASS } from "@/lib/constants/documents";
 import { labelFromFilename } from "@/lib/format";
+import Button from "@/components/ui/Button";
 
 const OVERALL_LABELS: Record<string, string> = {
   love_it: "Love it — let's go",
@@ -50,12 +51,12 @@ async function CreateDocumentButton({
 
   return (
     <form action={handleCreate}>
-      <button
+      <Button size="sm"
         type="submit"
-        className="text-xs px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-700 transition-colors"
+       
       >
         New {label}
-      </button>
+      </Button>
     </form>
   );
 }

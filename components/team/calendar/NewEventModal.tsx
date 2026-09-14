@@ -3,6 +3,8 @@
 import { useRef, useState } from "react";
 import { createEvent, updateEvent, deleteEvent } from "@/app/actions/events";
 import { EVENT_TYPE_OPTIONS } from "@/lib/constants/events";
+import Button from "@/components/ui/Button";
+import { Input, Label, Select, Textarea } from "@/components/ui/Field";
 
 type Project = { id: string; name: string };
 
@@ -101,14 +103,8 @@ export default function NewEventModal({
 
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs text-ink-3 mb-1">Title</label>
-            <input
-              name="title"
-              required
-              defaultValue={event?.title}
-              placeholder="Event title"
-              className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
-            />
+            <Label size="xs">Title</Label>
+            <Input name="title" required defaultValue={event?.title} placeholder="Event title" />
           </div>
 
           <div className="flex items-center gap-2">
@@ -126,77 +122,57 @@ export default function NewEventModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-ink-3 mb-1">
-                {allDay ? "Date" : "Start"}
-              </label>
-              <input
+              <Label size="xs">{allDay ? "Date" : "Start"}</Label>
+              <Input
                 name="startAt"
                 type={allDay ? "date" : "datetime-local"}
                 required
                 defaultValue={defaultStart}
-                className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
               />
             </div>
             {!allDay && (
               <div>
-                <label className="block text-xs text-ink-3 mb-1">
-                  End (optional)
-                </label>
-                <input
+                <Label size="xs">End (optional)</Label>
+                <Input
                   name="endAt"
                   type="datetime-local"
-                  defaultValue={
-                    event?.endAt ? toLocalDateTimeValue(event.endAt) : ""
-                  }
-                  className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                  defaultValue={event?.endAt ? toLocalDateTimeValue(event.endAt) : ""}
                 />
               </div>
             )}
           </div>
 
           <div>
-            <label className="block text-xs text-ink-3 mb-1">Type</label>
-            <select
-              name="type"
-              defaultValue={event?.type ?? "APPOINTMENT"}
-              className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 bg-surface"
-            >
+            <Label size="xs">Type</Label>
+            <Select name="type" defaultValue={event?.type ?? "APPOINTMENT"}>
               {EVENT_TYPE_OPTIONS.map((t) => (
                 <option key={t.value} value={t.value}>
                   {t.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>
-            <label className="block text-xs text-ink-3 mb-1">
-              Project (optional)
-            </label>
-            <select
-              name="projectId"
-              defaultValue={event?.projectId ?? ""}
-              className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 bg-surface"
-            >
+            <Label size="xs">Project (optional)</Label>
+            <Select name="projectId" defaultValue={event?.projectId ?? ""}>
               <option value="">— No project —</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>
-            <label className="block text-xs text-ink-3 mb-1">
-              Description (optional)
-            </label>
-            <textarea
+            <Label size="xs">Description (optional)</Label>
+            <Textarea
               name="description"
               rows={2}
+              resize="none"
               defaultValue={event?.description ?? ""}
               placeholder="Notes, agenda, details…"
-              className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 resize-none"
             />
           </div>
 
@@ -204,32 +180,19 @@ export default function NewEventModal({
 
           <div className="flex items-center justify-between pt-1">
             {event ? (
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={busy}
-                className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
-              >
+              <Button variant="link-danger" size="xs" onClick={handleDelete} disabled={busy}>
                 Delete event
-              </button>
+              </Button>
             ) : (
               <span />
             )}
             <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-3 py-1.5 text-sm text-ink-2 hover:text-ink"
-              >
+              <Button variant="quiet" size="md" onClick={onClose}>
                 Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={busy}
-                className="px-4 py-1.5 text-sm bg-neutral-900 text-white rounded-md hover:bg-neutral-700 disabled:opacity-50"
-              >
+              </Button>
+              <Button type="submit" size="md" disabled={busy}>
                 {busy ? "Saving…" : event ? "Save" : "Create"}
-              </button>
+              </Button>
             </div>
           </div>
         </form>

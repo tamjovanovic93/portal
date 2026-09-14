@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { saveDesignLink, deleteDesignAsset } from "@/app/actions/design";
 import { DESIGN_STAGE } from "@/lib/stages";
+import { Input } from "@/components/ui/Field";
 
 type MockupAsset = {
   id: string;
@@ -145,11 +146,11 @@ export default function MockupSection({
               placeholder="Label (e.g. Figma Design)"
               className="w-36 px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
             />
-            <input
+            <Input fullWidth={false} className="flex-1"
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
               placeholder="https://..."
-              className="flex-1 px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+             
               required
             />
           </div>

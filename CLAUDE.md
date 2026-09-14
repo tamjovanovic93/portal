@@ -31,4 +31,10 @@ Conventions that must hold:
   `border-line`, `bg-mint-fill`, …) and the components in `components/ui`.
   No visual changes without the user asking; keep class strings identical
   when refactoring.
+- Buttons and form controls go through `components/ui/Button.tsx` and
+  `components/ui/Field.tsx` (`Input`, `Textarea`, `Select`, `Label`). Pick a
+  `variant` and `size`; never pass padding, text size or colour through
+  `className` (it collides with the variant's class and CSS order decides the
+  winner). `className` is layout only. See the tables in `docs/ARCHITECTURE.md`.
+  Clickable rows, tabs and state-driven toggles stay plain elements.
 - Verify with `npm run typecheck`, `npm run lint`, `npx next build`.

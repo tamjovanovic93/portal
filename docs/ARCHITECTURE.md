@@ -149,6 +149,58 @@ tasks load on demand through `listWorkTasks`.
   `SectionHeading` is the uppercase section label; `Modal` is the portal
   dialog shell; `PipelineStep` and `StagePips` are the shared pipeline /
   progress pieces.
+
+### Button
+
+`components/ui/Button.tsx` is the only button. Pick by `variant`; the name
+says both the role and which of the app's two looks it uses.
+
+| variant | family | use it for |
+|---------|--------|------------|
+| `primary` | design system (`.btn btn-primary`) | the main action in team-app chrome: page headers, toolbars, card actions |
+| `secondary` | design system (`.btn`) | a neutral action beside a primary |
+| `ghost` | design system (`.btn btn-ghost`) | a low-emphasis chrome action; transparent until hover |
+| `solid` (default) | form | the confirm action in a form, modal or the portal |
+| `outline` | form | the secondary action — the Cancel beside a solid |
+| `danger` | form | a destructive action that still needs a box |
+| `success` | form | a green confirm; approval flows only |
+| `quiet` | form | low emphasis, but keeps a button's padding |
+| `dashed` | form | the "+ Add" affordance |
+| `link` | bare text | an inline text action in a dense row |
+| `link-danger` | bare text | an inline delete / remove |
+
+`size` is `sm`/`md` for the design-system family (30px / 36px) and
+`xs`/`sm`/`md`/`lg` (default)/`xl`/`block` for the rest. `block` drops
+horizontal padding for the stacked buttons at the foot of a modal — pair it
+with `className="flex-1"` or `"w-full"`. `icon` makes a design-system button
+square.
+
+**Never pass padding, text size, colour, background or border colour through
+`className`.** Those collide with the variant's own class and CSS order, not
+class order, picks the winner. Choose the size that fits, or add a step to
+`SIZES`. `className` is for layout only: `w-full`, `flex-1`, `ml-auto`,
+`shrink-0`, `mt-*`.
+
+A control that is really a clickable row, a tab, or a toggle whose classes
+depend on state stays a plain `<button>` — roughly 130 of those remain and
+that is correct.
+
+### Input, Textarea, Select, Label
+
+`components/ui/Field.tsx`, same two-family split:
+
+- `variant="plain"` (default) — the form/modal/portal look. `size` is `md`
+  (default), `sm` (dense rows) or `xs` (inline table cells). `fullWidth`
+  defaults to true; turn it off for a control in a flex row and pass
+  `className="flex-1"`.
+- `variant="zp"` — the design-system control (`.zp-input`, `.zp-select`,
+  `.zp-textarea`) used by Client Data, the brief tables and verification rows.
+  `size` does not apply.
+
+`Textarea` takes `resize="y" | "none"`. `Label` takes `size="sm"` (default) or
+`"xs"`, and `variant="zp"` for `.zp-label`. Checkboxes and radios stay plain
+`<input>` — they are a single `accent-*` class and a wrapper would only get in
+the way.
 - Login and password pages have no theme root and use plain Tailwind.
 
 ## Conventions

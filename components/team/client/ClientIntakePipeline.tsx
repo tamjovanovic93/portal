@@ -10,6 +10,7 @@ import {
 } from "@/app/actions/intake";
 import { useAiJob } from "@/components/ai/useAiJob";
 import PipelineStep from "@/components/team/PipelineStep";
+import Button from "@/components/ui/Button";
 
 // Client-level Client Data pipeline: Agent 1 (profile + verification) →
 // verify gate → Agent 2 (strategy). All keyed by clientId. The two agents run
@@ -74,7 +75,7 @@ export default function ClientIntakePipeline({
           done={hasProfile}
           desc="Builds the client profile + verification queue from the intake form, researching gaps."
         >
-          <button
+          <Button variant="primary" size="sm"
             onClick={() =>
               runJob(
                 "intake",
@@ -85,10 +86,10 @@ export default function ClientIntakePipeline({
               )
             }
             disabled={!hasApprovedIntake || anyBusy}
-            className="btn btn-sm btn-primary"
+           
           >
             {busy("intake") ? "Running…" : hasProfile ? "Re-run intake" : "Run intake"}
-          </button>
+          </Button>
         </PipelineStep>
 
         <PipelineStep
@@ -114,22 +115,22 @@ export default function ClientIntakePipeline({
             </Link>
           )}
           {hasProfile && !verified && (
-            <button
+            <Button variant="primary" size="sm"
               onClick={() => run("verify", () => markProfileVerified(clientId))}
               disabled={anyBusy}
-              className="btn btn-sm btn-primary"
+             
             >
               {busy("verify") ? "…" : "Mark verified"}
-            </button>
+            </Button>
           )}
           {verified && (
-            <button
+            <Button variant="ghost" size="sm"
               onClick={() => run("unverify", () => markProfileDraft(clientId))}
               disabled={anyBusy}
-              className="btn btn-sm btn-ghost"
+             
             >
               {busy("unverify") ? "…" : "Re-open as draft"}
-            </button>
+            </Button>
           )}
         </PipelineStep>
 
@@ -139,7 +140,7 @@ export default function ClientIntakePipeline({
           done={hasStrategy}
           desc="Builds the full strategy document from the verified profile."
         >
-          <button
+          <Button variant="primary" size="sm"
             onClick={() =>
               runJob(
                 "strategy",
@@ -148,11 +149,11 @@ export default function ClientIntakePipeline({
               )
             }
             disabled={!verified || anyBusy}
-            className="btn btn-sm btn-primary"
+           
             title={!verified ? "Verify the profile first" : undefined}
           >
             {busy("strategy") ? "Generating…" : hasStrategy ? "Regenerate strategy" : "Generate strategy"}
-          </button>
+          </Button>
         </PipelineStep>
       </ol>
 

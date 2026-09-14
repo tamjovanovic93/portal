@@ -16,6 +16,7 @@ import type { TaskStatus } from "@prisma/client";
 import { STAGE_LABELS } from "@/lib/stages";
 import { STAGE_TASK_STATUS_OPTIONS, STAGE_CHOICES } from "@/lib/constants/tasks";
 import { toIsoDateInput } from "@/lib/format";
+import { Input, Select, Textarea } from "@/components/ui/Field";
 
 export type StageTask = {
   id: string;
@@ -78,57 +79,57 @@ function TaskRow({
 
       <div className="flex items-center gap-2 flex-wrap">
         {/* Assignee — team member only */}
-        <select
+        <Select size="xs" fullWidth={false}
           value={task.assigneeId ?? ""}
           onChange={(e) => run(() => assignTask(task.id, projectId, e.target.value || null))}
           disabled={isPending}
-          className="text-xs rounded border border-line-2 px-2 py-1 bg-surface focus:outline-none focus:ring-1 focus:ring-neutral-900"
+         
         >
           <option value="">Unassigned</option>
           {roster.map((m) => (
             <option key={m.id} value={m.id}>{m.name}</option>
           ))}
-        </select>
+        </Select>
 
         {/* Estimate date */}
         <label className="text-xs text-ink-3 flex items-center gap-1">
           Est.
-          <input
+          <Input size="xs" fullWidth={false}
             type="date"
             defaultValue={toIsoDateInput(task.estimateDate)}
             onChange={(e) => run(() => updateTaskEstimate(task.id, projectId, e.target.value || null))}
-            className="text-xs rounded border border-line-2 px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-neutral-900"
+           
           />
         </label>
 
         {/* Status — stage view only (no statuses in the Stage 1 planning view) */}
         {!planning && (
-          <select
+          <Select size="xs" fullWidth={false}
             value={displayStatus}
             onChange={(e) => run(() => updateTaskStatus(task.id, projectId, e.target.value as TaskStatus))}
             disabled={isPending}
-            className="text-xs rounded border border-line-2 px-2 py-1 bg-surface focus:outline-none focus:ring-1 focus:ring-neutral-900"
+           
           >
             {STAGE_TASK_STATUS_OPTIONS.map((s) => (
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
-          </select>
+          </Select>
         )}
 
         {/* Move to stage */}
         <label className="text-xs text-ink-3 flex items-center gap-1">
           Stage
-          <select
+          <Select size="xs" fullWidth={false}
             value={task.stageNumber ?? ""}
             onChange={(e) => run(() => moveTaskToStage(task.id, projectId, e.target.value ? Number(e.target.value) : null))}
             disabled={isPending}
-            className="text-xs rounded border border-line-2 px-1.5 py-1 bg-surface focus:outline-none focus:ring-1 focus:ring-neutral-900"
+           
           >
             <option value="">—</option>
             {STAGE_CHOICES.map((n) => (
               <option key={n} value={n}>{n} · {STAGE_LABELS[n]}</option>
             ))}
-          </select>
+          </Select>
         </label>
 
         {/* Blocked toggle */}
@@ -148,13 +149,13 @@ function TaskRow({
 
       {/* Work link */}
       <div className="flex items-center gap-2">
-        <input
+        <Input size="xs" fullWidth={false} className="flex-1"
           type="url"
           value={link}
           onChange={(e) => setLink(e.target.value)}
           onBlur={() => { if (link !== (task.workLink ?? "")) run(() => updateTaskWorkLink(task.id, projectId, link)); }}
           placeholder="Link to the work (Figma, doc, PR…)"
-          className="flex-1 text-xs rounded border border-line-2 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-neutral-900"
+         
         />
         {task.workLink && (
           <a href={task.workLink} target="_blank" rel="noreferrer" className="text-xs text-blue hover:underline shrink-0">
@@ -164,13 +165,13 @@ function TaskRow({
       </div>
 
       {/* Notes (per task/chunk) */}
-      <textarea
+      <Textarea size="xs" resize="y"
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         onBlur={() => { if (notes !== (task.notes ?? "")) run(() => updateTaskNotes(task.id, projectId, notes)); }}
         rows={planning ? 2 : 1}
         placeholder="Notes…"
-        className="w-full text-xs rounded border border-line px-2 py-1 focus:outline-none focus:ring-1 focus:ring-neutral-900 resize-y"
+       
       />
     </div>
   );

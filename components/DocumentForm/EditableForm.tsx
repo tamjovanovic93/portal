@@ -7,6 +7,7 @@ import { sendFormToClient } from "@/app/actions/onboarding";
 import { teamPrefill, type FormContent } from "@/lib/forms/collab";
 import { SectionRenderer } from "./fields";
 import type { DocumentFormProps } from "./types";
+import Button from "@/components/ui/Button";
 
 // ─── fill / prefill — a plain editable form ─────────────────────────────────
 
@@ -83,32 +84,32 @@ export default function EditableForm({
 
       {!readOnly && (
         <div className="flex items-center gap-3 pt-2">
-          <button
+          <Button variant="outline"
             type="button"
             onClick={handleSave}
             disabled={isPending}
-            className="px-4 py-2 rounded-md border border-line-2 text-sm font-medium text-ink-2 hover:bg-surface-2 disabled:opacity-50 transition-colors"
+           
           >
             {isPending ? "Saving…" : "Save draft"}
-          </button>
+          </Button>
           {mode === "prefill" ? (
-            <button
+            <Button
               type="button"
               onClick={handleSend}
               disabled={isPending}
-              className="px-4 py-2 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-700 disabled:opacity-50 transition-colors"
+             
             >
               {isPending ? "Sending…" : "Send to client"}
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               type="button"
               onClick={handleSubmit}
               disabled={isPending}
-              className="px-4 py-2 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-700 disabled:opacity-50 transition-colors"
+             
             >
               {isTeam ? "Save & mark complete" : "Submit"}
-            </button>
+            </Button>
           )}
           {saved && !isPending && (
             <span className="text-xs text-ink-2">Saved</span>

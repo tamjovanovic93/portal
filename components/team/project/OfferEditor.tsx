@@ -11,6 +11,8 @@ import {
   type Milestone,
   newMilestoneId,
 } from "@/lib/offer";
+import Button from "@/components/ui/Button";
+import { Input, Select, Textarea } from "@/components/ui/Field";
 
 // Team-side editor for the Project / Financial Offer. Fill the fields + pricing,
 // then send to the client. The client's Initial Form answers are shown alongside
@@ -63,20 +65,20 @@ export default function OfferEditor({
                 {field.required && <span className="text-red-500 ml-0.5">*</span>}
               </label>
               {field.type === "textarea" ? (
-                <textarea
+                <Textarea resize="y"
                   value={(values[field.key] as string) ?? ""}
                   onChange={(e) => set(field.key, e.target.value)}
                   placeholder={field.placeholder}
                   rows={field.rows ?? 3}
-                  className="w-full rounded-md border border-line-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 resize-y"
+                 
                 />
               ) : (
-                <input
+                <Input
                   type="text"
                   value={(values[field.key] as string) ?? ""}
                   onChange={(e) => set(field.key, e.target.value)}
                   placeholder={field.placeholder}
-                  className="w-full rounded-md border border-line-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                 
                 />
               )}
             </div>
@@ -89,34 +91,34 @@ export default function OfferEditor({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-ink mb-1.5">Currency</label>
-              <select
+              <Select
                 value={currency}
                 onChange={(e) => set("currency", e.target.value)}
-                className="w-full rounded-md border border-line-2 px-3 py-2 text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-neutral-900"
+               
               >
                 {CURRENCIES.map((c) => (
                   <option key={c.value} value={c.value}>{c.label}</option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div>
               <label className="block text-sm font-medium text-ink mb-1.5">Price — one time</label>
-              <input
+              <Input
                 type="text"
                 value={(values.oneTimePrice as string) ?? ""}
                 onChange={(e) => set("oneTimePrice", e.target.value)}
                 placeholder="e.g. 5000"
-                className="w-full rounded-md border border-line-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+               
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-ink mb-1.5">Price — monthly</label>
-              <input
+              <Input
                 type="text"
                 value={(values.monthlyPrice as string) ?? ""}
                 onChange={(e) => set("monthlyPrice", e.target.value)}
                 placeholder="e.g. 800"
-                className="w-full rounded-md border border-line-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+               
               />
             </div>
           </div>
@@ -142,31 +144,31 @@ export default function OfferEditor({
                 <div key={m.id} className="grid grid-cols-1 sm:grid-cols-[1fr_150px_120px_auto] gap-2 items-end">
                   <div>
                     <label className="block text-[11px] text-ink-3 mb-1">Milestone {i + 1} — name</label>
-                    <input
+                    <Input
                       type="text"
                       value={m.name}
                       onChange={(e) => updateMilestone(m.id, { name: e.target.value })}
                       placeholder="e.g. Kickoff / On delivery"
-                      className="w-full rounded-md border border-line-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                     
                     />
                   </div>
                   <div>
                     <label className="block text-[11px] text-ink-3 mb-1">Date (optional)</label>
-                    <input
+                    <Input
                       type="date"
                       value={m.date ?? ""}
                       onChange={(e) => updateMilestone(m.id, { date: e.target.value || null })}
-                      className="w-full rounded-md border border-line-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                     
                     />
                   </div>
                   <div>
                     <label className="block text-[11px] text-ink-3 mb-1">Amount</label>
-                    <input
+                    <Input
                       type="text"
                       value={m.amount ?? ""}
                       onChange={(e) => updateMilestone(m.id, { amount: e.target.value })}
                       placeholder="0"
-                      className="w-full rounded-md border border-line-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                     
                     />
                   </div>
                   <button
@@ -184,7 +186,7 @@ export default function OfferEditor({
         </div>
 
         <div className="flex items-center gap-3">
-          <button
+          <Button variant="outline"
             type="button"
             onClick={() =>
               startTransition(async () => {
@@ -193,11 +195,11 @@ export default function OfferEditor({
               })
             }
             disabled={isPending}
-            className="px-4 py-2 rounded-md border border-line-2 text-sm font-medium text-ink-2 hover:bg-surface-2 disabled:opacity-50"
+           
           >
             {isPending ? "Saving…" : "Save draft"}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() =>
               startTransition(async () => {
@@ -206,10 +208,10 @@ export default function OfferEditor({
               })
             }
             disabled={isPending}
-            className="px-4 py-2 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-700 disabled:opacity-50"
+           
           >
             Send offer to client
-          </button>
+          </Button>
           {saved && !isPending && <span className="text-xs text-ink-2">Saved</span>}
         </div>
       </div>

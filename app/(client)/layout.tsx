@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth/session";
 import { logout } from "@/app/actions/auth";
 import NotificationsBell from "@/components/NotificationsBell";
+import Button from "@/components/ui/Button";
 
 export default async function ClientLayout({
   children,
@@ -29,7 +30,7 @@ export default async function ClientLayout({
           <div className="flex items-center gap-3">
             <NotificationsBell />
             <form action={logout}>
-              <button type="submit" className="btn btn-sm btn-ghost">Sign out</button>
+              <Button variant="ghost" size="sm" type="submit">Sign out</Button>
             </form>
           </div>
         </div>

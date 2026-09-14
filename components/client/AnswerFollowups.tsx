@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { approveEdit, answerQuestion } from "@/app/actions/onboarding";
+import Button from "@/components/ui/Button";
+import { Input } from "@/components/ui/Field";
 
 export type Followup = {
   fieldKey: string;
@@ -63,7 +65,7 @@ function EditRow({ documentId, followup }: { documentId: string; followup: Follo
       <p className="text-sm font-medium text-ink">{followup.label}</p>
       <p className="text-xs text-ink-3 mt-1">Your team changed this to:</p>
       <p className="text-sm text-ink mt-0.5 whitespace-pre-wrap">{followup.value || "—"}</p>
-      <button
+      <Button size="sm" className="mt-2"
         type="button"
         onClick={() =>
           startTransition(async () => {
@@ -72,10 +74,10 @@ function EditRow({ documentId, followup }: { documentId: string; followup: Follo
           })
         }
         disabled={isPending}
-        className="mt-2 px-3 py-1.5 rounded-md bg-neutral-900 text-white text-xs font-medium hover:bg-neutral-700 disabled:opacity-50"
+       
       >
         {isPending ? "…" : "Approve change"}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -99,13 +101,13 @@ function QuestionRow({ documentId, followup }: { documentId: string; followup: F
       <p className="text-xs text-ink-3">About: {followup.label}</p>
       <p className="text-sm font-medium text-ink mt-0.5">{followup.question}</p>
       <div className="mt-2 flex gap-2">
-        <input
+        <Input size="sm" fullWidth={false} className="flex-1"
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           placeholder="Your answer…"
-          className="flex-1 rounded-md border border-line-2 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+         
         />
-        <button
+        <Button size="sm"
           type="button"
           onClick={() =>
             startTransition(async () => {
@@ -115,10 +117,10 @@ function QuestionRow({ documentId, followup }: { documentId: string; followup: F
             })
           }
           disabled={isPending}
-          className="px-3 py-1.5 rounded-md bg-neutral-900 text-white text-xs font-medium disabled:opacity-50"
+         
         >
           Send
-        </button>
+        </Button>
       </div>
     </div>
   );

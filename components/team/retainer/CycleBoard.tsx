@@ -25,6 +25,8 @@ import type { RosterMember } from "@/lib/team";
 import QuestionsPanel from "@/components/team/QuestionsPanel";
 import { TASK_STATUSES, INTERNAL_TASK_STATUSES, KANBAN_COLUMNS, TASK_TYPE_LABEL, TASK_TYPE_CLASS } from "@/lib/constants/tasks";
 import { toDateInput, toDateInputOrToday } from "@/lib/format";
+import Button from "@/components/ui/Button";
+import { Input, Select, Textarea } from "@/components/ui/Field";
 
 type Task = {
   id: string;
@@ -214,33 +216,33 @@ function TaskCard({ task, projectId, isActive, roster = [] }: { task: Task; proj
               {roster.length > 0 && (
                 <div>
                   <label className="block text-xs text-ink-2 mb-0.5">Assigned to</label>
-                  <select
+                  <Select size="xs"
                     value={task.assigneeId ?? ""}
                     onChange={(e) => changeAssignee(e.target.value)}
                     disabled={isPending}
-                    className="w-full text-xs rounded border border-line-2 px-2 py-1 bg-surface focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                   
                   >
                     <option value="">Unassigned</option>
                     {roster.map((m) => (
                       <option key={m.id} value={m.id}>{m.name}{m.title ? ` · ${m.title}` : ""}</option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               )}
 
               <div>
                 <label className="block text-xs text-ink-2 mb-0.5">Department</label>
-                <select
+                <Select size="xs"
                   value={task.ownerRole ?? ""}
                   onChange={(e) => changeOwner(e.target.value)}
                   disabled={isPending}
-                  className="w-full text-xs rounded border border-line-2 px-2 py-1 bg-surface focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                 
                 >
                   <option value="">Unassigned</option>
                   {OWNER_ROLES.map((r) => (
                     <option key={r.value} value={r.value}>{r.label}</option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <label className="flex items-center gap-2 text-xs text-ink-2 cursor-pointer">
@@ -251,17 +253,17 @@ function TaskCard({ task, projectId, isActive, roster = [] }: { task: Task; proj
               {task.isBlocker && (
                 <div>
                   <label className="block text-xs text-ink-2 mb-0.5">Resolver — who needs to clear it</label>
-                  <select
+                  <Select size="xs"
                     value={task.blockerResolver ?? ""}
                     onChange={(e) => changeResolver(e.target.value)}
                     disabled={isPending}
-                    className="w-full text-xs text-ink rounded border border-line-2 px-2 py-1 bg-surface focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                   
                   >
                     <option value="">Choose resolver…</option>
                     {OWNER_ROLES.map((r) => (
                       <option key={r.value} value={r.value}>{r.label}</option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               )}
 
@@ -280,12 +282,12 @@ function TaskCard({ task, projectId, isActive, roster = [] }: { task: Task; proj
                   <div>
                     <label className="block text-xs text-ink-2 mb-0.5">Mark unblocked</label>
                     <div className="flex items-center gap-2">
-                      <input
+                      <Input size="xs" fullWidth={false}
                         type="date"
                         value={unblockDate}
                         onChange={(e) => setUnblockDate(e.target.value)}
                         disabled={isPending}
-                        className="text-xs text-ink rounded border border-line-2 px-2 py-1 bg-surface focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                       
                       />
                       <button
                         type="button"
@@ -376,35 +378,35 @@ function AddTaskForm({ cycleId, projectId, onDone, roster = [] }: { cycleId: str
   return (
     <form action={handleSubmit} className="space-y-2 pt-3 border-t border-line">
       <div className="flex gap-2">
-        <input name="name" required placeholder="Task name" className="flex-1 text-sm rounded border border-line-2 px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-neutral-900" />
-        <select name="type" value={type} onChange={(e) => setType(e.target.value as TaskType)} className="text-sm text-ink rounded border border-line-2 px-2.5 py-1.5 bg-surface focus:outline-none focus:ring-1 focus:ring-neutral-900">
+        <Input size="sm" fullWidth={false} className="flex-1" name="name" required placeholder="Task name" />
+        <Select size="sm" fullWidth={false} name="type" value={type} onChange={(e) => setType(e.target.value as TaskType)}>
           <option value="DELIVERABLE">Deliverable</option>
           <option value="INTERNAL">Internal</option>
           <option value="FIX_UPDATE">Fix / Update</option>
-        </select>
-        <select name="status" defaultValue="PLANNING" className="text-sm text-ink rounded border border-line-2 px-2.5 py-1.5 bg-surface focus:outline-none focus:ring-1 focus:ring-neutral-900">
+        </Select>
+        <Select size="sm" fullWidth={false} name="status" defaultValue="PLANNING">
           {(type === "INTERNAL" ? INTERNAL_TASK_STATUSES : TASK_STATUSES).map((s) => (
             <option key={s.key} value={s.key}>{s.label}</option>
           ))}
-        </select>
+        </Select>
       </div>
       <div className="flex gap-2">
-        <input name="description" placeholder="Description (optional)" className="flex-1 text-sm rounded border border-line-2 px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-neutral-900" />
+        <Input size="sm" fullWidth={false} className="flex-1" name="description" placeholder="Description (optional)" />
         {roster.length > 0 && (
-          <select name="assigneeId" defaultValue="" className="text-sm text-ink rounded border border-line-2 px-2.5 py-1.5 bg-surface focus:outline-none focus:ring-1 focus:ring-neutral-900" title="Assign to a team member">
+          <Select size="sm" fullWidth={false} name="assigneeId" defaultValue="" title="Assign to a team member">
             <option value="">Assign to…</option>
             {roster.map((m) => (
               <option key={m.id} value={m.id}>{m.name}</option>
             ))}
-          </select>
+          </Select>
         )}
-        <select name="ownerRole" className="text-sm text-ink rounded border border-line-2 px-2.5 py-1.5 bg-surface focus:outline-none focus:ring-1 focus:ring-neutral-900" title="Department (optional, secondary to the assignee)">
+        <Select size="sm" fullWidth={false} name="ownerRole" title="Department (optional, secondary to the assignee)">
           <option value="">Dept…</option>
           {OWNER_ROLES.map((r) => (
             <option key={r.value} value={r.value}>{r.label}</option>
           ))}
-        </select>
-        <input name="dueDate" type="date" className="text-sm rounded border border-line-2 px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-neutral-900" />
+        </Select>
+        <Input size="sm" fullWidth={false} name="dueDate" type="date" />
       </div>
       <div className="flex items-center gap-4 flex-wrap">
         <label className="flex items-center gap-2 text-xs text-ink-2 cursor-pointer">
@@ -420,12 +422,12 @@ function AddTaskForm({ cycleId, projectId, onDone, roster = [] }: { cycleId: str
         {isBlocker && (
           <label className="flex items-center gap-2 text-xs text-ink-2">
             Resolver
-            <select name="blockerResolver" className="text-xs text-ink rounded border border-line-2 px-2 py-1 bg-surface focus:outline-none focus:ring-1 focus:ring-neutral-900">
+            <Select size="xs" fullWidth={false} name="blockerResolver">
               <option value="">Choose…</option>
               {OWNER_ROLES.map((r) => (
                 <option key={r.value} value={r.value}>{r.label}</option>
               ))}
-            </select>
+            </Select>
           </label>
         )}
         {type === "DELIVERABLE" && (
@@ -445,10 +447,10 @@ function AddTaskForm({ cycleId, projectId, onDone, roster = [] }: { cycleId: str
       />
 
       <div className="flex gap-2">
-        <button type="submit" disabled={isPending} className="text-xs px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-700 disabled:opacity-50 transition-colors">
+        <Button size="sm" type="submit" disabled={isPending}>
           {isPending ? "Adding…" : pendingQs.length > 0 ? `Add task & send ${pendingQs.length} question${pendingQs.length !== 1 ? "s" : ""}` : "Add task"}
-        </button>
-        <button type="button" onClick={onDone} className="text-xs text-ink-3 hover:text-neutral-800 transition-colors">Cancel</button>
+        </Button>
+        <Button variant="link" size="xs" type="button" onClick={onDone}>Cancel</Button>
       </div>
     </form>
   );
@@ -507,30 +509,30 @@ function CommunicationSection({
 
       {mode === "none" ? (
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setMode("client")} className="text-xs px-2 py-1 rounded border border-line-2 text-ink-2 hover:bg-surface-2">+ Ask Client</button>
+          <Button variant="outline" size="xs" type="button" onClick={() => setMode("client")}>+ Ask Client</Button>
           {roster.length > 0 && (
-            <button type="button" onClick={() => setMode("team")} className="text-xs px-2 py-1 rounded border border-line-2 text-ink-2 hover:bg-surface-2">+ Ask Team Member</button>
+            <Button variant="outline" size="xs" type="button" onClick={() => setMode("team")}>+ Ask Team Member</Button>
           )}
         </div>
       ) : mode === "client" ? (
         <div className="space-y-1.5 bg-page border border-line rounded p-2">
-          <textarea rows={2} value={text} placeholder="Question for the client…" onChange={(e) => setText(e.target.value)} className="w-full text-xs rounded border border-line-2 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-neutral-900" />
-          <textarea rows={1} value={proposed} placeholder="Proposed answer (optional — turns into a confirm request)" onChange={(e) => setProposed(e.target.value)} className="w-full text-xs rounded border border-line-2 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-neutral-900" />
+          <Textarea size="xs" rows={2} value={text} placeholder="Question for the client…" onChange={(e) => setText(e.target.value)} />
+          <Textarea size="xs" rows={1} value={proposed} placeholder="Proposed answer (optional — turns into a confirm request)" onChange={(e) => setProposed(e.target.value)} />
           <div className="flex items-center gap-2">
-            <button type="button" onClick={addClient} disabled={!text.trim()} className="text-xs px-2 py-1 rounded bg-neutral-900 text-white hover:bg-neutral-700 disabled:opacity-50">Add question</button>
-            <button type="button" onClick={reset} className="text-xs text-ink-3 hover:text-neutral-800">Cancel</button>
+            <Button size="xs" type="button" onClick={addClient} disabled={!text.trim()}>Add question</Button>
+            <Button variant="link" size="xs" type="button" onClick={reset}>Cancel</Button>
           </div>
         </div>
       ) : (
         <div className="space-y-1.5 bg-page border border-line rounded p-2">
-          <select value={recipientId} onChange={(e) => setRecipientId(e.target.value)} className="w-full text-xs rounded border border-line-2 px-2 py-1 bg-surface focus:outline-none focus:ring-1 focus:ring-neutral-900">
+          <Select size="xs" value={recipientId} onChange={(e) => setRecipientId(e.target.value)}>
             <option value="">Select team member…</option>
             {roster.map((m) => <option key={m.id} value={m.id}>{m.name}{m.title ? ` · ${m.title}` : ""}</option>)}
-          </select>
-          <textarea rows={2} value={text} placeholder="Question for the team member…" onChange={(e) => setText(e.target.value)} className="w-full text-xs rounded border border-line-2 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-neutral-900" />
+          </Select>
+          <Textarea size="xs" rows={2} value={text} placeholder="Question for the team member…" onChange={(e) => setText(e.target.value)} />
           <div className="flex items-center gap-2">
-            <button type="button" onClick={addTeamQ} disabled={!text.trim() || !recipientId} className="text-xs px-2 py-1 rounded bg-neutral-900 text-white hover:bg-neutral-700 disabled:opacity-50">Add question</button>
-            <button type="button" onClick={reset} className="text-xs text-ink-3 hover:text-neutral-800">Cancel</button>
+            <Button size="xs" type="button" onClick={addTeamQ} disabled={!text.trim() || !recipientId}>Add question</Button>
+            <Button variant="link" size="xs" type="button" onClick={reset}>Cancel</Button>
           </div>
         </div>
       )}
@@ -757,7 +759,7 @@ export default function CycleBoard({
             </>
           ) : (
             <>
-              <button type="button" onClick={handleReopen} disabled={isPending} className="text-xs px-3 py-1.5 rounded-md border border-line-2 text-ink-3 hover:bg-surface-2 transition-colors">Reopen</button>
+              <Button variant="outline" size="sm" type="button" onClick={handleReopen} disabled={isPending}>Reopen</Button>
               <button type="button" onClick={handleDelete} disabled={isPending} className="text-xs text-ink-2 hover:text-red-500 transition-colors">Delete</button>
             </>
           )}

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { markUnblocked } from "@/app/actions/retainer";
+import { Input } from "@/components/ui/Field";
 
 function today(): string {
   const d = new Date();
@@ -40,12 +41,12 @@ export default function BlockerUnblockControl({
 
   return (
     <div className="flex items-center gap-2">
-      <input
+      <Input size="xs" fullWidth={false}
         type="date"
         value={date}
         onChange={(e) => setDate(e.target.value)}
         disabled={isPending}
-        className="text-xs text-ink rounded border border-line-2 px-2 py-1 bg-surface focus:outline-none focus:ring-1 focus:ring-neutral-900"
+       
       />
       <button
         type="button"

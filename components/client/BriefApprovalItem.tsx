@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { respondToKeyMessage, respondToSlogan } from "@/app/actions/client-approvals";
 import { MESSAGE_TYPE_LABELS } from "@/lib/constants/approvals";
+import Button from "@/components/ui/Button";
 
 export default function BriefApprovalItem({
   projectId,
@@ -59,20 +60,20 @@ export default function BriefApprovalItem({
         </div>
       </div>
       <div className="flex gap-2">
-        <button
+        <Button
           onClick={() => handle("yes")}
           disabled={loading}
-          className="px-4 py-2 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-700 disabled:opacity-50 transition-colors"
+         
         >
           {loading ? "…" : "Approve"}
-        </button>
-        <button
+        </Button>
+        <Button variant="outline"
           onClick={() => handle("no")}
           disabled={loading}
-          className="px-4 py-2 border border-line-2 text-ink-2 text-sm font-medium rounded-md hover:bg-white disabled:opacity-50 transition-colors"
+         
         >
           Request changes
-        </button>
+        </Button>
       </div>
     </div>
   );

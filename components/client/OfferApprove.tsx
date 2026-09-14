@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { approveOffer, askAboutOffer } from "@/app/actions/onboarding";
+import Button from "@/components/ui/Button";
+import { Textarea } from "@/components/ui/Field";
 
 export type OfferQA = {
   id: string;
@@ -69,18 +71,18 @@ export default function OfferApprove({
           {sent && <p className="text-xs text-mint mt-2">Your question was sent — we&apos;ll get back to you.</p>}
           {asking ? (
             <div className="mt-3 space-y-2">
-              <textarea
+              <Textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 rows={3}
                 placeholder="Your question about the offer…"
-                className="w-full rounded-md border border-line-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+               
               />
               <div className="flex items-center gap-2">
-                <button type="button" onClick={submitQuestion} disabled={isPending || !text.trim()} className="px-3 py-1.5 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-700 disabled:opacity-50">
+                <Button size="md" type="button" onClick={submitQuestion} disabled={isPending || !text.trim()}>
                   {isPending ? "Sending…" : "Send question"}
-                </button>
-                <button type="button" onClick={() => { setAsking(false); setText(""); }} className="text-sm text-ink-2 hover:text-ink">Cancel</button>
+                </Button>
+                <Button variant="quiet" size="md" type="button" onClick={() => { setAsking(false); setText(""); }}>Cancel</Button>
               </div>
             </div>
           ) : (
@@ -101,49 +103,49 @@ export default function OfferApprove({
 
           {asking ? (
             <div className="mt-3 space-y-2">
-              <textarea
+              <Textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 rows={3}
                 placeholder="Your question about the offer…"
-                className="w-full rounded-md border border-line-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+               
               />
               <div className="flex items-center gap-2">
-                <button
+                <Button size="md"
                   type="button"
                   onClick={submitQuestion}
                   disabled={isPending || !text.trim()}
-                  className="px-3 py-1.5 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-700 disabled:opacity-50"
+                 
                 >
                   {isPending ? "Sending…" : "Send question"}
-                </button>
-                <button
+                </Button>
+                <Button variant="quiet" size="md"
                   type="button"
                   onClick={() => { setAsking(false); setText(""); }}
-                  className="text-sm text-ink-2 hover:text-ink"
+                 
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
             <div className="mt-3 flex items-center gap-3">
-              <button
+              <Button
                 type="button"
                 onClick={accept}
                 disabled={isPending}
-                className="px-4 py-2 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-700 disabled:opacity-50"
+               
               >
                 {isPending ? "Working…" : "Accept offer"}
-              </button>
-              <button
+              </Button>
+              <Button variant="outline"
                 type="button"
                 onClick={() => setAsking(true)}
                 disabled={isPending}
-                className="px-4 py-2 rounded-md border border-line-2 text-sm font-medium text-ink-2 hover:bg-surface-2 disabled:opacity-50"
+               
               >
                 Additional questions
-              </button>
+              </Button>
             </div>
           )}
         </div>

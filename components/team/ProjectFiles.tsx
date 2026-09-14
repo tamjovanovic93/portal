@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { approveAsset, deleteAsset } from "@/app/actions/assets";
 import { formatBytesKb } from "@/lib/format";
+import Button from "@/components/ui/Button";
 
 export type FolderAsset = {
   id: string;
@@ -64,9 +65,9 @@ function AssetRow({ asset }: { asset: FolderAsset }) {
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {asset.isClientUpload && !approved && (
-          <button onClick={handleApprove} disabled={loading} className="text-xs px-2.5 py-1 rounded-md bg-neutral-900 text-white hover:bg-neutral-700 disabled:opacity-50">
+          <Button size="xs" onClick={handleApprove} disabled={loading}>
             Approve
-          </button>
+          </Button>
         )}
         <button onClick={handleDelete} disabled={loading} className="text-xs text-ink-2 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
           Delete
@@ -163,14 +164,14 @@ export default function ProjectFiles({
                 Share with client
               </label>
               <input ref={inputRef} type="file" multiple className="hidden" onChange={(e) => uploadFiles(open, e.target.files)} />
-              <button
+              <Button size="sm"
                 type="button"
                 onClick={() => inputRef.current?.click()}
                 disabled={uploading}
-                className="text-xs px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-700 disabled:opacity-50 transition-colors"
+               
               >
                 {uploading ? "Uploading…" : "+ Upload"}
-              </button>
+              </Button>
             </div>
           </div>
 

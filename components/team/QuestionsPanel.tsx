@@ -14,6 +14,7 @@ import { ACTIVE_STATUSES, type QuestionRow } from "@/lib/questions";
 import type { RosterMember } from "@/lib/team";
 import type { QuestionContext } from "@prisma/client";
 import { formatWhen } from "@/lib/format";
+import Button from "@/components/ui/Button";
 
 type Props = {
   projectId: string;
@@ -69,8 +70,8 @@ export default function QuestionsPanel({ projectId, contextType, contextId, ques
       {/* Ask controls */}
       {mode === "none" ? (
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setMode("client")} className="btn btn-sm btn-primary">+ Ask Client</button>
-          <button type="button" onClick={() => setMode("team")} className="btn btn-sm btn-ghost">+ Ask Team Member</button>
+          <Button variant="primary" size="sm" type="button" onClick={() => setMode("client")}>+ Ask Client</Button>
+          <Button variant="ghost" size="sm" type="button" onClick={() => setMode("team")}>+ Ask Team Member</Button>
         </div>
       ) : mode === "client" ? (
         <div className="card card-pad space-y-2">
@@ -79,10 +80,10 @@ export default function QuestionsPanel({ projectId, contextType, contextId, ques
           <label className="zp-label" style={{ marginTop: 4 }}>Proposed answer <span className="faint">(optional — turns this into a confirm request)</span></label>
           <textarea className="zp-textarea" rows={2} value={proposed} placeholder="e.g. Yes, Germany should be included." onChange={(e) => setProposed(e.target.value)} />
           <div className="flex items-center gap-2">
-            <button type="button" onClick={submitClient} disabled={pending || !text.trim()} className="btn btn-sm btn-primary">
+            <Button variant="primary" size="sm" type="button" onClick={submitClient} disabled={pending || !text.trim()}>
               {proposed.trim() ? "Send for confirmation" : "Send question"}
-            </button>
-            <button type="button" onClick={reset} className="btn btn-sm btn-ghost">Cancel</button>
+            </Button>
+            <Button variant="ghost" size="sm" type="button" onClick={reset}>Cancel</Button>
           </div>
         </div>
       ) : (
@@ -94,8 +95,8 @@ export default function QuestionsPanel({ projectId, contextType, contextId, ques
           </select>
           <textarea className="zp-textarea" rows={2} value={text} placeholder="Your question…" onChange={(e) => setText(e.target.value)} />
           <div className="flex items-center gap-2">
-            <button type="button" onClick={submitTeam} disabled={pending || !text.trim() || !teamMember} className="btn btn-sm btn-primary">Send question</button>
-            <button type="button" onClick={reset} className="btn btn-sm btn-ghost">Cancel</button>
+            <Button variant="primary" size="sm" type="button" onClick={submitTeam} disabled={pending || !text.trim() || !teamMember}>Send question</Button>
+            <Button variant="ghost" size="sm" type="button" onClick={reset}>Cancel</Button>
           </div>
         </div>
       )}
@@ -193,21 +194,21 @@ function QuestionCard({ q, canTeamAnswer }: { q: QuestionRow; canTeamAnswer: boo
               <div className="space-y-2">
                 <textarea className="zp-textarea" rows={2} value={answer} placeholder="Your answer…" onChange={(e) => setAnswer(e.target.value)} />
                 <div className="flex items-center gap-2">
-                  <button type="button" disabled={pending || !answer.trim()} className="btn btn-sm btn-primary"
-                    onClick={() => start(async () => { await answerQuestion(q.id, answer); setAnswering(false); })}>Submit answer</button>
-                  <button type="button" onClick={() => setAnswering(false)} className="btn btn-sm btn-ghost">Cancel</button>
+                  <Button variant="primary" size="sm" type="button" disabled={pending || !answer.trim()}
+                    onClick={() => start(async () => { await answerQuestion(q.id, answer); setAnswering(false); })}>Submit answer</Button>
+                  <Button variant="ghost" size="sm" type="button" onClick={() => setAnswering(false)}>Cancel</Button>
                 </div>
               </div>
             ) : (
-              <button type="button" onClick={() => setAnswering(true)} className="btn btn-sm">Answer</button>
+              <Button variant="secondary" size="sm" type="button" onClick={() => setAnswering(true)}>Answer</Button>
             )
           )}
 
           <div className="flex items-center gap-2">
-            {!resolved && <button type="button" disabled={pending} className="btn btn-sm btn-ghost"
-              onClick={() => start(async () => { await resolveQuestion(q.id); })}>Mark resolved</button>}
-            {resolved && <button type="button" disabled={pending} className="btn btn-sm btn-ghost"
-              onClick={() => start(async () => { await reopenQuestion(q.id); })}>Reopen</button>}
+            {!resolved && <Button variant="ghost" size="sm" type="button" disabled={pending}
+              onClick={() => start(async () => { await resolveQuestion(q.id); })}>Mark resolved</Button>}
+            {resolved && <Button variant="ghost" size="sm" type="button" disabled={pending}
+              onClick={() => start(async () => { await reopenQuestion(q.id); })}>Reopen</Button>}
             <button type="button" disabled={pending} className="faint" style={{ fontSize: 12 }}
               onClick={() => { if (confirm("Delete this question?")) start(async () => { await deleteQuestion(q.id); }); }}>Delete</button>
           </div>

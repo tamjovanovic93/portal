@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Button from "@/components/ui/Button";
 
 type CompanyData = {
   companyName: string | null;
@@ -80,7 +81,7 @@ export default function CompanyCard({
           <p className="faint" style={{ fontSize: 12, marginTop: 2 }}>Core business identity</p>
         </div>
         {!editing && (
-          <button type="button" onClick={() => setEditing(true)} className="btn btn-sm">Edit</button>
+          <Button variant="secondary" size="sm" type="button" onClick={() => setEditing(true)}>Edit</Button>
         )}
       </div>
 
@@ -110,11 +111,11 @@ export default function CompanyCard({
 
         {editing && (
           <div className="flex items-center gap-3" style={{ padding: "0 18px 18px" }}>
-            <button type="submit" disabled={isPending} className="btn btn-sm btn-primary">
+            <Button variant="primary" size="sm" type="submit" disabled={isPending}>
               {isPending ? "Saving…" : "Save"}
-            </button>
+            </Button>
             {company?.companyName && (
-              <button type="button" onClick={() => setEditing(false)} className="btn btn-sm btn-ghost">Cancel</button>
+              <Button variant="ghost" size="sm" type="button" onClick={() => setEditing(false)}>Cancel</Button>
             )}
           </div>
         )}

@@ -16,6 +16,8 @@ import { getRoster } from "@/lib/team";
 import { listByTaskIds } from "@/lib/questions";
 import { PROJECT_TYPE_LABELS } from "@/lib/constants/projects";
 import { MATERIAL_CATEGORIES, MATERIAL_STATUS_LABEL, MATERIAL_STATUS_TEXT_CLASS } from "@/lib/constants/materials";
+import { Input, Textarea } from "@/components/ui/Field";
+import Button from "@/components/ui/Button";
 
 async function NewCycleForm({ projectId }: { projectId: string }) {
   async function handleCreate(formData: FormData) {
@@ -32,28 +34,28 @@ async function NewCycleForm({ projectId }: { projectId: string }) {
       <form action={handleCreate} className="px-5 pb-5 pt-1 grid grid-cols-3 gap-3 border-t border-line">
         <div>
           <label className="block text-xs text-ink-2 mb-1">Cycle name</label>
-          <input name="name" required placeholder="e.g. June 2026"
-            className="w-full text-sm rounded-md border border-line-2 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+          <Input name="name" required placeholder="e.g. June 2026"
+            />
         </div>
         <div>
           <label className="block text-xs text-ink-2 mb-1">Start date</label>
-          <input name="startDate" type="date" required
-            className="w-full text-sm rounded-md border border-line-2 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+          <Input name="startDate" type="date" required
+            />
         </div>
         <div>
           <label className="block text-xs text-ink-2 mb-1">End date (optional)</label>
-          <input name="endDate" type="date"
-            className="w-full text-sm rounded-md border border-line-2 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+          <Input name="endDate" type="date"
+            />
         </div>
         <div className="col-span-3">
           <label className="block text-xs text-ink-2 mb-1">Focus — what needs to happen (optional)</label>
-          <textarea name="focus" rows={2} placeholder="e.g. Launch summer campaign, finalise landing page"
-            className="w-full text-sm rounded-md border border-line-2 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900 resize-none" />
+          <Textarea resize="none" name="focus" rows={2} placeholder="e.g. Launch summer campaign, finalise landing page"
+            />
         </div>
-        <button type="submit"
-          className="col-span-3 justify-self-start text-sm px-4 py-2 rounded-md bg-neutral-900 text-white hover:bg-neutral-700 transition-colors">
+        <Button className="col-span-3 justify-self-start" type="submit"
+         >
           Create cycle
-        </button>
+        </Button>
       </form>
     </details>
   );

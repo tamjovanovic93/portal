@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { answerQuestion, respondConfirm } from "@/app/actions/questions";
+import Button from "@/components/ui/Button";
+import { Textarea } from "@/components/ui/Field";
 
 export type ClientQuestion = {
   id: string;
@@ -56,29 +58,29 @@ function QuestionItem({ q }: { q: ClientQuestion }) {
           )}
           {!changeMode ? (
             <div className="flex items-center gap-2">
-              <button onClick={confirm} disabled={pending}
-                className="text-sm px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-700 disabled:opacity-50">Confirm</button>
-              <button onClick={() => setChangeMode(true)} disabled={pending}
-                className="text-sm px-3 py-1.5 rounded-md border border-line-2 hover:bg-surface-2">Request a change</button>
+              <Button size="md" onClick={confirm} disabled={pending}
+               >Confirm</Button>
+              <Button variant="outline" size="md" onClick={() => setChangeMode(true)} disabled={pending}
+               >Request a change</Button>
             </div>
           ) : (
             <div className="space-y-2">
-              <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="What should change?"
-                className="w-full text-sm rounded border border-line-2 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-neutral-900" />
+              <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="What should change?"
+                />
               <div className="flex items-center gap-2">
-                <button onClick={requestChange} disabled={pending}
-                  className="text-sm px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-700 disabled:opacity-50">Send</button>
-                <button onClick={() => setChangeMode(false)} className="text-sm px-3 py-1.5 rounded-md border border-line-2">Cancel</button>
+                <Button size="md" onClick={requestChange} disabled={pending}
+                 >Send</Button>
+                <Button variant="outline" size="md" onClick={() => setChangeMode(false)}>Cancel</Button>
               </div>
             </div>
           )}
         </div>
       ) : (
         <div className="mt-3 space-y-2">
-          <textarea value={answer} onChange={(e) => setAnswer(e.target.value)} rows={2} placeholder="Your answer…"
-            className="w-full text-sm rounded border border-line-2 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-neutral-900" />
-          <button onClick={submitAnswer} disabled={pending || !answer.trim()}
-            className="text-sm px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-700 disabled:opacity-50">Send answer</button>
+          <Textarea value={answer} onChange={(e) => setAnswer(e.target.value)} rows={2} placeholder="Your answer…"
+            />
+          <Button size="md" onClick={submitAnswer} disabled={pending || !answer.trim()}
+           >Send answer</Button>
         </div>
       )}
     </div>

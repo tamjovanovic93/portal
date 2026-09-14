@@ -7,6 +7,7 @@ import {
   approveWireframesAndSubmit,
 } from "@/app/actions/wireframes";
 import { labelFromFilename } from "@/lib/format";
+import Button from "@/components/ui/Button";
 
 type Asset = { id: string; filename: string; mimeType: string | null; previewUrl?: string | null };
 type Reaction = "happy" | "tweaks" | "rethink" | "";
@@ -314,20 +315,20 @@ export default function WireframeFeedbackForm({
               </div>
 
               <div className="flex items-center gap-3">
-                <button
+                <Button variant="outline"
                   onClick={handleSave}
                   disabled={saving || submitting}
-                  className="px-4 py-2 border border-line-2 rounded-md text-sm text-ink-2 hover:bg-surface-2 disabled:opacity-50 transition-colors"
+                 
                 >
                   {saving ? "Saving…" : "Save draft"}
-                </button>
-                <button
+                </Button>
+                <Button variant="success" size="xl"
                   onClick={handleSubmit}
                   disabled={saving || submitting}
-                  className="px-5 py-2 bg-green-700 text-white rounded-md text-sm font-medium hover:bg-green-800 disabled:opacity-50 transition-colors"
+                 
                 >
                   {submitting ? "Submitting…" : "Approve wireframes →"}
-                </button>
+                </Button>
                 {savedDraft && !saving && (
                   <span className="text-xs text-ink-2">Saved</span>
                 )}
@@ -335,20 +336,20 @@ export default function WireframeFeedbackForm({
             </>
           ) : (
             <div className="flex items-center gap-3">
-              <button
+              <Button variant="outline"
                 onClick={handleSave}
                 disabled={saving || submitting}
-                className="px-4 py-2 border border-line-2 rounded-md text-sm text-ink-2 hover:bg-surface-2 disabled:opacity-50 transition-colors"
+               
               >
                 {saving ? "Saving…" : "Save draft"}
-              </button>
-              <button
+              </Button>
+              <Button size="xl"
                 onClick={handleSubmit}
                 disabled={saving || submitting}
-                className="px-5 py-2 bg-neutral-900 text-white rounded-md text-sm font-medium hover:bg-neutral-800 disabled:opacity-50 transition-colors"
+               
               >
                 {submitting ? "Submitting…" : "Submit feedback →"}
-              </button>
+              </Button>
               {savedDraft && !saving && (
                 <span className="text-xs text-ink-2">Saved</span>
               )}

@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { createProject, listClients } from "@/app/actions/projects";
 import { PROJECT_TYPE_OPTIONS } from "@/lib/constants/projects";
 import Modal from "@/components/ui/Modal";
+import Button from "@/components/ui/Button";
+import { Input, Label, Select } from "@/components/ui/Field";
 
 type ClientOption = { id: string; name: string | null; email: string };
 
@@ -53,124 +55,95 @@ export default function NewProjectButton({
         overlayClassName="theme-dark fixed inset-0 z-[100] flex items-center justify-center bg-black/40"
         cardClassName="bg-surface rounded-lg shadow-xl w-full max-w-md mx-4 p-6"
       >
-            <h2 className="text-base font-semibold text-ink mb-5">
-              Create project
-            </h2>
+        <h2 className="text-base font-semibold text-ink mb-5">
+          Create project
+        </h2>
 
-            <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-ink-2 mb-1">
-                  Project name
-                </label>
-                <input
-                  name="name"
-                  type="text"
-                  required
-                  placeholder="e.g. ALEM Store Website"
-                  className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
-                />
-              </div>
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label>Project name</Label>
+            <Input name="name" type="text" required placeholder="e.g. ALEM Store Website" />
+          </div>
 
-              {/* Client — existing or new */}
-              <div>
-                <label className="block text-sm font-medium text-ink-2 mb-1">
-                  Client
-                </label>
-                <input type="hidden" name="clientChoice" value={clientChoice} />
-                <div className="flex gap-2 mb-2">
-                  {(["new", "existing"] as const).map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setClientChoice(c)}
-                      className={`flex-1 py-1.5 text-sm rounded-md border transition-colors ${
-                        clientChoice === c
-                          ? "border-neutral-900 bg-neutral-900 text-white"
-                          : "border-line-2 text-ink-2 hover:bg-surface-2"
-                      }`}
-                    >
-                      {c === "new" ? "New client" : "Existing client"}
-                    </button>
-                  ))}
-                </div>
-                {clientChoice === "new" ? (
-                  <input
-                    name="clientEmail"
-                    type="email"
-                    required
-                    defaultValue={prefillEmail ?? ""}
-                    placeholder="client@example.com"
-                    className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
-                  />
-                ) : (
-                  <select
-                    name="existingClientId"
-                    required
-                    className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-surface"
-                  >
-                    <option value="">Select a client…</option>
-                    {clients.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name ? `${c.name} — ${c.email}` : c.email}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-ink-2 mb-1">
-                  Project type
-                </label>
-                <select
-                  name="type"
-                  required
-                  className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-surface"
-                >
-                  <option value="">Select type…</option>
-                  {PROJECT_TYPE_OPTIONS.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-ink-2 mb-1">
-                  Mode
-                </label>
-                <select
-                  name="mode"
-                  className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-surface"
-                >
-                  <option value="PROJECT">Project (stages 1–8)</option>
-                  <option value="ONGOING">Ongoing / Retainer</option>
-                </select>
-              </div>
-
-              {error && <p className="text-sm text-rose">{error}</p>}
-
-              <div className="flex gap-3 pt-1">
+          {/* Client — existing or new */}
+          <div>
+            <Label>Client</Label>
+            <input type="hidden" name="clientChoice" value={clientChoice} />
+            <div className="flex gap-2 mb-2">
+              {(["new", "existing"] as const).map((c) => (
                 <button
+                  key={c}
                   type="button"
-                  onClick={() => {
-                    setOpen(false);
-                    setError(null);
-                  }}
-                  className="flex-1 py-2 border border-line-2 text-sm rounded-md hover:bg-surface-2 transition-colors"
+                  onClick={() => setClientChoice(c)}
+                  className={`flex-1 py-1.5 text-sm rounded-md border transition-colors ${
+                    clientChoice === c
+                      ? "border-neutral-900 bg-neutral-900 text-white"
+                      : "border-line-2 text-ink-2 hover:bg-surface-2"
+                  }`}
                 >
-                  Cancel
+                  {c === "new" ? "New client" : "Existing client"}
                 </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 py-2 bg-neutral-900 text-white text-sm rounded-md hover:bg-neutral-800 disabled:opacity-50 transition-colors"
-                >
-                  {loading ? "Creating…" : "Create project"}
-                </button>
-              </div>
-            </form>
+              ))}
+            </div>
+            {clientChoice === "new" ? (
+              <Input
+                name="clientEmail"
+                type="email"
+                required
+                defaultValue={prefillEmail ?? ""}
+                placeholder="client@example.com"
+              />
+            ) : (
+              <Select name="existingClientId" required>
+                <option value="">Select a client…</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name ? `${c.name} — ${c.email}` : c.email}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </div>
+
+          <div>
+            <Label>Project type</Label>
+            <Select name="type" required>
+              <option value="">Select type…</option>
+              {PROJECT_TYPE_OPTIONS.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          <div>
+            <Label>Mode</Label>
+            <Select name="mode">
+              <option value="PROJECT">Project (stages 1–8)</option>
+              <option value="ONGOING">Ongoing / Retainer</option>
+            </Select>
+          </div>
+
+          {error && <p className="text-sm text-rose">{error}</p>}
+
+          <div className="flex gap-3 pt-1">
+            <Button
+              variant="outline"
+              size="block"
+              className="flex-1"
+              onClick={() => {
+                setOpen(false);
+                setError(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" size="block" className="flex-1" disabled={loading}>
+              {loading ? "Creating…" : "Create project"}
+            </Button>
+          </div>
+        </form>
       </Modal>
     </>
   );

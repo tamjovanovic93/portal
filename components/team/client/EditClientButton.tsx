@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { updateClient } from "@/app/actions/clients";
 import Modal from "@/components/ui/Modal";
+import Button from "@/components/ui/Button";
+import { Input, Label } from "@/components/ui/Field";
 
 // Edit a client's business name and email after creation.
 export default function EditClientButton({
@@ -38,56 +40,41 @@ export default function EditClientButton({
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="btn btn-ghost">
+      <Button variant="ghost" type="button" onClick={() => setOpen(true)}>
         Edit
-      </button>
+      </Button>
 
       <Modal open={open}>
-              <h2 className="text-base font-semibold text-ink mb-5">Edit client</h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-ink-2 mb-1">Business name</label>
-                  <input
-                    name="name"
-                    type="text"
-                    required
-                    defaultValue={name}
-                    className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-ink-2 mb-1">Email</label>
-                  <input
-                    name="email"
-                    type="email"
-                    required
-                    defaultValue={email}
-                    className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
-                  />
-                </div>
+        <h2 className="text-base font-semibold text-ink mb-5">Edit client</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label>Business name</Label>
+            <Input name="name" type="text" required defaultValue={name} />
+          </div>
+          <div>
+            <Label>Email</Label>
+            <Input name="email" type="email" required defaultValue={email} />
+          </div>
 
-                {error && <p className="text-sm text-rose">{error}</p>}
+          {error && <p className="text-sm text-rose">{error}</p>}
 
-                <div className="flex gap-3 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpen(false);
-                      setError(null);
-                    }}
-                    className="flex-1 py-2 border border-line-2 text-sm rounded-md hover:bg-surface-2 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 py-2 bg-neutral-900 text-white text-sm rounded-md hover:bg-neutral-800 disabled:opacity-50 transition-colors"
-                  >
-                    {loading ? "Saving…" : "Save changes"}
-                  </button>
-                </div>
-              </form>
+          <div className="flex gap-3 pt-1">
+            <Button
+              variant="outline"
+              size="block"
+              className="flex-1"
+              onClick={() => {
+                setOpen(false);
+                setError(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" size="block" className="flex-1" disabled={loading}>
+              {loading ? "Saving…" : "Save changes"}
+            </Button>
+          </div>
+        </form>
       </Modal>
     </>
   );

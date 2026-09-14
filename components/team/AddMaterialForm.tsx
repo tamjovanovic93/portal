@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { addMaterialItem } from "@/app/actions/materials";
 import { MATERIAL_CATEGORY_OPTIONS } from "@/lib/constants/materials";
+import { Input, Select } from "@/components/ui/Field";
 
 export default function AddMaterialForm({ projectId }: { projectId: string }) {
   const [open, setOpen] = useState(false);
@@ -49,22 +50,22 @@ export default function AddMaterialForm({ projectId }: { projectId: string }) {
           <label className="block text-xs font-medium text-ink-2 mb-1">
             What do we need?
           </label>
-          <input
+          <Input
             name="label"
             type="text"
             required
             placeholder="e.g. Logo files in SVG format"
-            className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+           
           />
         </div>
         <div className="w-36">
           <label className="block text-xs font-medium text-ink-2 mb-1">
             Category
           </label>
-          <select
+          <Select
             name="category"
             required
-            className="w-full px-3 py-2 border border-line-2 rounded-md text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-neutral-900"
+           
           >
             <option value="">Pick…</option>
             {MATERIAL_CATEGORY_OPTIONS.map((c) => (
@@ -72,7 +73,7 @@ export default function AddMaterialForm({ projectId }: { projectId: string }) {
                 {c.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 
@@ -81,21 +82,21 @@ export default function AddMaterialForm({ projectId }: { projectId: string }) {
           <label className="block text-xs font-medium text-ink-2 mb-1">
             Notes for client (optional)
           </label>
-          <input
+          <Input
             name="notes"
             type="text"
             placeholder="e.g. Please include all colour variants"
-            className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+           
           />
         </div>
         <div className="w-36">
           <label className="block text-xs font-medium text-ink-2 mb-1">
             Due date (optional)
           </label>
-          <input
+          <Input className="bg-surface"
             name="dueDate"
             type="date"
-            className="w-full px-3 py-2 border border-line-2 rounded-md text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-neutral-900"
+           
           />
         </div>
       </div>

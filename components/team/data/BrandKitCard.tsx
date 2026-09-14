@@ -8,6 +8,7 @@ import {
   addBrandLogoLink,
   deleteBrandLogo,
 } from "@/app/actions/brand-kit";
+import Button from "@/components/ui/Button";
 
 type Logo = { id: string; filename: string; url: string; isLink: boolean };
 
@@ -53,7 +54,7 @@ function LogoSection({ clientId, logos }: { clientId: string; logos: Logo[] }) {
         <input className="zp-input" style={{ width: 160 }} placeholder="Label (e.g. Primary)" value={label} onChange={(e) => setLabel(e.target.value)} />
         <input className="zp-input" style={{ flex: 1 }} placeholder="File / link URL" value={url} onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} />
-        <button type="button" onClick={add} disabled={pending || !url.trim()} className="btn btn-sm btn-primary">+ Add</button>
+        <Button variant="primary" size="sm" type="button" onClick={add} disabled={pending || !url.trim()}>+ Add</Button>
       </div>
     </div>
   );
@@ -70,7 +71,7 @@ function TypographyEditor({ clientId, items: initial }: { clientId: string; item
     <div>
       <label className="zp-label">Typography</label>
       <div className="flex flex-wrap" style={{ gap: 6, marginBottom: 10 }}>
-        {TYPE_PRESETS.map((p) => <button key={p} type="button" onClick={() => addPreset(p)} className="btn btn-sm btn-ghost" style={{ padding: "3px 9px" }}>+ {p}</button>)}
+        {TYPE_PRESETS.map((p) => <Button variant="ghost" size="sm" key={p} type="button" onClick={() => addPreset(p)} style={{ padding: "3px 9px" }}>+ {p}</Button>)}
       </div>
       {items.length === 0 ? (
         <p className="faint" style={{ fontSize: 13 }}>Add a style above (H1, Body…), then fill in the font, size and style.</p>
@@ -103,7 +104,7 @@ function ColorsEditor({ clientId, items: initial }: { clientId: string; items: B
     <div>
       <div className="flex items-center justify-between">
         <label className="zp-label" style={{ marginBottom: 0 }}>Colors</label>
-        <button type="button" onClick={add} className="btn btn-sm btn-primary">+ Add color</button>
+        <Button variant="primary" size="sm" type="button" onClick={add}>+ Add color</Button>
       </div>
       {items.length === 0 ? (
         <p className="faint" style={{ fontSize: 13, marginTop: 6 }}>No colors yet.</p>

@@ -6,6 +6,7 @@ import { Avatar, Pill, Health, VAR } from "@/components/ui/kit";
 import { capacityColor, capacityLabel, type TeamMember } from "@/lib/team";
 import TeamMemberModal from "@/components/team/TeamMemberModal";
 import DeactivateMemberButton from "@/components/team/DeactivateMemberButton";
+import Button from "@/components/ui/Button";
 
 export default function TeamView({ members }: { members: TeamMember[] }) {
   const [sel, setSel] = useState<string>(members[0]?.id ?? "");
@@ -69,9 +70,9 @@ export default function TeamView({ members }: { members: TeamMember[] }) {
 
 function SocialBtn({ name }: { name: string }) {
   return (
-    <button className="btn btn-icon" style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(127,127,127,0.06)" }}>
+    <Button variant="secondary" icon style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(127,127,127,0.06)" }}>
       <Icon name={name} size={16} />
-    </button>
+    </Button>
   );
 }
 

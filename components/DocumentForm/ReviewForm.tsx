@@ -7,6 +7,8 @@ import { changeAnswer, askQuestion } from "@/app/actions/onboarding";
 import { getCollab, type FormContent, type CollabMap } from "@/lib/forms/collab";
 import { displayValue } from "./fields";
 import type { DocumentFormProps } from "./types";
+import Button from "@/components/ui/Button";
+import { Input } from "@/components/ui/Field";
 
 // ─── review — team reviews a completed form (change / ask a question) ────────
 
@@ -91,20 +93,20 @@ function ReviewField({
           </p>
         </div>
         <div className="flex gap-2 shrink-0">
-          <button
+          <Button variant="outline" size="xs"
             type="button"
             onClick={() => setOpen(open === "edit" ? null : "edit")}
-            className="text-xs px-2.5 py-1 rounded border border-line-2 text-ink-2 hover:bg-surface-2"
+           
           >
             Change
-          </button>
-          <button
+          </Button>
+          <Button variant="outline" size="xs"
             type="button"
             onClick={() => setOpen(open === "ask" ? null : "ask")}
-            className="text-xs px-2.5 py-1 rounded border border-line-2 text-ink-2 hover:bg-surface-2"
+           
           >
             Ask a question
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -132,38 +134,38 @@ function ReviewField({
 
       {open === "edit" && (
         <div className="mt-2 flex gap-2">
-          <input
+          <Input size="sm" fullWidth={false} className="flex-1"
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
-            className="flex-1 rounded-md border border-line-2 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+           
             placeholder="New answer…"
           />
-          <button
+          <Button size="sm"
             type="button"
             onClick={submitEdit}
             disabled={isPending}
-            className="px-3 py-1.5 rounded-md bg-neutral-900 text-white text-xs font-medium disabled:opacity-50"
+           
           >
             Send change
-          </button>
+          </Button>
         </div>
       )}
       {open === "ask" && (
         <div className="mt-2 flex gap-2">
-          <input
+          <Input size="sm" fullWidth={false} className="flex-1"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            className="flex-1 rounded-md border border-line-2 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+           
             placeholder="Ask the client about this answer…"
           />
-          <button
+          <Button size="sm"
             type="button"
             onClick={submitAsk}
             disabled={isPending}
-            className="px-3 py-1.5 rounded-md bg-neutral-900 text-white text-xs font-medium disabled:opacity-50"
+           
           >
             Send question
-          </button>
+          </Button>
         </div>
       )}
       {done && <p className="text-xs text-mint mt-1.5">{done}</p>}

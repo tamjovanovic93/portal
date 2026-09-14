@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { respondToDeliverableTask } from "@/app/actions/client-approvals";
+import Button from "@/components/ui/Button";
+import { Textarea } from "@/components/ui/Field";
 
 export default function DeliverableApproval({
   taskId,
@@ -60,45 +62,45 @@ export default function DeliverableApproval({
 
       {mode === "idle" ? (
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={approve}
             disabled={loading}
-            className="px-4 py-2 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-700 disabled:opacity-50 transition-colors"
+           
           >
             {loading ? "…" : "Approve"}
-          </button>
-          <button
+          </Button>
+          <Button variant="outline"
             onClick={() => setMode("changes")}
             disabled={loading}
-            className="px-4 py-2 border border-line-2 text-ink-2 text-sm font-medium rounded-md hover:bg-white disabled:opacity-50 transition-colors"
+           
           >
             Request changes
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="space-y-2">
-          <textarea
+          <Textarea resize="none"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="What would you like changed?"
             rows={3}
-            className="w-full rounded-md border border-line-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 resize-none"
+           
           />
           <div className="flex gap-2">
-            <button
+            <Button
               onClick={submitChanges}
               disabled={loading}
-              className="px-4 py-2 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-700 disabled:opacity-50 transition-colors"
+             
             >
               {loading ? "Sending…" : "Send request"}
-            </button>
-            <button
+            </Button>
+            <Button variant="quiet" size="lg"
               onClick={() => setMode("idle")}
               disabled={loading}
-              className="px-4 py-2 text-ink-3 text-sm hover:text-neutral-800 transition-colors"
+             
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}

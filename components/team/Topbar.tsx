@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Icon from "@/components/ui/Icon";
+import Button from "@/components/ui/Button";
 
 // Derive a simple breadcrumb from the path. Pages still render their own titles;
 // this is the persistent chrome bar from the design.
@@ -49,7 +50,7 @@ export default function Topbar({ notifications }: { notifications?: React.ReactN
           </div>
         ))}
       </div>
-      <button className="btn btn-sm btn-ghost" style={{ color: "var(--text-3)", paddingLeft: 10 }}>
+      <Button variant="ghost" size="sm" style={{ color: "var(--text-3)", paddingLeft: 10 }}>
         <Icon name="search" size={16} /> Search
         <span
           className="mono"
@@ -57,11 +58,11 @@ export default function Topbar({ notifications }: { notifications?: React.ReactN
         >
           ⌘K
         </span>
-      </button>
+      </Button>
       {notifications ?? (
-        <button className="btn btn-icon btn-sm btn-ghost relative">
+        <Button variant="ghost" size="sm" icon className="relative">
           <Icon name="bell" size={17} />
-        </button>
+        </Button>
       )}
     </header>
   );

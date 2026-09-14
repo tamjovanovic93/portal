@@ -11,6 +11,7 @@ import {
   rejectSuggestion,
   approveSuggestion,
 } from "@/app/actions/suggested-projects";
+import Button from "@/components/ui/Button";
 
 type Suggestion = {
   id: string;
@@ -211,15 +212,15 @@ function PendingCard({ s }: { s: Suggestion }) {
 
       {error && <p className="text-sm text-rose">{error}</p>}
       <div className="flex items-center gap-2 pt-1">
-        <button onClick={save} disabled={!!busy} className="px-3 py-1.5 text-sm rounded-md border border-line-2 hover:bg-surface-2 disabled:opacity-50">
+        <Button variant="outline" size="md" onClick={save} disabled={!!busy}>
           {busy === "save" ? "Saving…" : "Save"}
-        </button>
+        </Button>
         <button onClick={approve} disabled={!!busy} className="px-3 py-1.5 text-sm rounded-md bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-50">
           {busy === "approve" ? "Approving…" : "Approve → create project"}
         </button>
-        <button onClick={reject} disabled={!!busy} className="px-3 py-1.5 text-sm rounded-md border border-red-200 text-rose hover:bg-red-50 disabled:opacity-50 ml-auto">
+        <Button variant="danger" size="md" className="ml-auto" onClick={reject} disabled={!!busy}>
           {busy === "reject" ? "…" : "Reject"}
-        </button>
+        </Button>
       </div>
     </div>
   );
