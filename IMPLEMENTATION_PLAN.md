@@ -19,10 +19,18 @@ Deviations and open items:
   Dropping `!important` changes how the classes interact with the
   form-control fallbacks and inline styles and must be screenshot-verified;
   the `!important` count is 35, not 0.
-- **8.4** — `.page-wrap*` and `SectionHeading` were extracted; the
-  `Button` / `Input` / `Card` primitives were not (large mechanical change,
-  same verification problem). The form-control fallbacks in `design.css`
-  therefore stay.
+- **8.4** — done. `.page-wrap*`, `SectionHeading`, `Button` and the form
+  controls (`Input`, `Textarea`, `Select`, `Label`) are all extracted and
+  migrated; see the variant tables in `docs/ARCHITECTURE.md`. This is the one
+  place the no-visual-change rule was relaxed, on your request for a uniform
+  set of components: accidental drift between near-identical controls was
+  normalized (hover shade, font weight, focus-ring width, border weight,
+  placeholder and disabled colours). Screens to eyeball: the five modals, the
+  calendar event modal, and any document form in read-only mode. A `Card`
+  primitive was not added — the card patterns vary by layout, and `.card` /
+  `.card-pad` already cover the design-system case.
+- **Form-control fallbacks** in `design.css` stay: pages still rely on the
+  bare `input`/`textarea`/`select` rules for controls that are not wrapped.
 - **9 copy fixes** — untouched, pending confirmation: "Project (stages 1–8)"
   in `NewProjectButton`, the "CLIENT PORTAL" sidebar label, the
   "(next phase)" wording in `ClientIntakePipeline`.
