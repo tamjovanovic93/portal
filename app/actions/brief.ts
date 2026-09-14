@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { requireTeam } from "@/lib/auth/session";
 import { mutateDoc } from "@/lib/intake/store";
 import { notifyClient } from "@/lib/notifications";
 import {
@@ -27,13 +27,6 @@ export type SectionConfig = {
   idField: string; // e.g. "service_id"
   idPrefix: string; // e.g. "SVC"
 };
-
-async function requireTeam() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  if (user.user_metadata?.role?.toLowerCase() === "client") throw new Error("Unauthorized");
-}
 
 function revalidate(clientId: string) {
   revalidatePath(`/clients/${clientId}/data`);

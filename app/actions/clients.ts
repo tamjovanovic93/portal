@@ -3,41 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { Prisma, ProjectMode } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
-
-// Generate a readable one-time password to hand to a client (shown once in the
-// Client Stream). Mixed case + digits, no ambiguous characters.
-function generateTempPassword(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
-  let out = "";
-  for (let i = 0; i < 12; i++) out += chars[Math.floor(Math.random() * chars.length)];
-  return out;
-}
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requireTeam } from "@/lib/auth/session";
+import { generateTempPassword } from "@/lib/auth/passwords";
 
 // Client-first creation. A Client no longer needs an initial Project — intake and
 // Client Data happen at the Client level (Projects come later, from approved
 // suggestions). Creating a client provisions the login and seeds the first
 // onboarding document (the Initial Client Form) scoped to the client.
-
-async function requireTeam() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role?.toLowerCase() === "client") {
-    throw new Error("Unauthorized");
-  }
-  return user;
-}
-
-function createAdminClient() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { createClient: create } = require("@supabase/supabase-js");
-  return create(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
 
 // Create a client from just business name + email + mode. A login is provisioned
 // with a temporary password (returned once so the team can hand it to the client)
@@ -70,17 +43,23 @@ export async function createClientAccount(
         email,
         password: tempPassword,
         email_confirm: true,
-        user_metadata: { role: "CLIENT" },
+        app_metadata: { role: "CLIENT" },
       });
     if (userError) {
       console.error("createClientAccount: create user error", JSON.stringify(userError));
       return { error: userError.message };
     }
-    clientProfile = await prisma.profile.upsert({
-      where: { id: userData.user.id },
-      update: {},
-      create: { id: userData.user.id, email, name, role: "CLIENT", clientMode: mode },
-    });
+    try {
+      clientProfile = await prisma.profile.upsert({
+        where: { id: userData.user.id },
+        update: {},
+        create: { id: userData.user.id, email, name, role: "CLIENT", clientMode: mode },
+      });
+    } catch (err) {
+      // Compensate: don't leave an auth user without a profile.
+      await adminSupabase.auth.admin.deleteUser(userData.user.id).catch(() => {});
+      throw err;
+    }
   } else {
     clientProfile = await prisma.profile.update({
       where: { id: clientProfile.id },

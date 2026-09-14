@@ -4,7 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { Prisma, ProjectType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
+import { requireTeam } from "@/lib/auth/session";
 import { getProfile, getStrategy } from "@/lib/intake/store";
 import { getBrandKit } from "@/app/actions/brand-kit";
 import { STAGE_COUNT } from "@/lib/stages";
@@ -19,15 +19,6 @@ import {
 } from "@/lib/brief/types";
 
 const MODEL = "claude-opus-4-8";
-
-async function requireTeam() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role?.toLowerCase() === "client") {
-    throw new Error("Unauthorized");
-  }
-  return user;
-}
 
 function extractJson<T>(text: string): T {
   const start = text.indexOf("{");

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionUser, homeFor } from "@/lib/auth/session";
 
 export async function login(formData: FormData) {
   const supabase = await createClient();
@@ -17,13 +18,9 @@ export async function login(formData: FormData) {
     return { error: error.message };
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const role = (user?.user_metadata?.role as string | undefined)?.toLowerCase();
+  const user = await getSessionUser();
   revalidatePath("/", "layout");
-  redirect(role === "client" ? "/portal" : "/dashboard");
+  redirect(homeFor(user?.role));
 }
 
 export async function logout() {

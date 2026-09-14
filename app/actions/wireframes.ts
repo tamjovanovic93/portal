@@ -2,23 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import { WIREFRAME_STAGE, DESIGN_STAGE } from "@/lib/stages";
-
-async function getAuthUser() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  return user;
-}
+import { requireDocumentAccess } from "@/lib/auth/access";
+import { WIREFRAME_STAGE } from "@/lib/stages";
 
 export async function saveWireframeFeedback(
   documentId: string,
   content: Record<string, unknown>
 ) {
-  await getAuthUser();
+  await requireDocumentAccess(documentId);
   await prisma.document.update({
     where: { id: documentId },
     data: { content: content as Prisma.InputJsonValue },
@@ -30,12 +23,7 @@ export async function submitWireframeFeedback(
   documentId: string,
   content: Record<string, unknown>
 ) {
-  await getAuthUser();
-  const doc = await prisma.document.findUnique({
-    where: { id: documentId },
-    select: { projectId: true },
-  });
-  if (!doc) throw new Error("Document not found");
+  const { doc } = await requireDocumentAccess(documentId);
 
   await prisma.document.update({
     where: { id: documentId },
@@ -53,15 +41,15 @@ export async function submitWireframeFeedback(
   redirect("/portal");
 }
 
+// The project is taken from the document itself — the caller-supplied
+// projectId is only accepted when it matches.
 export async function approveWireframesAndSubmit(
   documentId: string,
   content: Record<string, unknown>,
   projectId: string
 ) {
-  const user = await getAuthUser();
-
-  const profile = await prisma.profile.findUnique({ where: { id: user.id } });
-  if (!profile) throw new Error("Profile not found");
+  const { user, doc } = await requireDocumentAccess(documentId);
+  if (!doc.projectId || doc.projectId !== projectId) throw new Error("Document does not belong to this project");
 
   const now = new Date();
 
@@ -80,7 +68,7 @@ export async function approveWireframesAndSubmit(
       data: {
         projectId,
         stageNumber: WIREFRAME_STAGE,
-        approvedById: profile.id,
+        approvedById: user.id,
         method: "PORTAL",
         notes: "Client approved wireframes via portal — authorised to proceed to the design stage.",
       },
@@ -91,7 +79,7 @@ export async function approveWireframesAndSubmit(
       data: {
         gateApproved: true,
         gateApprovedAt: now,
-        gateApproverId: profile.id,
+        gateApproverId: user.id,
       },
     }),
   ]);

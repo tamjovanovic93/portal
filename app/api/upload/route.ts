@@ -1,58 +1,61 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient as createSupabaseServer } from "@/lib/supabase/server";
-import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 import { Visibility } from "@prisma/client";
-
-const BUCKET = "project-assets";
-const MAX_SIZE = 50 * 1024 * 1024; // 50 MB
+import { getSessionUser } from "@/lib/auth/session";
+import { createAdminClient, STORAGE_BUCKET } from "@/lib/supabase/admin";
+import { STAGE_COUNT } from "@/lib/stages";
+import { isAllowedUpload, MAX_UPLOAD_BYTES, safeFilename } from "@/lib/uploads";
 
 export async function POST(req: NextRequest) {
-  const supabase = await createSupabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user || user.user_metadata?.role === "client") {
+  const user = await getSessionUser();
+  if (!user || user.role !== "TEAM") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
   const projectId = formData.get("projectId") as string;
-  const stageNumber = formData.get("stageNumber") as string | null;
-  const visibility = (formData.get("visibility") as Visibility) ?? "INTERNAL";
+  const stageNumberRaw = formData.get("stageNumber") as string | null;
+  const visibilityRaw = formData.get("visibility") as string | null;
   const notes = (formData.get("notes") as string) || null;
   const folder = (formData.get("folder") as string) || null;
 
   if (!file || !projectId) {
     return NextResponse.json({ error: "File and projectId required" }, { status: 400 });
   }
-
-  if (file.size > MAX_SIZE) {
+  if (file.size > MAX_UPLOAD_BYTES) {
     return NextResponse.json({ error: "File too large (max 50 MB)" }, { status: 400 });
+  }
+  if (!isAllowedUpload(file)) {
+    return NextResponse.json({ error: "This file type is not allowed" }, { status: 400 });
+  }
+
+  const visibility: Visibility =
+    visibilityRaw && (Object.values(Visibility) as string[]).includes(visibilityRaw)
+      ? (visibilityRaw as Visibility)
+      : "INTERNAL";
+
+  const stageNumber = stageNumberRaw ? parseInt(stageNumberRaw, 10) : null;
+  if (stageNumber !== null && (!Number.isInteger(stageNumber) || stageNumber < 1 || stageNumber > STAGE_COUNT)) {
+    return NextResponse.json({ error: "Invalid stage" }, { status: 400 });
   }
 
   // Verify project exists
-  const project = await prisma.project.findUnique({ where: { id: projectId } });
+  const project = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
   if (!project) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
   // Build storage path
-  const ext = file.name.split(".").pop() ?? "";
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const safeName = safeFilename(file.name);
   const stage = stageNumber ? `stage-${stageNumber}` : "general";
   const storagePath = `${projectId}/${stage}/${Date.now()}_${safeName}`;
 
   // Upload via admin client (bypasses RLS on storage)
-  const adminClient = createSupabaseAdmin(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const adminClient = createAdminClient();
 
   const { error: uploadError } = await adminClient.storage
-    .from(BUCKET)
+    .from(STORAGE_BUCKET)
     .upload(storagePath, file, {
       contentType: file.type || "application/octet-stream",
       upsert: false,
@@ -66,7 +69,7 @@ export async function POST(req: NextRequest) {
   const asset = await prisma.projectAsset.create({
     data: {
       projectId,
-      stageNumber: stageNumber ? parseInt(stageNumber) : null,
+      stageNumber,
       storagePath,
       filename: file.name,
       mimeType: file.type || null,

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 import { logout } from "@/app/actions/auth";
 import NotificationsBell from "@/components/NotificationsBell";
 
@@ -8,13 +8,10 @@ export default async function ClientLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) redirect("/login");
-  if (user.user_metadata?.role?.toLowerCase() !== "client") redirect("/dashboard");
+  if (user.role !== "CLIENT") redirect("/dashboard");
 
   return (
     <div className="theme-light theme-root min-h-screen">

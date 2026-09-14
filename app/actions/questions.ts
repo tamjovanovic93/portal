@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { requireTeam, requireUser } from "@/lib/auth/session";
 import { notifyClient, notify } from "@/lib/notifications";
 import { mutateDoc } from "@/lib/intake/store";
 import { VERIFICATION_DOC, type VerificationQueue } from "@/lib/intake/types";
@@ -11,21 +11,6 @@ import type { QuestionContext } from "@prisma/client";
 // Server actions for the generalized Question model. Team asks a client (open
 // question or confirmation of a proposed answer) or another team member; the
 // recipient answers / confirms; the team resolves. See lib/questions.ts.
-
-async function requireTeam() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  if (user.user_metadata?.role?.toLowerCase() === "client") throw new Error("Unauthorized");
-  return user;
-}
-
-async function requireUser() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  return user;
-}
 
 function revalidateFor(projectId: string | null) {
   if (projectId) {
@@ -125,9 +110,7 @@ export async function answerQuestion(questionId: string, answer: string): Promis
   const q = await prisma.question.findUnique({ where: { id: questionId } });
   if (!q) return { error: "Question not found." };
   // Only the recipient (or a team member) may answer.
-  if (q.recipientId && q.recipientId !== user.id) {
-    if (user.user_metadata?.role?.toLowerCase() === "client") return { error: "Unauthorized" };
-  }
+  if (user.role === "CLIENT" && q.recipientId !== user.id) return { error: "Unauthorized" };
   await prisma.question.update({
     where: { id: questionId },
     data: { answerText: text, status: "ANSWERED", answeredAt: new Date() },
@@ -175,9 +158,7 @@ export async function respondConfirm(
   const user = await requireUser();
   const q = await prisma.question.findUnique({ where: { id: questionId } });
   if (!q) return { error: "Question not found." };
-  if (q.recipientId && q.recipientId !== user.id && user.user_metadata?.role?.toLowerCase() === "client") {
-    return { error: "Unauthorized" };
-  }
+  if (user.role === "CLIENT" && q.recipientId !== user.id) return { error: "Unauthorized" };
   const answerText =
     decision === "confirm"
       ? `Confirmed: ${q.proposedAnswer ?? ""}`.trim()

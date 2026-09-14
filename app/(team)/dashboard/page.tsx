@@ -5,7 +5,7 @@ import NewClientButton from "@/components/team/NewClientButton";
 import Icon from "@/components/ui/Icon";
 import { Eyebrow, Pill, StageBar, Health, Avatar, VAR, type Accent } from "@/components/ui/kit";
 import { getTeamData, capacityColor } from "@/lib/team";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 import { WAITING_CLIENT_STATUSES } from "@/lib/questions";
 import { listNotifications } from "@/lib/notifications";
 import MyWork, { type WorkTask, type WorkMember } from "@/components/team/MyWork";
@@ -219,8 +219,7 @@ export default async function DashboardPage() {
   const team = await getTeamData();
 
   // ── Current user (for "My tasks" default) ──
-  const supabase = await createClient();
-  const { data: { user: authUser } } = await supabase.auth.getUser();
+  const authUser = await getSessionUser();
   const currentUserId = authUser?.id ?? "";
 
   // ── Connected PM data: tasks, blockers, waiting-on-client, meetings ──

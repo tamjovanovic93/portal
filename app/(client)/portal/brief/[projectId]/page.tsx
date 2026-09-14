@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
@@ -25,11 +25,7 @@ export default async function ClientBriefPage({
 }) {
   const { projectId } = await params;
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const profileRow = await prisma.profile.findUnique({ where: { id: user.id } });
+  const profileRow = await getSessionUser();
   if (!profileRow) redirect("/login");
 
   const project = await prisma.project.findUnique({ where: { id: projectId } });

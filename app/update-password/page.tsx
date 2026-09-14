@@ -35,8 +35,8 @@ export default function UpdatePasswordPage() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    const role = user?.user_metadata?.role as string | undefined;
-    router.push(role === "client" ? "/portal" : "/dashboard");
+    const role = (user?.app_metadata?.role as string | undefined)?.toUpperCase();
+    router.push(role === "CLIENT" ? "/portal" : "/dashboard");
   }
 
   return (

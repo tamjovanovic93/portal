@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
@@ -30,10 +30,9 @@ export default async function ClientDocumentPage({
 }) {
   const { id: clientId, docId: documentId } = await params;
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/login");
-  if (user.user_metadata?.role?.toLowerCase() === "client") redirect("/portal");
+  if (user.role === "CLIENT") redirect("/portal");
 
   const [client, doc] = await Promise.all([
     prisma.profile.findUnique({ where: { id: clientId }, select: { name: true, email: true, role: true } }),

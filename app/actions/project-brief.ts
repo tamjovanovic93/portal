@@ -3,8 +3,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { requireTeam } from "@/lib/auth/session";
 import { notifyClient } from "@/lib/notifications";
 import {
   BRIEF_DOC,
@@ -20,15 +20,6 @@ import {
 } from "@/lib/brief/types";
 
 const MODEL = "claude-opus-4-8";
-
-// ─── Auth ────────────────────────────────────────────────────────────────────
-async function requireTeam() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  if (user.user_metadata?.role?.toLowerCase() === "client") throw new Error("Unauthorized");
-  return user;
-}
 
 // ─── Exactly one brief per project (the project_brief Document) ───────────────
 

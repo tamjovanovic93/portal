@@ -1,18 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
+import { requireTeam } from "@/lib/auth/session";
+import { createAdminClient, STORAGE_BUCKET } from "@/lib/supabase/admin";
 
-const BUCKET = "project-assets";
+async function teamOrError() {
+  try {
+    return await requireTeam();
+  } catch {
+    return null;
+  }
+}
 
 export async function toggleAssetVisibility(assetId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role === "client") return { error: "Unauthorized" };
+  if (!(await teamOrError())) return { error: "Unauthorized" };
 
   const asset = await prisma.projectAsset.findUnique({ where: { id: assetId } });
   if (!asset) return { error: "Not found" };
@@ -30,9 +32,8 @@ export async function toggleAssetVisibility(assetId: string) {
 }
 
 export async function approveAsset(assetId: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role?.toLowerCase() === "client") return { error: "Unauthorized" };
+  const user = await teamOrError();
+  if (!user) return { error: "Unauthorized" };
 
   const asset = await prisma.projectAsset.findUnique({ where: { id: assetId } });
   if (!asset) return { error: "Not found" };
@@ -47,21 +48,14 @@ export async function approveAsset(assetId: string) {
 }
 
 export async function deleteAsset(assetId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role === "client") return { error: "Unauthorized" };
+  if (!(await teamOrError())) return { error: "Unauthorized" };
 
   const asset = await prisma.projectAsset.findUnique({ where: { id: assetId } });
   if (!asset) return { error: "Not found" };
 
   // Delete from storage
-  const adminClient = createSupabaseAdmin(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-  await adminClient.storage.from(BUCKET).remove([asset.storagePath]);
+  const adminClient = createAdminClient();
+  await adminClient.storage.from(STORAGE_BUCKET).remove([asset.storagePath]);
 
   // Delete DB record
   await prisma.projectAsset.delete({ where: { id: assetId } });

@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
+import { requireTeam } from "@/lib/auth/session";
+import { requireProjectAccess } from "@/lib/auth/access";
 import { MaterialItemStatus } from "@prisma/client";
 
 const MATERIAL_STATUSES = Object.values(MaterialItemStatus);
@@ -12,33 +13,17 @@ function parseStatus(value: string | null): MaterialItemStatus | undefined {
     : undefined;
 }
 
-async function assertTeam() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role === "client") {
-    throw new Error("Unauthorized");
+async function teamOrError() {
+  try {
+    await requireTeam();
+    return true;
+  } catch {
+    return false;
   }
-  return user;
-}
-
-async function assertOwnsProject(projectId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-
-  if (user.user_metadata?.role !== "client") return user; // team can access any
-
-  const project = await prisma.project.findUnique({ where: { id: projectId } });
-  if (!project || project.clientId !== user.id) throw new Error("Unauthorized");
-  return user;
 }
 
 export async function addMaterialItem(formData: FormData) {
-  await assertTeam();
+  if (!(await teamOrError())) return { error: "Unauthorized" };
 
   const projectId = formData.get("projectId") as string;
   const label = (formData.get("label") as string)?.trim();
@@ -67,6 +52,7 @@ export async function addMaterialItem(formData: FormData) {
   return { success: true };
 }
 
+// Clients may update status on their own project's items; team on any.
 export async function updateMaterialStatus(
   itemId: string,
   status: MaterialItemStatus,
@@ -75,12 +61,14 @@ export async function updateMaterialStatus(
   const item = await prisma.materialItem.findUnique({ where: { id: itemId } });
   if (!item) return { error: "Item not found" };
 
-  await assertOwnsProject(item.projectId);
+  await requireProjectAccess(item.projectId);
+  const parsed = parseStatus(status);
+  if (!parsed) return { error: "Invalid status" };
 
   await prisma.materialItem.update({
     where: { id: itemId },
     data: {
-      status,
+      status: parsed,
       ...(note !== undefined ? { notes: note } : {}),
     },
   });
@@ -93,7 +81,7 @@ export async function updateMaterialStatus(
 }
 
 export async function updateMaterialItem(formData: FormData) {
-  await assertTeam();
+  if (!(await teamOrError())) return { error: "Unauthorized" };
 
   const itemId = formData.get("itemId") as string;
   const label = (formData.get("label") as string)?.trim();
@@ -123,7 +111,7 @@ export async function updateMaterialItem(formData: FormData) {
 }
 
 export async function deleteMaterialItem(itemId: string) {
-  await assertTeam();
+  if (!(await teamOrError())) return { error: "Unauthorized" };
 
   const item = await prisma.materialItem.findUnique({ where: { id: itemId } });
   if (!item) return { error: "Item not found" };

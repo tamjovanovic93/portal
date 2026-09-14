@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { requireTeam } from "@/lib/auth/session";
 import type { TypeStyle, BrandColor } from "@/lib/brief/types";
 
 // Brand Kit is shared CLIENT DATA — a single JSON Document (templateType
@@ -19,14 +19,6 @@ export type BrandKit = {
   colors?: BrandColor[];
   logos?: BrandLogo[];
 };
-
-async function requireTeam() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  if (user.user_metadata?.role?.toLowerCase() === "client") throw new Error("Unauthorized");
-  return user;
-}
 
 async function getDoc(clientId: string) {
   return prisma.document.findFirst({ where: { clientId, templateType: BRAND_KIT_DOC } });

@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import CompanyCard from "@/components/team/brief/CompanyCard";
 import BriefTable from "@/components/team/brief/BriefTable";
@@ -66,8 +66,7 @@ export default async function ClientDataPage({
   const { tab: rawTab } = await searchParams;
   const tab = (rawTab as Tab) ?? "business";
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/login");
 
   const client = await prisma.profile.findUnique({

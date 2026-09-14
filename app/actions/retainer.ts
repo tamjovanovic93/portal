@@ -1,21 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { requireTeam } from "@/lib/auth/session";
 import type { TaskStatus, TaskOwnerRole } from "@prisma/client";
 import { STAGE_COUNT } from "@/lib/stages";
 
 const OWNER_ROLES: TaskOwnerRole[] = ["PROJECT_MANAGER", "DEV_TEAM", "DESIGN_TEAM", "CLIENT"];
-
-async function requireTeam() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  if (user.user_metadata?.role?.toLowerCase() === "client") throw new Error("Unauthorized");
-}
 
 function revalidateProject(projectId: string) {
   revalidatePath(`/projects/${projectId}`);

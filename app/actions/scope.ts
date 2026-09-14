@@ -3,20 +3,13 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { requireTeam } from "@/lib/auth/session";
 import type { ProjectBrief, ScopeItem } from "@/lib/brief/types";
 
 // Fast structured-JSON task (task breakdown + stage placement) — a quick model
 // without extended thinking keeps the Sync responsive.
 const MODEL = "claude-sonnet-4-6";
-
-async function requireTeam() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  if (user.user_metadata?.role?.toLowerCase() === "client") throw new Error("Unauthorized");
-}
 
 // A desired task derived from a scope item. scopeItemId is the stable sync key:
 //   simple item        → scopeItemId = item.id

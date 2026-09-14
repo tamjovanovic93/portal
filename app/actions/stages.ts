@@ -2,15 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
+import { requireTeam } from "@/lib/auth/session";
+import { requireProjectAccess } from "@/lib/auth/access";
 import { FINAL_STAGE, GATED_STAGES } from "@/lib/stages";
 
 export async function advanceStage(projectId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role === "client") {
+  try {
+    await requireTeam();
+  } catch {
     return { error: "Unauthorized" };
   }
 
@@ -72,25 +71,22 @@ export async function recordApproval(
   method: "PORTAL" | "EMAIL" | "VERBAL" | "OTHER",
   notes?: string
 ) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Unauthorized" };
+  let user;
+  try {
+    ({ user } = await requireProjectAccess(projectId));
+  } catch {
+    return { error: "Unauthorized" };
+  }
 
   // Client can only approve via PORTAL
-  const isClient = user.user_metadata?.role === "client";
-  if (isClient && method !== "PORTAL") return { error: "Unauthorized" };
-
-  const profile = await prisma.profile.findUnique({ where: { id: user.id } });
-  if (!profile) return { error: "Profile not found" };
+  if (user.role === "CLIENT" && method !== "PORTAL") return { error: "Unauthorized" };
 
   await prisma.$transaction([
     prisma.approval.create({
       data: {
         projectId,
         stageNumber,
-        approvedById: profile.id,
+        approvedById: user.id,
         method,
         notes,
       },
@@ -99,7 +95,7 @@ export async function recordApproval(
       where: {
         projectId_stageNumber: { projectId, stageNumber },
       },
-      data: { gateApproved: true, gateApprovedAt: new Date(), gateApproverId: profile.id },
+      data: { gateApproved: true, gateApprovedAt: new Date(), gateApproverId: user.id },
     }),
   ]);
 

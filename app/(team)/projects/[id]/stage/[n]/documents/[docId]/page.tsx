@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
@@ -30,10 +30,7 @@ export default async function DocumentPage({
   const { id: projectId, n, docId: documentId } = await params;
   const stageNumber = parseInt(n, 10);
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/login");
 
   const [project, doc] = await Promise.all([

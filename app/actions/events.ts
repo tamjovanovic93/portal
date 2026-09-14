@@ -2,22 +2,31 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
+import { requireTeam } from "@/lib/auth/session";
 import { EventType } from "@prisma/client";
 
-export async function createEvent(formData: FormData) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role?.toLowerCase() === "client") {
-    return { error: "Unauthorized" };
+const EVENT_TYPES = Object.values(EventType);
+
+function parseEventType(value: FormDataEntryValue | null): EventType {
+  return EVENT_TYPES.includes(value as EventType) ? (value as EventType) : "APPOINTMENT";
+}
+
+async function teamOrError() {
+  try {
+    return await requireTeam();
+  } catch {
+    return null;
   }
+}
+
+export async function createEvent(formData: FormData) {
+  const user = await teamOrError();
+  if (!user) return { error: "Unauthorized" };
 
   const title = (formData.get("title") as string)?.trim();
   const startAtRaw = formData.get("startAt") as string;
   const endAtRaw = formData.get("endAt") as string | null;
-  const type = (formData.get("type") as EventType) ?? "APPOINTMENT";
+  const type = parseEventType(formData.get("type"));
   const description = (formData.get("description") as string)?.trim() || null;
   const projectId = (formData.get("projectId") as string) || null;
   const allDay = formData.get("allDay") === "true";
@@ -44,18 +53,12 @@ export async function createEvent(formData: FormData) {
 }
 
 export async function updateEvent(id: string, formData: FormData) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role?.toLowerCase() === "client") {
-    return { error: "Unauthorized" };
-  }
+  if (!(await teamOrError())) return { error: "Unauthorized" };
 
   const title = (formData.get("title") as string)?.trim();
   const startAtRaw = formData.get("startAt") as string;
   const endAtRaw = formData.get("endAt") as string | null;
-  const type = (formData.get("type") as EventType) ?? "APPOINTMENT";
+  const type = parseEventType(formData.get("type"));
   const description = (formData.get("description") as string)?.trim() || null;
   const projectId = (formData.get("projectId") as string) || null;
   const allDay = formData.get("allDay") === "true";
@@ -81,13 +84,7 @@ export async function updateEvent(id: string, formData: FormData) {
 }
 
 export async function deleteEvent(id: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role?.toLowerCase() === "client") {
-    return { error: "Unauthorized" };
-  }
+  if (!(await teamOrError())) return { error: "Unauthorized" };
 
   await prisma.appEvent.delete({ where: { id } });
   revalidatePath("/calendar");

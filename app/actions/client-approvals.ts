@@ -1,19 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { requireTeam, requireUser } from "@/lib/auth/session";
+import { requireProjectAccess, requireTaskAccess } from "@/lib/auth/access";
 import { mutateDoc, clientIdForProject } from "@/lib/intake/store";
 import { notifyClient } from "@/lib/notifications";
 import { PROFILE_DOC, type ClientProfile } from "@/lib/intake/types";
-
-async function requireTeam() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  if (user.user_metadata?.role?.toLowerCase() === "client") throw new Error("Unauthorized");
-  return user;
-}
 
 // Team EXPLICITLY sends a generated key message / slogan to the client for
 // approval. Nothing reaches the client until this runs — agents only generate
@@ -52,34 +45,14 @@ export async function requestClientApprovalForItem(
   return { ok: true };
 }
 
-async function getClientProfile() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  const profile = await prisma.profile.findUnique({ where: { id: user.id } });
-  if (!profile) throw new Error("Unauthorized");
-  return profile;
-}
-
-async function assertOwnsProject(projectId: string, profileId: string) {
-  const project = await prisma.project.findUnique({
-    where: { id: projectId },
-    select: { clientId: true },
-  });
-  if (!project || project.clientId !== profileId) throw new Error("Not found");
-}
-
 // Client approves / requests changes on a key message in the profile JSON.
 export async function respondToKeyMessage(
   projectId: string,
   messageId: string,
   decision: "yes" | "no"
 ) {
-  const profile = await getClientProfile();
-  await assertOwnsProject(projectId, profile.id);
-
-  const clientId = (await clientIdForProject(projectId)) ?? profile.id;
-  await mutateDoc<ClientProfile>(clientId, PROFILE_DOC, (content) => {
+  const { project } = await requireProjectAccess(projectId);
+  await mutateDoc<ClientProfile>(project.clientId, PROFILE_DOC, (content) => {
     const item = content.messaging?.key_messages?.find((m) => m.message_id === messageId);
     if (item) item.approved = decision;
   });
@@ -92,11 +65,8 @@ export async function respondToSlogan(
   sloganId: string,
   decision: "yes" | "no"
 ) {
-  const profile = await getClientProfile();
-  await assertOwnsProject(projectId, profile.id);
-
-  const clientId = (await clientIdForProject(projectId)) ?? profile.id;
-  await mutateDoc<ClientProfile>(clientId, PROFILE_DOC, (content) => {
+  const { project } = await requireProjectAccess(projectId);
+  await mutateDoc<ClientProfile>(project.clientId, PROFILE_DOC, (content) => {
     const item = content.messaging?.slogans?.find((s) => s.slogan_id === sloganId);
     if (item) item.approved = decision;
   });
@@ -111,12 +81,11 @@ export async function acknowledgeApprovalItem(
   id: string,
   kind: "message" | "slogan"
 ) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const user = await requireTeam();
+  const clientId = await clientIdForProject(projectId);
+  if (!clientId) return;
 
   const now = new Date().toISOString();
-  const clientId = (await clientIdForProject(projectId)) ?? user.id;
   await mutateDoc<ClientProfile>(clientId, PROFILE_DOC, (content) => {
     const item =
       kind === "message"
@@ -130,22 +99,14 @@ export async function acknowledgeApprovalItem(
   revalidatePath(`/projects/${projectId}`);
 }
 
-// Client approve / request-changes on a retainer deliverable task. (Unchanged —
-// operates on Task rows, not the intake JSON.)
+// Client approve / request-changes on a retainer deliverable task.
 export async function respondToDeliverableTask(
   taskId: string,
   decision: "approve" | "changes",
   notes?: string
 ) {
-  const profile = await getClientProfile();
-
-  const task = await prisma.task.findUnique({
-    where: { id: taskId },
-    include: { cycle: { include: { project: { select: { id: true, clientId: true } } } } },
-  });
-  if (!task || task.cycle.project.clientId !== profile.id) throw new Error("Not found");
-
-  const projectId = task.cycle.project.id;
+  const user = await requireUser();
+  const { task, projectId } = await requireTaskAccess(taskId);
   const trimmedNotes = notes?.trim() || null;
 
   if (decision === "approve") {
@@ -154,7 +115,7 @@ export async function respondToDeliverableTask(
         data: {
           projectId,
           taskId,
-          approvedById: profile.id,
+          approvedById: user.id,
           method: "PORTAL",
           notes: trimmedNotes,
         },
@@ -166,7 +127,7 @@ export async function respondToDeliverableTask(
       prisma.activityLog.create({
         data: {
           projectId,
-          actorId: profile.id,
+          actorId: user.id,
           action: "deliverable_approved",
           detail: `Client approved deliverable: ${task.name}`,
         },
@@ -181,7 +142,7 @@ export async function respondToDeliverableTask(
       prisma.activityLog.create({
         data: {
           projectId,
-          actorId: profile.id,
+          actorId: user.id,
           action: "deliverable_changes_requested",
           detail: `Client requested changes on: ${task.name}`,
           metadata: trimmedNotes ? { notes: trimmedNotes } : undefined,

@@ -4,6 +4,9 @@
 -- ═══════════════════════════════════════════════════════════════
 
 -- ─── 1. Auto-create profile row on Supabase Auth signup ─────────
+-- The role comes from app_metadata (server-set) — never from user_metadata,
+-- which the user can edit. Skips when a profile with the same id OR email already
+-- exists (team members are pre-created by the app with a matching id).
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -11,12 +14,13 @@ security definer set search_path = public
 as $$
 begin
   insert into public.profiles (id, email, role)
-  values (
+  select
     new.id,
     new.email,
-    coalesce(new.raw_user_meta_data->>'role', 'CLIENT')::"UserRole"
-  )
-  on conflict (id) do nothing;
+    coalesce(new.raw_app_meta_data->>'role', 'CLIENT')::"UserRole"
+  where not exists (
+    select 1 from public.profiles p where p.id = new.id or p.email = new.email
+  );
   return new;
 end;
 $$;

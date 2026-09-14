@@ -3,7 +3,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
+import { requireTeam } from "@/lib/auth/session";
 import { TEMPLATES } from "@/lib/templates/registry";
 import type { Template } from "@/lib/templates/types";
 import { isVisible } from "@/lib/templates/visibility";
@@ -27,16 +27,6 @@ import verificationQueueTemplate from "@/lib/intake/templates/verification_queue
 // the profile is verified (hard gate).
 
 const MODEL = "claude-opus-4-8";
-
-// ─── Auth ────────────────────────────────────────────────────────────────────
-
-async function requireTeam() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  if (user.user_metadata?.role?.toLowerCase() === "client") throw new Error("Unauthorized");
-  return user;
-}
 
 // ─── Form → readable text ────────────────────────────────────────────────────
 

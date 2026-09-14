@@ -7,7 +7,10 @@
     "build": "prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "prisma migrate deploy",
+    "db:dev": "prisma migrate dev"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",

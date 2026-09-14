@@ -1,25 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { requireTeam } from "@/lib/auth/session";
+import { requireDocumentAccess } from "@/lib/auth/access";
 import { TEMPLATES } from "@/lib/templates/registry";
-
-async function getTeamUser() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  if (user.user_metadata?.role?.toLowerCase() === "client") throw new Error("Unauthorized");
-  return user;
-}
-
-async function getAuthUser() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  return user;
-}
 
 // A document is owned by a client either directly (clientId, client-scoped) or
 // through its project (legacy project-scoped). Revalidate whichever surface it
@@ -29,12 +15,7 @@ type OwnedDoc = {
   projectId: string | null;
   clientId: string | null;
   stageNumber: number;
-  project?: { clientId: string } | null;
 };
-
-function ownerClientId(doc: OwnedDoc): string | null {
-  return doc.clientId ?? doc.project?.clientId ?? null;
-}
 
 function revalidateDoc(doc: OwnedDoc) {
   if (doc.projectId) {
@@ -52,7 +33,7 @@ export async function createDocument(
   stageNumber: number,
   templateType: string
 ): Promise<string> {
-  await getTeamUser();
+  await requireTeam();
 
   const template = TEMPLATES[templateType];
   if (!template) throw new Error("Unknown template");
@@ -75,20 +56,7 @@ export async function saveDocument(
   documentId: string,
   content: Record<string, unknown>
 ) {
-  const user = await getAuthUser();
-
-  const doc = await prisma.document.findUnique({
-    where: { id: documentId },
-    include: { project: { select: { clientId: true } } },
-  });
-  if (!doc) throw new Error("Document not found");
-
-  const profile = await prisma.profile.findUnique({ where: { id: user.id } });
-  if (!profile) throw new Error("Profile not found");
-
-  const isTeam = profile.role === "TEAM";
-  const isOwner = ownerClientId(doc) === profile.id;
-  if (!isTeam && !isOwner) throw new Error("Unauthorized");
+  const { doc } = await requireDocumentAccess(documentId);
 
   await prisma.document.update({
     where: { id: documentId },
@@ -99,20 +67,8 @@ export async function saveDocument(
 }
 
 export async function submitDocument(documentId: string) {
-  const user = await getAuthUser();
-
-  const doc = await prisma.document.findUnique({
-    where: { id: documentId },
-    include: { project: { select: { clientId: true } } },
-  });
-  if (!doc) throw new Error("Document not found");
-
-  const profile = await prisma.profile.findUnique({ where: { id: user.id } });
-  if (!profile) throw new Error("Profile not found");
-
-  const isTeam = profile.role === "TEAM";
-  const isOwner = ownerClientId(doc) === profile.id;
-  if (!isTeam && !isOwner) throw new Error("Unauthorized");
+  const { user, doc } = await requireDocumentAccess(documentId);
+  const isTeam = user.role === "TEAM";
 
   await prisma.document.update({
     where: { id: documentId },
@@ -126,7 +82,7 @@ export async function submitDocument(documentId: string) {
 }
 
 export async function sendDocumentToClient(documentId: string) {
-  await getTeamUser();
+  await requireTeam();
 
   const doc = await prisma.document.findUnique({ where: { id: documentId } });
   if (!doc) throw new Error("Document not found");
@@ -140,7 +96,7 @@ export async function sendDocumentToClient(documentId: string) {
 }
 
 export async function deleteDocument(documentId: string) {
-  await getTeamUser();
+  await requireTeam();
 
   const doc = await prisma.document.findUnique({ where: { id: documentId } });
   if (!doc) throw new Error("Document not found");
@@ -153,7 +109,7 @@ export async function deleteDocument(documentId: string) {
 // Team marks a client-submitted document as reviewed/handled — moves it out of
 // "Action Required" into completed/history.
 export async function markDocumentHandled(documentId: string) {
-  await getTeamUser();
+  await requireTeam();
   const doc = await prisma.document.findUnique({ where: { id: documentId } });
   if (!doc) throw new Error("Document not found");
   await prisma.document.update({
@@ -165,7 +121,7 @@ export async function markDocumentHandled(documentId: string) {
 }
 
 export async function unmarkDocumentHandled(documentId: string) {
-  await getTeamUser();
+  await requireTeam();
   const doc = await prisma.document.findUnique({ where: { id: documentId } });
   if (!doc) throw new Error("Document not found");
   await prisma.document.update({

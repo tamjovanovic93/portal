@@ -2,20 +2,20 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getSessionUser, requireTeam } from "@/lib/auth/session";
+import { generateTempPassword } from "@/lib/auth/passwords";
 import { ProjectMode, ProjectType, ProjectHealth } from "@prisma/client";
 import { STAGE_COUNT } from "@/lib/stages";
 
+async function teamOrError() {
+  const user = await getSessionUser();
+  return user?.role === "TEAM" ? user : null;
+}
+
 export async function createProject(formData: FormData) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role === "client") {
-    return { error: "Unauthorized" };
-  }
+  if (!(await teamOrError())) return { error: "Unauthorized" };
 
   const name = (formData.get("name") as string)?.trim();
   const clientChoice = (formData.get("clientChoice") as string) ?? "new";
@@ -44,7 +44,7 @@ export async function createProject(formData: FormData) {
         await adminSupabase.auth.admin.createUser({
           email: clientEmail,
           email_confirm: true,
-          user_metadata: { role: "CLIENT" },
+          app_metadata: { role: "CLIENT" },
         });
 
       if (userError) {
@@ -113,39 +113,21 @@ export async function listClients() {
 }
 
 export async function archiveProject(id: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role?.toLowerCase() === "client") {
-    return { error: "Unauthorized" };
-  }
+  if (!(await teamOrError())) return { error: "Unauthorized" };
   await prisma.project.update({ where: { id }, data: { isArchived: true } });
   revalidatePath("/projects");
   revalidatePath("/dashboard");
 }
 
 export async function restoreProject(id: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role?.toLowerCase() === "client") {
-    return { error: "Unauthorized" };
-  }
+  if (!(await teamOrError())) return { error: "Unauthorized" };
   await prisma.project.update({ where: { id }, data: { isArchived: false } });
   revalidatePath("/projects");
   revalidatePath("/dashboard");
 }
 
 export async function setProjectHealth(id: string, health: ProjectHealth) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role?.toLowerCase() === "client") {
-    return { error: "Unauthorized" };
-  }
+  if (!(await teamOrError())) return { error: "Unauthorized" };
   const project = await prisma.project.update({
     where: { id },
     data: { health },
@@ -158,13 +140,7 @@ export async function setProjectHealth(id: string, health: ProjectHealth) {
 }
 
 export async function deleteProject(id: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role?.toLowerCase() === "client") {
-    return { error: "Unauthorized" };
-  }
+  if (!(await teamOrError())) return { error: "Unauthorized" };
 
   const project = await prisma.project.findUnique({
     where: { id },
@@ -194,13 +170,7 @@ export async function deleteProject(id: string) {
 // The client's shared Client Data documents and their notifications cascade when
 // the profile itself is deleted. Team-member profiles are never touched.
 export async function deleteClient(clientId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role?.toLowerCase() === "client") {
-    return { error: "Unauthorized" };
-  }
+  if (!(await teamOrError())) return { error: "Unauthorized" };
 
   const client = await prisma.profile.findUnique({
     where: { id: clientId },
@@ -275,11 +245,9 @@ export async function deleteClient(clientId: string) {
 export async function generateClientAccess(
   projectId: string
 ): Promise<{ email?: string; password?: string; error?: string }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role?.toLowerCase() === "client") {
+  try {
+    await requireTeam();
+  } catch {
     return { error: "Unauthorized" };
   }
 
@@ -316,7 +284,7 @@ export async function generateClientAccess(
         ...(existingProfile ? { id: existingProfile.id } : {}),
         email,
         email_confirm: true,
-        user_metadata: { role: "CLIENT" },
+        app_metadata: { role: "CLIENT" },
       });
     if (createError) return { error: createError.message };
     authUserId = newUserData.user?.id ?? null;
@@ -337,10 +305,7 @@ export async function generateClientAccess(
   }
 
   // Set a temporary password the client can use to log in immediately
-  const tempPassword =
-    Math.random().toString(36).slice(2, 8).toUpperCase() +
-    Math.random().toString(36).slice(2, 8) +
-    "1!";
+  const tempPassword = generateTempPassword();
 
   const { error: pwError } = await adminSupabase.auth.admin.updateUserById(
     authUserId,
@@ -349,13 +314,4 @@ export async function generateClientAccess(
   if (pwError) return { error: pwError.message };
 
   return { email, password: tempPassword };
-}
-
-function createAdminClient() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { createClient: create } = require("@supabase/supabase-js");
-  return create(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
 }

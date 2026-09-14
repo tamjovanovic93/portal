@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -107,10 +107,7 @@ export default async function StagePage({
   const { id: projectId, n } = await params;
   const stageNumber = parseInt(n, 10);
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) redirect("/login");
   if (isNaN(stageNumber) || stageNumber < 1 || stageNumber > STAGE_COUNT) redirect("/dashboard");
 

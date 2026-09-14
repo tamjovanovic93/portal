@@ -2,28 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { createClient as createAdmin } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { requireTeam } from "@/lib/auth/session";
+import { requireDocumentAccess } from "@/lib/auth/access";
+import { createAdminClient, STORAGE_BUCKET } from "@/lib/supabase/admin";
 import { DESIGN_STAGE } from "@/lib/stages";
 
-async function getTeamUser() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role?.toLowerCase() === "client") throw new Error("Unauthorized");
-  return user;
-}
-
-async function getAuthUser() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  return user;
-}
-
 export async function saveDesignLink(projectId: string, label: string, url: string) {
-  const user = await getTeamUser();
+  const user = await requireTeam();
   await prisma.projectAsset.create({
     data: {
       projectId,
@@ -40,17 +27,14 @@ export async function saveDesignLink(projectId: string, label: string, url: stri
 }
 
 export async function deleteDesignAsset(assetId: string, projectId: string) {
-  await getTeamUser();
+  await requireTeam();
   const asset = await prisma.projectAsset.findUnique({ where: { id: assetId } });
   if (!asset) return;
 
   // Delete the file from Supabase storage if it's a real upload (not a link)
   if (asset.mimeType !== "text/uri-list") {
-    const admin = createAdmin(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-    await admin.storage.from("project-assets").remove([asset.storagePath]);
+    const admin = createAdminClient();
+    await admin.storage.from(STORAGE_BUCKET).remove([asset.storagePath]);
   }
 
   await prisma.projectAsset.delete({ where: { id: assetId } });
@@ -58,7 +42,7 @@ export async function deleteDesignAsset(assetId: string, projectId: string) {
 }
 
 export async function saveDesignFeedback(documentId: string, content: Record<string, unknown>) {
-  await getAuthUser();
+  await requireDocumentAccess(documentId);
   await prisma.document.update({
     where: { id: documentId },
     data: { content: content as Prisma.InputJsonValue },
@@ -67,12 +51,7 @@ export async function saveDesignFeedback(documentId: string, content: Record<str
 }
 
 export async function submitDesignFeedback(documentId: string, content: Record<string, unknown>) {
-  await getAuthUser();
-  const doc = await prisma.document.findUnique({
-    where: { id: documentId },
-    select: { projectId: true },
-  });
-  if (!doc) throw new Error("Document not found");
+  const { doc } = await requireDocumentAccess(documentId);
 
   await prisma.document.update({
     where: { id: documentId },
@@ -95,7 +74,7 @@ export async function updateRevisionStatus(
   revisionIndex: string,
   status: string
 ) {
-  await getTeamUser();
+  await requireTeam();
 
   const doc = await prisma.document.findUnique({
     where: { id: documentId },
@@ -122,14 +101,15 @@ export async function updateRevisionStatus(
   revalidatePath(`/projects/${doc.projectId}/stage/${DESIGN_STAGE}`);
 }
 
+// The project is taken from the document itself — the caller-supplied
+// projectId is only accepted when it matches.
 export async function approveDesignAndSubmit(
   documentId: string,
   content: Record<string, unknown>,
   projectId: string
 ) {
-  const user = await getAuthUser();
-  const profile = await prisma.profile.findUnique({ where: { id: user.id } });
-  if (!profile) throw new Error("Profile not found");
+  const { user, doc } = await requireDocumentAccess(documentId);
+  if (!doc.projectId || doc.projectId !== projectId) throw new Error("Document does not belong to this project");
 
   const now = new Date();
   const verdict = content.verdict as string;
@@ -151,7 +131,7 @@ export async function approveDesignAndSubmit(
       data: {
         projectId,
         stageNumber: DESIGN_STAGE,
-        approvedById: profile.id,
+        approvedById: user.id,
         method: "PORTAL",
         notes: approvalNote,
       },
@@ -161,7 +141,7 @@ export async function approveDesignAndSubmit(
       data: {
         gateApproved: true,
         gateApprovedAt: now,
-        gateApproverId: profile.id,
+        gateApproverId: user.id,
       },
     }),
   ]);

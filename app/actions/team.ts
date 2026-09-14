@@ -3,23 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
+import { requireTeam } from "@/lib/auth/session";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // Team-member management. Team members are TEAM Profiles (the single source of
 // truth — see lib/team.ts). Add / edit reuse that structure; "remove" is a safe
 // soft-deactivate (active=false) so existing references — approvals, task
 // assignments, activity history, brief team refs — are preserved.
-
-async function requireTeam() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role?.toLowerCase() === "client") {
-    throw new Error("Unauthorized");
-  }
-  return user;
-}
 
 const ACCENTS = ["mint", "blue", "amber", "rose", "purple"];
 
@@ -72,15 +62,32 @@ export async function createTeamMember(
   const existing = await prisma.profile.findUnique({ where: { email } });
   if (existing) return { error: "A profile with that email already exists." };
 
-  await prisma.profile.create({
-    data: {
-      id: crypto.randomUUID(), // non-login team member; a login can be attached later
-      email,
-      role: "TEAM",
-      active: true,
-      ...profileFieldsFrom(formData),
-    },
+  // Provision a real login so the profile id matches auth.users.id. The member
+  // sets their password via "Forgot password" on the login page.
+  const admin = createAdminClient();
+  const { data: created, error: authErr } = await admin.auth.admin.createUser({
+    email,
+    email_confirm: true,
+    app_metadata: { role: "TEAM" },
   });
+  if (authErr || !created.user) {
+    return { error: authErr?.message ?? "Could not create the login for this member." };
+  }
+
+  try {
+    await prisma.profile.create({
+      data: {
+        id: created.user.id,
+        email,
+        role: "TEAM",
+        active: true,
+        ...profileFieldsFrom(formData),
+      },
+    });
+  } catch (err) {
+    await admin.auth.admin.deleteUser(created.user.id).catch(() => {});
+    throw err;
+  }
 
   revalidatePath("/team");
   revalidatePath("/dashboard");
@@ -124,6 +131,11 @@ export async function deactivateTeamMember(
   if (!member || member.role !== "TEAM") return { error: "Team member not found." };
 
   await prisma.profile.update({ where: { id }, data: { active: false } });
+
+  // Best-effort: block the login too (no auth user exists for legacy members).
+  await createAdminClient()
+    .auth.admin.updateUserById(id, { ban_duration: "876000h" })
+    .catch(() => {});
 
   revalidatePath("/team");
   revalidatePath("/dashboard");

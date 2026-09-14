@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { requireTeam, requireUser } from "@/lib/auth/session";
 import { notifyTeam, notifyClient } from "@/lib/notifications";
 import {
   teamEdit,
@@ -17,23 +17,6 @@ import {
 // (change / ask-a-question) → Offer → Intake. Onboarding now happens at the
 // CLIENT level (documents scoped by clientId, projectId null) — a Project is not
 // required. Legacy project-scoped docs still resolve via their project's client.
-
-// ─── Auth ────────────────────────────────────────────────────────────────────
-
-async function requireTeam() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  if (user.user_metadata?.role?.toLowerCase() === "client") throw new Error("Unauthorized");
-  return user;
-}
-
-async function requireUser() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  return user;
-}
 
 // Load a document and resolve its owning client — from the document's own
 // clientId (client-scoped) or, for legacy docs, via its project.

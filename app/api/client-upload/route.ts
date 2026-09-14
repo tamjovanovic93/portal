@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { createClient as createSupabaseServer } from "@/lib/supabase/server";
-import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
-
-const BUCKET = "project-assets";
-const MAX_SIZE = 50 * 1024 * 1024;
+import { getSessionUser } from "@/lib/auth/session";
+import { createAdminClient, STORAGE_BUCKET } from "@/lib/supabase/admin";
+import { STAGE_COUNT } from "@/lib/stages";
+import { isAllowedUpload, MAX_UPLOAD_BYTES, safeFilename } from "@/lib/uploads";
 
 // Material category → folder
 function folderFromCategory(category: string): string {
@@ -15,8 +14,7 @@ function folderFromCategory(category: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const formData = await req.formData();
@@ -30,16 +28,22 @@ export async function POST(req: NextRequest) {
   if (!file || !projectId) {
     return NextResponse.json({ error: "File and projectId required" }, { status: 400 });
   }
-  if (file.size > MAX_SIZE) {
+  if (file.size > MAX_UPLOAD_BYTES) {
     return NextResponse.json({ error: "File too large (max 50 MB)" }, { status: 400 });
   }
+  if (!isAllowedUpload(file)) {
+    return NextResponse.json({ error: "This file type is not allowed" }, { status: 400 });
+  }
+  if (stageNumber !== null && (!Number.isInteger(stageNumber) || stageNumber < 1 || stageNumber > STAGE_COUNT)) {
+    return NextResponse.json({ error: "Invalid stage" }, { status: 400 });
+  }
 
-  // Verify this client owns the project
+  // Verify this client owns the project (team may upload on behalf of the client)
   const project = await prisma.project.findUnique({
     where: { id: projectId },
     select: { clientId: true },
   });
-  if (!project || project.clientId !== user.id) {
+  if (!project || (user.role !== "TEAM" && project.clientId !== user.id)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -48,22 +52,22 @@ export async function POST(req: NextRequest) {
   if (!explicitFolder && materialItemId) {
     const material = await prisma.materialItem.findUnique({
       where: { id: materialItemId },
-      select: { category: true },
+      select: { category: true, projectId: true },
     });
-    if (material) folder = folderFromCategory(material.category);
+    if (!material || material.projectId !== projectId) {
+      return NextResponse.json({ error: "Material item not found" }, { status: 404 });
+    }
+    folder = folderFromCategory(material.category);
   }
 
   // Upload to storage
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const safeName = safeFilename(file.name);
   const storagePath = `${projectId}/client-uploads/${folder}/${Date.now()}_${safeName}`;
 
-  const adminClient = createSupabaseAdmin(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const adminClient = createAdminClient();
 
   const { error: uploadError } = await adminClient.storage
-    .from(BUCKET)
+    .from(STORAGE_BUCKET)
     .upload(storagePath, file, {
       contentType: file.type || "application/octet-stream",
       upsert: false,
