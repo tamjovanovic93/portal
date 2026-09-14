@@ -1,15 +1,14 @@
 "use server";
 
-import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireTeam } from "@/lib/auth/session";
+import { STAGE_COUNT } from "@/lib/stages";
+import { runAgent, parseJsonResponse, AgentTimeoutError } from "@/lib/ai/client";
+import { MODELS } from "@/lib/ai/models";
+import { buildScopeBreakdownPrompt, FIRST_DELIVERY_STAGE } from "@/lib/ai/prompts/scopeBreakdown";
 import type { ProjectBrief, ScopeItem } from "@/lib/brief/types";
-
-// Fast structured-JSON task (task breakdown + stage placement) — a quick model
-// without extended thinking keeps the Sync responsive.
-const MODEL = "claude-sonnet-4-6";
 
 // A desired task derived from a scope item. scopeItemId is the stable sync key:
 //   simple item        → scopeItemId = item.id
@@ -33,59 +32,30 @@ function toDate(v?: string | null): Date | null {
 
 function clampStage(n: unknown): number {
   const v = typeof n === "number" ? n : parseInt(String(n), 10);
-  if (!Number.isFinite(v) || v < 2) return 2;
-  if (v > 7) return 7;
+  if (!Number.isFinite(v) || v < FIRST_DELIVERY_STAGE) return FIRST_DELIVERY_STAGE;
+  if (v > STAGE_COUNT) return STAGE_COUNT;
   return v;
 }
 
 // Ask the model to (a) break larger scope items into a few concrete sub-tasks and
-// (b) place each task into the delivery stage where it's relevant:
-//   2 wireframe / first direction · 3 full design · 4 build · 5 client review ·
-//   6 launch/delivery · 7 complete. Returns a map itemId → ItemPlan.
+// (b) place each task into the delivery stage where it's relevant. Bounded to
+// 20 s so a stalled stream can never hang the sync — falls back to a 1:1
+// mapping at the first delivery stage. Returns a map itemId → ItemPlan.
 async function breakdown(
   items: ScopeItem[],
   projectType: string | null
 ): Promise<Record<string, ItemPlan>> {
   if (!process.env.ANTHROPIC_API_KEY || items.length === 0) return {};
-  const prompt = `You are planning delivery tasks for a web/design agency project${projectType ? ` (type: ${projectType})` : ""}.
-The project runs in stages: 2 = wireframe / first direction, 3 = full design, 4 = build / development, 5 = client review, 6 = launch / delivery, 7 = complete.
-
-For each Scope of Work item below:
-- Decide whether it needs to be broken into a few concrete sub-tasks (2–5). Simple items (e.g. "QA") get an empty subtask list and become one task.
-- Assign each task (the item itself, or each sub-task) to the single stage (2–7) where the work actually happens.
-- Do NOT overcomplicate or invent scope. Keep names short.
-
-Return ONLY one raw JSON object:
-{ "items": [ { "id": "<item id>", "stage": <2-7>, "subtasks": [ { "name": "...", "stage": <2-7> } ] } ] }
-
-SCOPE ITEMS:
-${JSON.stringify(items.map((i) => ({ id: i.id, text: i.text })))}`;
-
   try {
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const stream = anthropic.messages.stream({
-      model: MODEL,
-      max_tokens: 4000,
-      messages: [{ role: "user", content: prompt }],
+    const { text } = await runAgent(buildScopeBreakdownPrompt(items, projectType), {
+      model: MODELS.fast,
+      maxTokens: 4000,
+      timeoutMs: 20000,
+      maxTurns: 1,
     });
-    // Bound the AI call so a stalled stream can never hang the whole sync — fall
-    // back to a 1:1 mapping (default stage) if it doesn't finish in time.
-    const message = await Promise.race([
-      stream.finalMessage(),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => {
-          try { stream.abort(); } catch {}
-          reject(new Error("breakdown timeout"));
-        }, 20000)
-      ),
-    ]);
-    const text = message.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map((b) => b.text).join("");
-    const start = text.indexOf("{");
-    const end = text.lastIndexOf("}");
-    if (start === -1 || end === -1) return {};
-    const parsed = JSON.parse(text.slice(start, end + 1)) as {
+    const parsed = parseJsonResponse<{
       items?: { id: string; stage?: number; subtasks?: ({ name: string; stage?: number } | string)[] }[];
-    };
+    }>(text);
     const map: Record<string, ItemPlan> = {};
     for (const it of parsed.items ?? []) {
       if (!it.id) continue;
@@ -97,8 +67,9 @@ ${JSON.stringify(items.map((i) => ({ id: i.id, text: i.text })))}`;
       map[it.id] = { stage, subtasks };
     }
     return map;
-  } catch {
-    return {}; // fall back to 1:1 mapping at a default stage
+  } catch (err) {
+    if (!(err instanceof AgentTimeoutError)) console.error("scope breakdown failed:", err);
+    return {}; // fall back to 1:1 mapping at the default stage
   }
 }
 
@@ -130,7 +101,7 @@ export async function syncScopeTasks(
     const plan = map[item.id];
     const start = toDate(item.startDate);
     const due = toDate(item.dueDate);
-    const itemStage = plan ? plan.stage : 2;
+    const itemStage = plan ? plan.stage : FIRST_DELIVERY_STAGE;
     const subs = plan?.subtasks ?? [];
     if (subs.length === 0) {
       desired.push({ scopeItemId: item.id, parentItemId: item.id, name: item.text, startDate: start, dueDate: due, stage: itemStage });

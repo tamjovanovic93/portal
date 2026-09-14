@@ -17,6 +17,7 @@ import {
   renameBrief,
 } from "@/app/actions/project-brief";
 import { syncScopeTasks } from "@/app/actions/scope";
+import { useAiJob } from "@/components/ai/useAiJob";
 import {
   PROJECT_TYPES,
   STATUSES,
@@ -45,6 +46,8 @@ type Props = {
   roster: RosterMember[];
   dataContacts: { label: string; value: string }[];
   clientDefault: { name?: string; email?: string };
+  // A brief-draft job already queued/running for this brief (resume polling).
+  activeDraftJobId?: string | null;
 };
 
 // Sections that can be re-added from the "Add section" menu if removed.
@@ -53,8 +56,10 @@ const ADDABLE_DEFAULTS: BriefSectionKind[] = ["meta", "overview", "scope", "keyF
 export default function ProjectBriefCard(props: Props) {
   const { projectId, briefId: id, currentStageLabel, brief, publishedAt, roster } = props;
   const [expanded, setExpanded] = useState(false);
-  const [genPending, startGen] = useTransition();
-  const [genError, setGenError] = useState<string | null>(null);
+  // The AI draft runs as a background job; the hook polls it to completion.
+  const draftJob = useAiJob({ initialJobId: props.activeDraftJobId });
+  const genPending = draftJob.running;
+  const genError = draftJob.error;
   const [busy, startBusy] = useTransition();
 
   const name = brief.name || props.projectName;
@@ -74,11 +79,7 @@ export default function ProjectBriefCard(props: Props) {
     if (brief.overview || brief.scope?.length) {
       if (!confirm("Re-generate the AI draft? Project Type, Overview, Scope, Key Functions and Sitemap may be replaced. Owner, team, status and contact are kept.")) return;
     }
-    setGenError(null);
-    startGen(async () => {
-      const res = await generateBriefDraft(id);
-      if (res.error) setGenError(res.error);
-    });
+    void draftJob.start(() => generateBriefDraft(id));
   }
 
   function togglePublish() {

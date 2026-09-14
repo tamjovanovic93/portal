@@ -1,254 +1,32 @@
 "use server";
 
-import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
 import { requireTeam } from "@/lib/auth/session";
-import { TEMPLATES } from "@/lib/templates/registry";
-import type { Template } from "@/lib/templates/types";
-import { isVisible } from "@/lib/templates/visibility";
-import { applyConfig, getConfig } from "@/lib/templates/config";
-import {
-  PROFILE_DOC,
-  STRATEGY_DOC,
-  VERIFICATION_DOC,
-  type ClientProfile,
-  type VerificationQueue,
-} from "@/lib/intake/types";
-import { getProfile, upsertIntakeDoc, mutateDoc } from "@/lib/intake/store";
-
-import clientProfileTemplate from "@/lib/intake/templates/client_profile.template.json";
-import strategyTemplate from "@/lib/intake/templates/strategy.template.json";
-import verificationQueueTemplate from "@/lib/intake/templates/verification_queue.template.json";
+import { PROFILE_DOC, type ClientProfile } from "@/lib/intake/types";
+import { mutateDoc } from "@/lib/intake/store";
+import { enqueueAiJob } from "@/lib/ai/jobs";
+import { checkIntakePreconditions, checkStrategyPreconditions } from "@/lib/ai/jobs/intake";
 
 // The two-agent intake pipeline. Agent 1 turns the approved intake form into a
 // client_profile + verification_queue (status: draft). A human verifies the
 // profile (markProfileVerified). Agent 2 then builds the strategy — but only if
-// the profile is verified (hard gate).
+// the profile is verified (hard gate). Both agents run as background jobs
+// (lib/ai/jobs); these actions validate, enqueue and return a job id the UI polls.
 
-const MODEL = "claude-opus-4-8";
+export type StartJobResult = { jobId?: string; error?: string };
 
-// ─── Form → readable text ────────────────────────────────────────────────────
-
-function buildFormText(template: Template, content: Record<string, unknown>): string {
-  const lines: string[] = [];
-  // Honor the team's builder config (removed/reordered sections & fields).
-  const configured = applyConfig(template, getConfig(content));
-  for (const section of configured.sections) {
-    if (section.teamOnly) continue;
-    // Skip sections/fields hidden by unmet conditionals (e.g. the B2B branch
-    // when the client answered B2C) so the agent only sees real answers.
-    if (!isVisible(section.showIf, content)) continue;
-    lines.push(`\n## ${section.title}`);
-    for (const field of section.fields) {
-      if (!isVisible(field.showIf, content)) continue;
-      const value = content[field.key];
-      if (value === undefined || value === null || value === "") continue;
-      if (field.type === "repeatable" && Array.isArray(value)) {
-        lines.push(`\n**${field.label}:**`);
-        (value as Record<string, string>[]).forEach((row, i) => {
-          const parts = (field.columns ?? [])
-            .filter((col) => row[col.key])
-            .map((col) => `${col.label}: ${row[col.key]}`);
-          if (parts.length) lines.push(`  ${i + 1}. ${parts.join(" | ")}`);
-        });
-      } else {
-        lines.push(`**${field.label}:** ${value}`);
-      }
-    }
-  }
-  return lines.join("\n");
+export async function runIntakeAgent(clientId: string): Promise<StartJobResult> {
+  const user = await requireTeam();
+  const pre = await checkIntakePreconditions(clientId);
+  if (pre.error) return { error: pre.error };
+  return enqueueAiJob("intake", clientId, user.id);
 }
 
-// ─── Claude call ─────────────────────────────────────────────────────────────
-
-// Run one agent turn. Streams (outputs are large), enables web search for the
-// research step, and resumes automatically on `pause_turn` (server-tool loop
-// limit). Falls back to a no-tools call if web search is unavailable.
-async function callAgent(prompt: string, useWebSearch: boolean): Promise<string> {
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const tools = useWebSearch
-    ? [{ type: "web_search_20260209" as const, name: "web_search" as const }]
-    : [];
-
-  const messages: Anthropic.MessageParam[] = [{ role: "user", content: prompt }];
-
-  for (let i = 0; i < 6; i++) {
-    const stream = anthropic.messages.stream({
-      model: MODEL,
-      max_tokens: 32000,
-      thinking: { type: "adaptive" },
-      output_config: { effort: "high" },
-      tools,
-      messages,
-    });
-    const message = await stream.finalMessage();
-    messages.push({ role: "assistant", content: message.content });
-    if (message.stop_reason === "pause_turn") continue;
-
-    return message.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("");
-  }
-  throw new Error("Agent did not finish within the allotted turns.");
-}
-
-// Models can wrap JSON in prose or code fences; extract the outermost object.
-function extractJson<T>(text: string): T {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start === -1 || end === -1) throw new Error("No JSON object in model response.");
-  return JSON.parse(text.slice(start, end + 1)) as T;
-}
-
-async function runWithFallback(prompt: string): Promise<string> {
-  try {
-    return await callAgent(prompt, true);
-  } catch (err) {
-    const msg = (err as Error).message ?? "";
-    // Web search not enabled / unsupported on this key — retry without it.
-    if (/web_search|tool|permission|not.*enabled/i.test(msg)) {
-      return callAgent(prompt, false);
-    }
-    throw err;
-  }
-}
-
-// ─── Agent 1 — Intake ─────────────────────────────────────────────────────────
-
-function buildIntakePrompt(projectName: string, formText: string): string {
-  return `You are a senior business analyst at a marketing agency. The client "${projectName}" has submitted their intake. Produce two JSON documents that follow the provided templates exactly.
-
-Your job:
-1. Fill the client_profile from the CLIENT INTAKE below. Copy answers faithfully; make reasonable inferences where data is implied. The intake is your source of truth — always prefer what the client actually wrote.
-2. RESEARCH what the intake does not cover — use web search to fill gaps about the company, its market, competitors, and industry where you can find reliable public information.
-3. Only add an item to the verification_queue for information that is genuinely MISSING, CONTRADICTORY, UNCLEAR, or that you had to GUESS/INFER without confirmation. Do NOT create a verification item for anything the client already clearly provided in the intake.
-
-CRITICAL — before adding ANY verification item, re-read the ENTIRE intake (all sections, including contact details, website, and every social/profile link such as Instagram, TikTok, Facebook, LinkedIn, YouTube, Google Business, and other platforms). If the client already gave the information, capture it in the profile and do NOT ask for it again. Never ask the client to repeat something they already told us.
-
-CRITICAL — write every verification question as a normal, human-readable question that a non-technical business owner can answer. The question MUST restate the actual information being verified in plain language.
-- GOOD: "We currently have your target audience as 'small and mid-sized B2B companies in Canada.' Is this correct?"
-- GOOD: "The intake suggests your brand should feel premium, direct, and approachable. Would you like to keep this positioning or change it?"
-- BAD (never do this): "Current value: Synthesized statement", "Inferred scale points", any JSON key, field id, or internal/AI wording.
-- Put the internal address in field_path (for our system only); put the plain, real current value in current_value; put the full human question in question_for_client.
-
-Business model: the intake customer type may be "b2c", "b2b", or "both". If the client sells to BOTH consumers and other businesses, set company.business_type to "Both" (do not reduce it to one type), and reflect both audiences in the personas/messaging.
-
-Rules:
-- Follow the template structures exactly. The strings like "primary | sub | tactical" are the ALLOWED VALUES — replace each with a single chosen value, not the menu.
-- Generate sequential ids per the template convention (SVC_001, CON_001, COMP_001, P001, PAIN_001, …).
-- Capture the client's social/profile links and contact details as contacts rows (type "social"/"website"/"email"/"phone"/"address", with platform + value) so they are never lost.
-- Use null / empty arrays for genuinely unknown values rather than inventing facts.
-- client_profile._meta.status MUST be "draft".
-- Return ONLY one raw JSON object, no markdown, with exactly two top-level keys: "client_profile" and "verification_queue".
-
-CLIENT INTAKE:
-${formText}
-
-client_profile TEMPLATE:
-${JSON.stringify(clientProfileTemplate)}
-
-verification_queue TEMPLATE:
-${JSON.stringify(verificationQueueTemplate)}`;
-}
-
-type IntakeResult = {
-  client_profile: ClientProfile;
-  verification_queue: VerificationQueue;
-};
-
-export async function runIntakeAgent(
-  clientId: string
-): Promise<{ success?: boolean; verificationCount?: number; error?: string }> {
-  await requireTeam();
-
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return { error: "ANTHROPIC_API_KEY is not set in environment variables." };
-  }
-
-  // The approved intake form is now client-scoped (projectId null).
-  const doc = await prisma.document.findFirst({
-    where: { clientId, templateType: "intake_form", status: "APPROVED" },
-    orderBy: { completedAt: "desc" },
-  });
-  if (!doc) return { error: "No approved intake form found for this client." };
-
-  // The Initial Client Form is collected earlier and holds the contact details
-  // and social/profile links (Instagram, TikTok, Facebook, LinkedIn, YouTube,
-  // Google Business, …). Feed it to the agent too so those are never re-asked.
-  const initialDoc = await prisma.document.findFirst({
-    where: { clientId, templateType: "initial_client_form" },
-    orderBy: { createdAt: "desc" },
-  });
-
-  const client = await prisma.profile.findUnique({
-    where: { id: clientId },
-    select: { name: true, email: true },
-  });
-  if (!client) return { error: "Client not found." };
-  const clientName = client.name ?? client.email;
-
-  const template = TEMPLATES["intake_form"];
-  if (!template) return { error: "Intake form template not found." };
-
-  const initialTemplate = TEMPLATES["initial_client_form"];
-  const initialText =
-    initialDoc && initialTemplate
-      ? buildFormText(initialTemplate, (initialDoc.content ?? {}) as Record<string, unknown>)
-      : "";
-  const formText = [
-    initialText && `# Initial Client Form (contact details & social/profile links)\n${initialText}`,
-    `# Intake Form (business, brand, audience, competitors, goals)\n${buildFormText(template, (doc.content ?? {}) as Record<string, unknown>)}`,
-  ]
-    .filter(Boolean)
-    .join("\n\n");
-
-  let result: IntakeResult;
-  try {
-    const text = await runWithFallback(buildIntakePrompt(clientName, formText));
-    result = extractJson<IntakeResult>(text);
-  } catch (err) {
-    return { error: `Intake agent failed: ${(err as Error).message}` };
-  }
-
-  const now = new Date().toISOString();
-  const profile = result.client_profile;
-  const queue = result.verification_queue;
-
-  // Stamp meta so it's authoritative regardless of what the model emitted.
-  profile._meta = {
-    ...profile._meta,
-    client_id: clientId,
-    company_name: profile.company?.company_name ?? clientName,
-    brand_name: profile.company?.brand_name ?? "",
-    created_date: now,
-    created_by: "Agent 1 — Intake",
-    schema_version: "1.0",
-    status: "draft",
-  };
-
-  const items = queue?.items ?? [];
-  const pending = items.filter((i) => (i.status ?? "pending") === "pending").length;
-  queue._meta = {
-    ...queue?._meta,
-    client_id: clientId,
-    company_name: profile._meta.company_name,
-    generated_date: now,
-    generated_by: "Agent 1 — Intake",
-    schema_version: "1.0",
-    total_items: items.length,
-    pending_count: pending,
-    resolved_count: items.length - pending,
-  };
-
-  await upsertIntakeDoc(clientId, PROFILE_DOC, profile);
-  await upsertIntakeDoc(clientId, VERIFICATION_DOC, queue);
-
-  revalidatePath(`/clients/${clientId}`);
-  revalidatePath(`/clients/${clientId}/data`);
-
-  return { success: true, verificationCount: items.length };
+export async function runStrategyAgent(clientId: string): Promise<StartJobResult> {
+  const user = await requireTeam();
+  const pre = await checkStrategyPreconditions(clientId);
+  if (pre.error) return { error: pre.error };
+  return enqueueAiJob("strategy", clientId, user.id);
 }
 
 // ─── Verification gate ─────────────────────────────────────────────────────────
@@ -282,71 +60,5 @@ export async function markProfileDraft(
   }
   revalidatePath(`/clients/${clientId}`);
   revalidatePath(`/clients/${clientId}/data`);
-  return { success: true };
-}
-
-// ─── Agent 2 — Strategy ─────────────────────────────────────────────────────────
-
-function buildStrategyPrompt(profile: ClientProfile): string {
-  return `You are a senior marketing strategist. Using the VERIFIED client profile below, build a complete strategy document that follows the provided template exactly.
-
-Rules:
-- Follow the template structure exactly. Strings like "primary | sub" are the ALLOWED VALUES — choose one per field, don't echo the menu.
-- Build objectives with nested initiatives and key_results; add cross_cutting initiatives, the four funnel stages, a content calendar, and a risk_register grounded in this client's reality.
-- Generate sequential ids per the template convention (OBJ_001, INI_001, KR_001, …).
-- Ground every element in the client profile — personas, goals, services, competitors, budget.
-- _meta.status MUST be "draft" and _meta.source "Generated from verified client_profile.json".
-- Return ONLY one raw JSON object matching the strategy template, no markdown.
-
-VERIFIED CLIENT PROFILE:
-${JSON.stringify(profile)}
-
-strategy TEMPLATE:
-${JSON.stringify(strategyTemplate)}`;
-}
-
-export async function runStrategyAgent(
-  clientId: string
-): Promise<{ success?: boolean; error?: string }> {
-  await requireTeam();
-
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return { error: "ANTHROPIC_API_KEY is not set in environment variables." };
-  }
-
-  const profile = await getProfile(clientId);
-  if (!profile) return { error: "No client profile found. Run intake first." };
-
-  // Hard gate — Agent 2 must not run on an unverified profile.
-  if (profile._meta?.status !== "verified") {
-    return { error: "Profile is not verified. Verify the client profile before generating strategy." };
-  }
-
-  let strategy: Record<string, unknown>;
-  try {
-    const text = await runWithFallback(buildStrategyPrompt(profile));
-    strategy = extractJson<Record<string, unknown>>(text);
-  } catch (err) {
-    return { error: `Strategy agent failed: ${(err as Error).message}` };
-  }
-
-  const now = new Date().toISOString();
-  strategy._meta = {
-    ...(strategy._meta as Record<string, unknown>),
-    client_id: clientId,
-    company_name: profile._meta.company_name,
-    brand_name: profile._meta.brand_name,
-    created_date: now,
-    created_by: "Agent 2 — Strategy",
-    schema_version: "1.0",
-    status: "draft",
-    source: "Generated from verified client_profile.json",
-  };
-
-  await upsertIntakeDoc(clientId, STRATEGY_DOC, strategy);
-
-  revalidatePath(`/clients/${clientId}`);
-  revalidatePath(`/clients/${clientId}/data`);
-
   return { success: true };
 }

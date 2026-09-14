@@ -1,31 +1,13 @@
 "use server";
 
-import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { Prisma, ProjectType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireTeam } from "@/lib/auth/session";
-import { getProfile, getStrategy } from "@/lib/intake/store";
-import { getBrandKit } from "@/app/actions/brand-kit";
+import { enqueueAiJob } from "@/lib/ai/jobs";
+import { checkSuggestionsPreconditions } from "@/lib/ai/jobs/suggestions";
 import { STAGE_COUNT } from "@/lib/stages";
-import {
-  BRIEF_DOC,
-  briefId,
-  PROJECT_TYPES,
-  type ProjectBrief,
-  type ScopeItem,
-  type BriefItem,
-  type SitemapNode,
-} from "@/lib/brief/types";
-
-const MODEL = "claude-opus-4-8";
-
-function extractJson<T>(text: string): T {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start === -1 || end === -1) throw new Error("No JSON object in model response.");
-  return JSON.parse(text.slice(start, end + 1)) as T;
-}
+import { BRIEF_DOC, type ProjectBrief } from "@/lib/brief/types";
 
 // Map a free-form brief project-type string onto the Project.type enum.
 function toProjectType(hint: string | null | undefined): ProjectType {
@@ -37,130 +19,15 @@ function toProjectType(hint: string | null | undefined): ProjectType {
   return "OTHER";
 }
 
-type SuggestionDraft = {
-  name?: string;
-  project_type?: string;
-  rationale?: string;
-  overview?: string;
-  scope?: string[];
-  key_functions?: string[];
-  sitemap?: { name: string; children?: string[] }[];
-};
-
-function draftToBrief(d: SuggestionDraft): ProjectBrief {
-  const validType =
-    d.project_type && (PROJECT_TYPES as readonly string[]).includes(d.project_type)
-      ? d.project_type
-      : undefined;
-  const scope: ScopeItem[] = (d.scope ?? []).filter(Boolean).map((t) => ({ id: briefId("s"), text: String(t) }));
-  const keyFunctions: BriefItem[] = (d.key_functions ?? []).filter(Boolean).map((t) => ({ id: briefId("f"), text: String(t) }));
-  const sitemap: SitemapNode[] = (d.sitemap ?? [])
-    .filter((n) => n && n.name)
-    .map((n) => ({
-      id: briefId("p"),
-      name: String(n.name),
-      children: (n.children ?? []).filter(Boolean).map((c) => ({ id: briefId("p"), name: String(c) })),
-    }));
-  return {
-    name: d.name || "Untitled project",
-    projectType: validType,
-    overview: d.overview || "",
-    scope,
-    keyFunctions,
-    sitemap,
-    _meta: { generatedAt: new Date().toISOString() },
-  };
-}
-
-// Analyze everything known about the client and propose Projects (each with a
-// pre-filled Brief). Re-runnable — appends new PENDING suggestions; never
-// auto-approves. Requires Client Data to be ready (verified profile + strategy).
+// Analyze everything known about the client and propose Projects — runs as a
+// background job (lib/ai/jobs/suggestions.ts); the UI polls the returned job.
 export async function generateSuggestedProjects(
   clientId: string
-): Promise<{ success?: boolean; count?: number; error?: string }> {
-  await requireTeam();
-  if (!process.env.ANTHROPIC_API_KEY) return { error: "ANTHROPIC_API_KEY is not set." };
-
-  const [profile, strategy, brandKit] = await Promise.all([
-    getProfile(clientId),
-    getStrategy(clientId),
-    getBrandKit(clientId),
-  ]);
-  if (!profile) return { error: "No client profile yet. Run the intake pipeline first." };
-  if (profile._meta?.status !== "verified") return { error: "Verify the client profile first." };
-  if (!strategy) return { error: "No strategy yet. Generate the strategy first." };
-
-  const existing = await prisma.suggestedProject.findMany({
-    where: { clientId },
-    select: { name: true, status: true },
-  });
-  const existingNames = existing.map((s) => s.name);
-
-  const prompt = `You are a senior strategist at a web/design/marketing agency. Using everything known about this client below, propose the distinct PROJECTS the agency should deliver. Decide what actually makes sense for THIS client — do not use a fixed list. Examples of possible projects: Website, E-commerce, Brand identity, SEO, Advertising campaign, Landing page, Content strategy, LinkedIn, Instagram — but choose only what the data supports.
-
-For each project, pre-fill the existing PROJECT BRIEF using known information; leave a field empty ([] or "") if you cannot confidently determine it — never invent facts.
-
-${existingNames.length ? `Do NOT re-propose these already-suggested projects: ${JSON.stringify(existingNames)}.` : ""}
-
-Return ONLY one raw JSON object:
-{
-  "projects": [
-    {
-      "name": "short project name",
-      "project_type": one of ${JSON.stringify(PROJECT_TYPES)} or null,
-      "rationale": "1 sentence on why this project, grounded in the client data",
-      "overview": "1-2 sentences on what we're building (project-focused)",
-      "scope": ["deliverables"],
-      "key_functions": ["important functionality"],
-      "sitemap": [{ "name": "Page", "children": ["optional child pages"] }]
-    }
-  ]
-}
-
-CLIENT PROFILE:
-${JSON.stringify(profile)}
-
-STRATEGY:
-${JSON.stringify(strategy)}
-
-BRAND KIT:
-${JSON.stringify(brandKit ?? {})}`;
-
-  let result: { projects?: SuggestionDraft[] };
-  try {
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const stream = anthropic.messages.stream({
-      model: MODEL,
-      max_tokens: 16000,
-      thinking: { type: "adaptive" },
-      messages: [{ role: "user", content: prompt }],
-    });
-    const message = await stream.finalMessage();
-    const text = message.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("");
-    result = extractJson(text);
-  } catch (err) {
-    return { error: `Suggestion agent failed: ${(err as Error).message}` };
-  }
-
-  const drafts = (result.projects ?? []).filter((p) => p && p.name);
-  if (drafts.length === 0) return { error: "The agent did not return any project suggestions." };
-
-  await prisma.suggestedProject.createMany({
-    data: drafts.map((d) => ({
-      clientId,
-      name: String(d.name),
-      projectType: d.project_type ?? null,
-      rationale: d.rationale ?? null,
-      briefDraft: draftToBrief(d) as unknown as Prisma.InputJsonValue,
-      status: "PENDING" as const,
-    })),
-  });
-
-  revalidatePath(`/clients/${clientId}/data`);
-  return { success: true, count: drafts.length };
+): Promise<{ jobId?: string; error?: string }> {
+  const user = await requireTeam();
+  const pre = await checkSuggestionsPreconditions(clientId);
+  if (pre.error) return { error: pre.error };
+  return enqueueAiJob("suggestions", clientId, user.id);
 }
 
 export async function updateSuggestion(

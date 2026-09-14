@@ -13,6 +13,7 @@ import { STAGE_LABELS, STAGE_COUNT } from "@/lib/stages";
 import ClientOnboardingPipeline from "@/components/team/client/ClientOnboardingPipeline";
 import ClientIntakePipeline from "@/components/team/client/ClientIntakePipeline";
 import { getProfile, getStrategy } from "@/lib/intake/store";
+import { findActiveJob } from "@/lib/ai/jobs";
 
 const TYPE_LABELS: Record<ProjectType, string> = {
   WEBSITE: "Website", BRANDING: "Branding", MARKETING: "Marketing",
@@ -76,7 +77,7 @@ export default async function ClientStreamPage({
   if (!client) notFound();
 
   // Client-level onboarding + Client Data state (all client-scoped, no project).
-  const [onboardingDocs, profile, strategy] = await Promise.all([
+  const [onboardingDocs, profile, strategy, activeJob] = await Promise.all([
     prisma.document.findMany({
       where: {
         clientId: id,
@@ -87,6 +88,7 @@ export default async function ClientStreamPage({
     }),
     getProfile(id),
     getStrategy(id),
+    findActiveJob(["intake", "strategy"], id),
   ]);
   const initialForm = onboardingDocs.find((d) => d.templateType === "initial_client_form") ?? null;
   const offer = onboardingDocs.find((d) => d.templateType === "financial_offer") ?? null;
@@ -188,6 +190,7 @@ export default async function ClientStreamPage({
               hasApprovedIntake={intakeApproved}
               profileStatus={profileStatus}
               hasStrategy={hasStrategy}
+              activeJob={activeJob ? { id: activeJob.id, type: activeJob.type } : null}
             />
           </div>
         </div>

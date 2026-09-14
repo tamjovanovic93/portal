@@ -8,30 +8,38 @@ import {
   markProfileDraft,
   runStrategyAgent,
 } from "@/app/actions/intake";
+import { useAiJob } from "@/components/ai/useAiJob";
 
 // Client-level Client Data pipeline: Agent 1 (profile + verification) →
-// verify gate → Agent 2 (strategy). All keyed by clientId. Publishing to the
-// client's portal belongs to a project's brief, not here.
+// verify gate → Agent 2 (strategy). All keyed by clientId. The two agents run
+// as background jobs; this component polls until they finish. Publishing to
+// the client's portal belongs to a project's brief, not here.
 type ProfileStatus = "draft" | "verified" | null;
+
+export type ActiveJob = { id: string; type: string } | null;
 
 export default function ClientIntakePipeline({
   clientId,
   hasApprovedIntake,
   profileStatus,
   hasStrategy,
+  activeJob = null,
 }: {
   clientId: string;
   hasApprovedIntake: boolean;
   profileStatus: ProfileStatus;
   hasStrategy: boolean;
+  activeJob?: ActiveJob;
 }) {
   const [isPending, startTransition] = useTransition();
-  const [active, setActive] = useState<string | null>(null);
+  const [active, setActive] = useState<string | null>(activeJob?.type ?? null);
   const [error, setError] = useState<string | null>(null);
+  const job = useAiJob({ initialJobId: activeJob?.id, onDone: () => setActive(null) });
 
   const hasProfile = profileStatus !== null;
   const verified = profileStatus === "verified";
 
+  // Synchronous actions (verify / re-open).
   function run(key: string, action: () => Promise<{ error?: string }>, confirmMsg?: string) {
     if (confirmMsg && !confirm(confirmMsg)) return;
     setError(null);
@@ -43,7 +51,18 @@ export default function ClientIntakePipeline({
     });
   }
 
-  const busy = (key: string) => isPending && active === key;
+  // Background jobs (intake / strategy).
+  async function runJob(key: "intake" | "strategy", start: () => Promise<{ jobId?: string; error?: string }>, confirmMsg?: string) {
+    if (confirmMsg && !confirm(confirmMsg)) return;
+    setError(null);
+    setActive(key);
+    const ok = await job.start(start);
+    if (!ok) setActive(null);
+  }
+
+  const anyBusy = isPending || job.running;
+  const busy = (key: string) => anyBusy && active === key;
+  const shownError = error ?? job.error;
 
   return (
     <div className="space-y-3">
@@ -56,7 +75,7 @@ export default function ClientIntakePipeline({
         >
           <button
             onClick={() =>
-              run(
+              runJob(
                 "intake",
                 () => runIntakeAgent(clientId),
                 hasProfile
@@ -64,7 +83,7 @@ export default function ClientIntakePipeline({
                   : undefined
               )
             }
-            disabled={!hasApprovedIntake || isPending}
+            disabled={!hasApprovedIntake || anyBusy}
             className="btn btn-sm btn-primary"
           >
             {busy("intake") ? "Running…" : hasProfile ? "Re-run intake" : "Run intake"}
@@ -96,7 +115,7 @@ export default function ClientIntakePipeline({
           {hasProfile && !verified && (
             <button
               onClick={() => run("verify", () => markProfileVerified(clientId))}
-              disabled={isPending}
+              disabled={anyBusy}
               className="btn btn-sm btn-primary"
             >
               {busy("verify") ? "…" : "Mark verified"}
@@ -105,7 +124,7 @@ export default function ClientIntakePipeline({
           {verified && (
             <button
               onClick={() => run("unverify", () => markProfileDraft(clientId))}
-              disabled={isPending}
+              disabled={anyBusy}
               className="btn btn-sm btn-ghost"
             >
               {busy("unverify") ? "…" : "Re-open as draft"}
@@ -121,13 +140,13 @@ export default function ClientIntakePipeline({
         >
           <button
             onClick={() =>
-              run(
+              runJob(
                 "strategy",
                 () => runStrategyAgent(clientId),
                 hasStrategy ? "This replaces the existing strategy. Continue?" : undefined
               )
             }
-            disabled={!verified || isPending}
+            disabled={!verified || anyBusy}
             className="btn btn-sm btn-primary"
             title={!verified ? "Verify the profile first" : undefined}
           >
@@ -141,7 +160,7 @@ export default function ClientIntakePipeline({
           Client Data is ready. Suggested Projects can be generated from it (next phase).
         </p>
       )}
-      {error && <p style={{ fontSize: 12, color: "var(--rose)" }}>{error}</p>}
+      {shownError && <p style={{ fontSize: 12, color: "var(--rose)" }}>{shownError}</p>}
     </div>
   );
 }

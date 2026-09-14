@@ -1,15 +1,14 @@
 "use server";
 
-import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireTeam } from "@/lib/auth/session";
 import { mutateDocumentContent } from "@/lib/documents/mutate";
 import { notifyClient } from "@/lib/notifications";
+import { enqueueAiJob } from "@/lib/ai/jobs";
+import { checkBriefDraftPreconditions } from "@/lib/ai/jobs/briefDraft";
 import {
   BRIEF_DOC,
-  briefId,
-  PROJECT_TYPES,
   type ProjectBrief,
   type BriefItem,
   type ScopeItem,
@@ -18,8 +17,6 @@ import {
   type BriefListField,
   type BriefSection,
 } from "@/lib/brief/types";
-
-const MODEL = "claude-opus-4-8";
 
 // ─── Exactly one brief per project (the project_brief Document) ───────────────
 
@@ -168,112 +165,13 @@ export async function unpublishBrief(briefDocId: string): Promise<{ ok?: boolean
   return { ok: true };
 }
 
-// ─── AI first draft ──────────────────────────────────────────────────────────
-
-function extractJson<T>(text: string): T {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start === -1 || end === -1) throw new Error("No JSON object in model response.");
-  return JSON.parse(text.slice(start, end + 1)) as T;
-}
-
-type DraftResult = {
-  project_type?: string;
-  overview?: string;
-  scope?: string[];
-  key_functions?: string[];
-  sitemap?: { name: string; children?: string[] }[];
-};
+// ─── AI first draft (background job — see lib/ai/jobs/briefDraft.ts) ────────
 
 export async function generateBriefDraft(
   briefDocId: string
-): Promise<{ success?: boolean; error?: string }> {
-  await requireTeam();
-  if (!process.env.ANTHROPIC_API_KEY) return { error: "ANTHROPIC_API_KEY is not set." };
-
-  const briefDocRow = await prisma.document.findUnique({ where: { id: briefDocId }, select: { projectId: true } });
-  if (!briefDocRow?.projectId) return { error: "Brief not found." };
-  const projectId = briefDocRow.projectId;
-
-  const project = await prisma.project.findUnique({
-    where: { id: projectId },
-    select: { name: true, type: true, clientId: true },
-  });
-  if (!project) return { error: "Project not found." };
-
-  // The client's approved onboarding forms + shared profile — read-only inputs
-  // for the draft. Onboarding docs are client-scoped.
-  const [intakeDoc, initialDoc, profileDoc] = await Promise.all([
-    prisma.document.findFirst({ where: { clientId: project.clientId, templateType: "intake_form", status: "APPROVED" }, orderBy: { completedAt: "desc" } }),
-    prisma.document.findFirst({ where: { clientId: project.clientId, templateType: "initial_client_form", status: "APPROVED" }, orderBy: { completedAt: "desc" } }),
-    prisma.document.findFirst({ where: { clientId: project.clientId, templateType: "client_profile" } }),
-  ]);
-
-  const sources = {
-    project_name: project.name,
-    project_type_hint: project.type,
-    initial_client_form: initialDoc?.content ?? null,
-    intake_form: intakeDoc?.content ?? null,
-    company: (profileDoc?.content as { company?: unknown } | null)?.company ?? null,
-  };
-
-  const prompt = `You are preparing the internal PROJECT BRIEF for a web/design agency ("Zero Point"). The brief defines ONLY what this project is and what we are building — NOT the client's audience, brand, positioning, messaging, competitors, business info, or budget (those live in a separate "Data" section — do not restate them).
-
-Using ONLY the approved information below, draft these fields. If you cannot confidently determine a field from the information, leave it empty (null or []). DO NOT invent facts.
-
-Return ONLY one raw JSON object with exactly these keys:
-{
-  "project_type": one of ${JSON.stringify(PROJECT_TYPES)} or null,
-  "overview": "1–2 sentences describing what we are building for this client (project-focused, not company description)" or null,
-  "scope": ["deliverables Zero Point is responsible for, e.g. UX strategy, Wireframes, UI design, Development, CMS setup, QA, Launch"] or [],
-  "key_functions": ["the most important functionality, e.g. Product catalogue, Search, Cart, Checkout, User accounts, CMS"] or [],
-  "sitemap": [{ "name": "Home", "children": ["optional child page names"] }] (proposed top-level pages; [] if unknown)
-}
-
-APPROVED INFORMATION:
-${JSON.stringify(sources)}`;
-
-  let draft: DraftResult;
-  try {
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const stream = anthropic.messages.stream({
-      model: MODEL,
-      max_tokens: 8000,
-      thinking: { type: "adaptive" },
-      messages: [{ role: "user", content: prompt }],
-    });
-    const message = await stream.finalMessage();
-    const text = message.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("");
-    draft = extractJson<DraftResult>(text);
-  } catch (err) {
-    return { error: `Brief draft failed: ${(err as Error).message}` };
-  }
-
-  const validType = draft.project_type && (PROJECT_TYPES as readonly string[]).includes(draft.project_type)
-    ? draft.project_type
-    : undefined;
-  const scope: ScopeItem[] = (draft.scope ?? []).filter(Boolean).map((t) => ({ id: briefId("s"), text: String(t) }));
-  const keyFunctions: BriefItem[] = (draft.key_functions ?? []).filter(Boolean).map((t) => ({ id: briefId("f"), text: String(t) }));
-  const sitemap: SitemapNode[] = (draft.sitemap ?? []).filter((n) => n && n.name).map((n) => ({
-    id: briefId("p"),
-    name: String(n.name),
-    children: (n.children ?? []).filter(Boolean).map((c) => ({ id: briefId("p"), name: String(c) })),
-  }));
-
-  // Merge: fill draft-able fields where the agent produced something, never
-  // clobber human-owned fields (owner, team, status, client contact).
-  await mutateBrief(briefDocId, (b) => ({
-    ...b,
-    projectType: validType ?? b.projectType,
-    overview: draft.overview || b.overview,
-    scope: scope.length ? scope : b.scope,
-    keyFunctions: keyFunctions.length ? keyFunctions : b.keyFunctions,
-    sitemap: sitemap.length ? sitemap : b.sitemap,
-    _meta: { ...b._meta, generatedAt: new Date().toISOString() },
-  }));
-
-  return { success: true };
+): Promise<{ jobId?: string; error?: string }> {
+  const user = await requireTeam();
+  const pre = await checkBriefDraftPreconditions(briefDocId);
+  if (pre.error) return { error: pre.error };
+  return enqueueAiJob("brief_draft", briefDocId, user.id);
 }

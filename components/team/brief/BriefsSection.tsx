@@ -11,6 +11,7 @@ type Props = {
   roster: RosterMember[];
   dataContacts: { label: string; value: string }[];
   clientDefault: { name?: string; email?: string };
+  activeDraftJobId?: string | null;
 };
 
 // Each project has exactly one Brief. (A separate engagement for the same
@@ -39,6 +40,7 @@ export default function BriefsSection(props: Props) {
           roster={props.roster}
           dataContacts={props.dataContacts}
           clientDefault={props.clientDefault}
+          activeDraftJobId={props.activeDraftJobId ?? null}
         />
       )}
     </div>

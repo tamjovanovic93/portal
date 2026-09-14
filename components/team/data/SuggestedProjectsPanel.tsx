@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useAiJob } from "@/components/ai/useAiJob";
 import { PROJECT_TYPES, type ProjectBrief, briefId } from "@/lib/brief/types";
 import {
   generateSuggestedProjects,
@@ -29,25 +30,25 @@ export default function SuggestedProjectsPanel({
   dataReady,
   notReadyReason,
   suggestions,
+  activeJobId = null,
 }: {
   clientId: string;
   dataReady: boolean;
   notReadyReason: string | null;
   suggestions: Suggestion[];
+  activeJobId?: string | null;
 }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Generation runs as a background job; the hook polls until it lands.
+  const job = useAiJob({ initialJobId: activeJobId });
+  const busy = job.running;
+  const error = job.error;
 
   const pending = suggestions.filter((s) => s.status === "PENDING");
   const approved = suggestions.filter((s) => s.status === "APPROVED");
   const rejected = suggestions.filter((s) => s.status === "REJECTED");
 
-  async function generate() {
-    setBusy(true);
-    setError(null);
-    const res = await generateSuggestedProjects(clientId);
-    if (res.error) setError(res.error);
-    setBusy(false);
+  function generate() {
+    void job.start(() => generateSuggestedProjects(clientId));
   }
 
   if (!dataReady) {

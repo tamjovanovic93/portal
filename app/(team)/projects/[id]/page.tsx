@@ -5,6 +5,7 @@ import StageProgressBar from "@/components/team/project/StageProgressBar";
 import ClientLoginLink from "@/components/team/project/ClientLoginLink";
 import { getProfile } from "@/lib/intake/store";
 import { getProjectBrief } from "@/app/actions/project-brief";
+import { findActiveJob } from "@/lib/ai/jobs";
 import BriefsSection from "@/components/team/brief/BriefsSection";
 import { getRoster } from "@/lib/team";
 import ProjectStageTasks from "@/components/team/project/ProjectStageTasks";
@@ -119,6 +120,7 @@ export default async function ProjectPage({
   const [profile, roster, brief] = await Promise.all([
     getProfile(clientId), getRoster(), getProjectBrief(id),
   ]);
+  const activeDraftJob = brief ? await findActiveJob("brief_draft", brief.id) : null;
   const company = profile?.company ?? null;
 
   // Data contacts offered as a convenience for the Brief's client-contact picker.
@@ -417,6 +419,7 @@ export default async function ProjectPage({
           currentStageLabel={STAGE_LABELS[project.currentStage] ?? `Stage ${project.currentStage}`}
           brief={brief}
           publishedAt={project.briefPublishedAt?.toISOString() ?? null}
+          activeDraftJobId={activeDraftJob?.id ?? null}
           roster={roster}
           dataContacts={dataContacts}
           clientDefault={{ name: project.client.name ?? undefined, email: project.client.email }}

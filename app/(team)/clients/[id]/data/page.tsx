@@ -18,6 +18,7 @@ import {
 } from "@/components/team/data/ui";
 import { getProfile, getStrategy, getVerificationQueue } from "@/lib/intake/store";
 import { getBrandKit, getBrandLogos } from "@/app/actions/brand-kit";
+import { findActiveJob } from "@/lib/ai/jobs";
 import BrandKitCard from "@/components/team/data/BrandKitCard";
 import SuggestedProjectsPanel from "@/components/team/data/SuggestedProjectsPanel";
 import { PROFILE_DOC, STRATEGY_DOC } from "@/lib/intake/types";
@@ -111,10 +112,10 @@ export default async function ClientDataPage({
     : !strategy
     ? "Generate the strategy first."
     : null;
-  const suggestionRows = await prisma.suggestedProject.findMany({
-    where: { clientId },
-    orderBy: { createdAt: "asc" },
-  });
+  const [suggestionRows, activeSuggestionJob] = await Promise.all([
+    prisma.suggestedProject.findMany({ where: { clientId }, orderBy: { createdAt: "asc" } }),
+    findActiveJob("suggestions", clientId),
+  ]);
   const suggestions = suggestionRows.map((s) => {
     const b = (s.briefDraft as Record<string, unknown>) ?? {};
     const list = (v: unknown, key: string) =>
@@ -991,6 +992,7 @@ export default async function ClientDataPage({
           dataReady={dataReady}
           notReadyReason={notReadyReason}
           suggestions={suggestions}
+          activeJobId={activeSuggestionJob?.id ?? null}
         />
       )}
     </div>

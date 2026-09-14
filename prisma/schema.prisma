@@ -506,3 +506,27 @@ model SuggestedProject {
   @@index([clientId, status])
   @@map("suggested_projects")
 }
+
+// Background AI work (intake / strategy / suggestions / brief draft). Actions
+// enqueue a row and return immediately; app/api/ai/run executes it inside the
+// route's maxDuration; app/api/ai/sweep re-dispatches queued or stale rows.
+// See lib/ai/jobs.ts.
+model AiJob {
+  id           String    @id @default(uuid()) @db.Uuid
+  type         String // intake | strategy | suggestions | brief_draft
+  targetId     String    @map("target_id") @db.Uuid // clientId or brief document id
+  status       String    @default("queued") // queued | running | done | failed
+  error        String?
+  result       Json?
+  createdBy    String?   @map("created_by") @db.Uuid
+  startedAt    DateTime? @map("started_at")
+  finishedAt   DateTime? @map("finished_at")
+  inputTokens  Int?      @map("input_tokens")
+  outputTokens Int?      @map("output_tokens")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@index([targetId, type])
+  @@map("ai_jobs")
+}
