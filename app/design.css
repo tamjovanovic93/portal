@@ -261,56 +261,75 @@
 .zp-table tbody tr:hover { background: var(--surface-2); }
 
 /* ============================================================
-   Dark-theme compatibility layer
-   Pages not yet hand-restyled use neutral/accent Tailwind utilities.
-   Remap them to theme tokens *inside .theme-dark only* so the whole
-   internal app reads as one dark surface. The client portal
-   (.theme-light) and Tailwind's own light defaults are untouched.
-   Unlayered rules here win over Tailwind's layered utilities.
+   Semantic colour utilities
+   Pages built on Tailwind-style utilities use these theme-aware
+   classes instead of raw palette names (bg-surface, text-ink-2,
+   border-line, bg-mint-fill, …). Each resolves to a design token;
+   where the two themes resolve a class differently, the token is
+   defined per theme just below.
+
+   Cascade note: these rules are unlayered and !important, exactly
+   like the palette remap they replace, so they keep winning over
+   the form-control fallbacks and inline styles the same way as
+   before. Dropping !important is a separate, screenshot-verified
+   change — see IMPLEMENTATION_PLAN.md Phase 8.
    ============================================================ */
-.theme-dark .bg-white,
-.theme-dark .bg-neutral-50 { background-color: var(--surface) !important; }
-.theme-dark .bg-neutral-100 { background-color: var(--surface-2) !important; }
+.theme-dark {
+  --c-bg-page:     var(--surface);    /* .bg-page  */
+  --c-bg-inset:    var(--surface-2);  /* .bg-inset */
+  --c-border-blue: color-mix(in srgb, var(--blue) 45%, transparent);
+}
+.theme-light {
+  --c-bg-page:     var(--bg);
+  --c-bg-inset:    var(--surface-3);
+  --c-border-blue: color-mix(in srgb, var(--blue) 50%, transparent);
+}
+
+:is(.theme-dark, .theme-light) .bg-surface { background-color: var(--surface) !important; }
+:is(.theme-dark, .theme-light) .bg-page    { background-color: var(--c-bg-page) !important; }
+:is(.theme-dark, .theme-light) .bg-inset   { background-color: var(--c-bg-inset) !important; }
 .theme-dark .bg-neutral-200 { background-color: var(--surface-3) !important; }
 .theme-dark .bg-neutral-900 { background-color: var(--mint) !important; color: #04130F !important; }
 
-.theme-dark .border-neutral-100,
-.theme-dark .border-neutral-200 { border-color: var(--border) !important; }
-.theme-dark .border-neutral-300 { border-color: var(--border-2) !important; }
+:is(.theme-dark, .theme-light) .border-line   { border-color: var(--border) !important; }
+:is(.theme-dark, .theme-light) .border-line-2 { border-color: var(--border-2) !important; }
 .theme-dark .border-neutral-400 { border-color: var(--border-3) !important; }
-.theme-dark .hover\:border-neutral-400:hover { border-color: var(--border-3) !important; }
-.theme-dark .divide-neutral-100 > :not([hidden]) ~ :not([hidden]),
-.theme-dark .divide-neutral-200 > :not([hidden]) ~ :not([hidden]) { border-color: var(--border) !important; }
+:is(.theme-dark, .theme-light) .hover\:border-line-3:hover { border-color: var(--border-3) !important; }
+:is(.theme-dark, .theme-light) .divide-line > :not([hidden]) ~ :not([hidden]) { border-color: var(--border) !important; }
 
-.theme-dark .text-neutral-900,
-.theme-dark .text-neutral-800 { color: var(--text) !important; }
-.theme-dark .text-neutral-700,
-.theme-dark .text-neutral-600 { color: var(--text-2) !important; }
-.theme-dark .text-neutral-500 { color: var(--text-3) !important; }
-.theme-dark .text-neutral-400,
-.theme-dark .text-neutral-300 { color: var(--text-4) !important; }
+:is(.theme-dark, .theme-light) .text-ink   { color: var(--text) !important; }
+:is(.theme-dark, .theme-light) .text-ink-2 { color: var(--text-2) !important; }
+:is(.theme-dark, .theme-light) .text-ink-3 { color: var(--text-3) !important; }
+:is(.theme-dark, .theme-light) .text-ink-4 { color: var(--text-4) !important; }
 
-.theme-dark .hover\:bg-neutral-50:hover,
-.theme-dark .hover\:bg-neutral-100:hover { background-color: var(--surface-2) !important; }
-.theme-dark .hover\:text-neutral-900:hover { color: var(--text) !important; }
+:is(.theme-dark, .theme-light) .hover\:bg-surface-2:hover { background-color: var(--surface-2) !important; }
+:is(.theme-dark, .theme-light) .hover\:text-ink:hover { color: var(--text) !important; }
 
-/* semantic accent chips → theme accent fills */
-.theme-dark .bg-green-50, .theme-dark .bg-green-100 { background-color: var(--mint-fill) !important; }
-.theme-dark .text-green-700, .theme-dark .text-green-800 { color: var(--mint) !important; }
+/* accent chips → theme accent fills */
+:is(.theme-dark, .theme-light) .bg-mint-fill { background-color: var(--mint-fill) !important; }
+:is(.theme-dark, .theme-light) .text-mint    { color: var(--mint) !important; }
 .theme-dark .border-green-200, .theme-dark .border-green-300 { border-color: color-mix(in srgb, var(--mint) 35%, transparent) !important; }
-.theme-dark .bg-amber-50, .theme-dark .bg-amber-100 { background-color: var(--amber-fill) !important; }
-.theme-dark .text-amber-700, .theme-dark .text-amber-800, .theme-dark .text-amber-600 { color: var(--amber) !important; }
+:is(.theme-dark, .theme-light) .bg-amber-fill { background-color: var(--amber-fill) !important; }
+:is(.theme-dark, .theme-light) .text-amber    { color: var(--amber) !important; }
 .theme-dark .border-amber-200, .theme-dark .border-amber-300 { border-color: color-mix(in srgb, var(--amber) 35%, transparent) !important; }
-.theme-dark .bg-red-50, .theme-dark .bg-red-100 { background-color: var(--rose-fill) !important; }
-.theme-dark .text-red-700, .theme-dark .text-red-600, .theme-dark .text-red-500 { color: var(--rose) !important; }
+:is(.theme-dark, .theme-light) .bg-rose-fill { background-color: var(--rose-fill) !important; }
+:is(.theme-dark, .theme-light) .text-rose    { color: var(--rose) !important; }
+.theme-dark .text-red-500 { color: var(--rose) !important; }
 .theme-dark .border-red-200, .theme-dark .border-red-300 { border-color: color-mix(in srgb, var(--rose) 35%, transparent) !important; }
-.theme-dark .bg-blue-50, .theme-dark .bg-blue-100 { background-color: var(--blue-fill) !important; }
-.theme-dark .text-blue-700, .theme-dark .text-blue-600 { color: var(--blue) !important; }
-.theme-dark .border-blue-200, .theme-dark .border-l-blue-500 { border-color: color-mix(in srgb, var(--blue) 45%, transparent) !important; }
-.theme-dark .bg-violet-50, .theme-dark .bg-violet-100, .theme-dark .bg-purple-50 { background-color: var(--purple-fill) !important; }
-.theme-dark .text-violet-700, .theme-dark .text-purple-700 { color: var(--purple) !important; }
+:is(.theme-dark, .theme-light) .bg-blue-fill  { background-color: var(--blue-fill) !important; }
+:is(.theme-dark, .theme-light) .text-blue     { color: var(--blue) !important; }
+.theme-dark .border-blue-200 { border-color: var(--c-border-blue) !important; }
+:is(.theme-dark, .theme-light) .border-l-blue { border-color: var(--c-border-blue) !important; }
+:is(.theme-dark, .theme-light) .bg-purple-fill { background-color: var(--purple-fill) !important; }
+.theme-dark .bg-violet-100 { background-color: var(--purple-fill) !important; }
+:is(.theme-dark, .theme-light) .text-purple { color: var(--purple) !important; }
 
-/* inputs in not-yet-restyled pages */
+/* Palette classes still in use that are NOT remapped (bg-neutral-800/900
+   hover states, text-white, focus rings, …) render Tailwind's real colours
+   in both themes, as they always did. */
+
+/* Form-control fallbacks for pages not built on .zp-input */
+/* dark app */
 .theme-dark input:not([type="checkbox"]):not([type="radio"]),
 .theme-dark textarea,
 .theme-dark select {
@@ -320,36 +339,7 @@
 }
 .theme-dark input::placeholder, .theme-dark textarea::placeholder { color: var(--text-4); }
 
-/* ============================================================
-   Light-theme compatibility layer (client portal)
-   Same idea, scoped to .theme-light → sage-white tokens.
-   ============================================================ */
-.theme-light .bg-white { background-color: var(--surface) !important; }
-.theme-light .bg-neutral-50 { background-color: var(--bg) !important; }
-.theme-light .bg-neutral-100 { background-color: var(--surface-3) !important; }
-.theme-light .border-neutral-100,
-.theme-light .border-neutral-200 { border-color: var(--border) !important; }
-.theme-light .border-neutral-300 { border-color: var(--border-2) !important; }
-.theme-light .hover\:border-neutral-400:hover { border-color: var(--border-3) !important; }
-.theme-light .divide-neutral-100 > :not([hidden]) ~ :not([hidden]),
-.theme-light .divide-neutral-200 > :not([hidden]) ~ :not([hidden]) { border-color: var(--border) !important; }
-.theme-light .text-neutral-900, .theme-light .text-neutral-800 { color: var(--text) !important; }
-.theme-light .text-neutral-700, .theme-light .text-neutral-600 { color: var(--text-2) !important; }
-.theme-light .text-neutral-500 { color: var(--text-3) !important; }
-.theme-light .text-neutral-400, .theme-light .text-neutral-300 { color: var(--text-4) !important; }
-.theme-light .hover\:bg-neutral-50:hover, .theme-light .hover\:bg-neutral-100:hover { background-color: var(--surface-2) !important; }
-.theme-light .hover\:text-neutral-900:hover { color: var(--text) !important; }
-.theme-light .bg-green-50, .theme-light .bg-green-100 { background-color: var(--mint-fill) !important; }
-.theme-light .text-green-700, .theme-light .text-green-800 { color: var(--mint) !important; }
-.theme-light .bg-amber-50, .theme-light .bg-amber-100 { background-color: var(--amber-fill) !important; }
-.theme-light .text-amber-700, .theme-light .text-amber-800, .theme-light .text-amber-600 { color: var(--amber) !important; }
-.theme-light .bg-red-50, .theme-light .bg-red-100 { background-color: var(--rose-fill) !important; }
-.theme-light .text-red-700, .theme-light .text-red-600 { color: var(--rose) !important; }
-.theme-light .bg-blue-50, .theme-light .bg-blue-100 { background-color: var(--blue-fill) !important; }
-.theme-light .text-blue-700, .theme-light .text-blue-600 { color: var(--blue) !important; }
-.theme-light .border-l-blue-500 { border-color: color-mix(in srgb, var(--blue) 50%, transparent) !important; }
-.theme-light .bg-violet-50, .theme-light .bg-purple-50 { background-color: var(--purple-fill) !important; }
-.theme-light .text-violet-700, .theme-light .text-purple-700 { color: var(--purple) !important; }
+/* light portal */
 .theme-light input:not([type="checkbox"]):not([type="radio"]),
 .theme-light textarea,
 .theme-light select {
@@ -358,6 +348,23 @@
   color: var(--text);
 }
 .theme-light input::placeholder, .theme-light textarea::placeholder { color: var(--text-4); }
+
+/* ============================================================
+   Onboarding pipeline controls — literal colours on both themes
+   (moved here from per-component <style jsx> blocks, values unchanged)
+   ============================================================ */
+.btn-mini { font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 6px; background: #171717; color: #fff; }
+.btn-mini-wide { padding: 5px 11px; }
+.btn-mini-wide:disabled { opacity: 0.5; }
+.chip { font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 999px; }
+.chip-amber { background: #fef3c7; color: #92400e; }
+.chip-green { background: #dcfce7; color: #166534; }
+
+/* Page wrapper for the internal app pages (was an inline style). */
+.page-wrap { padding: 28px 32px 60px; margin: 0 auto; }
+.page-wrap-md { max-width: 1100px; }
+.page-wrap-lg { max-width: 1320px; }
+.page-wrap-xl { max-width: 1440px; }
 
 @keyframes zpFadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .fade-up { animation: zpFadeUp .4s cubic-bezier(.2,.7,.3,1) both; }

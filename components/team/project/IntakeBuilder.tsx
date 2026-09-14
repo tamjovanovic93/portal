@@ -140,7 +140,7 @@ export default function IntakeBuilder({
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-ink-3">
         Configure the form below — untick questions to remove them, use ✕ to remove a
         whole section, and the arrows to reorder. Anything you fill in is sent to the
         client to approve or change; leave a field blank for the client to fill it in.
@@ -153,17 +153,17 @@ export default function IntakeBuilder({
         return (
           <div
             key={key}
-            className={`border rounded-lg bg-white ${removed ? "border-neutral-200 opacity-60" : "border-neutral-300"}`}
+            className={`border rounded-lg bg-surface ${removed ? "border-line opacity-60" : "border-line-2"}`}
           >
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-neutral-100">
-              <p className="text-sm font-semibold text-neutral-900">{section.title}</p>
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-line">
+              <p className="text-sm font-semibold text-ink">{section.title}</p>
               <div className="flex items-center gap-1.5">
                 <button type="button" onClick={() => moveSection(key, -1)} disabled={idx === 0}
-                  className="w-6 h-6 rounded border border-neutral-300 text-neutral-600 disabled:opacity-30 hover:bg-neutral-50">↑</button>
+                  className="w-6 h-6 rounded border border-line-2 text-ink-2 disabled:opacity-30 hover:bg-surface-2">↑</button>
                 <button type="button" onClick={() => moveSection(key, 1)} disabled={idx === order.length - 1}
-                  className="w-6 h-6 rounded border border-neutral-300 text-neutral-600 disabled:opacity-30 hover:bg-neutral-50">↓</button>
+                  className="w-6 h-6 rounded border border-line-2 text-ink-2 disabled:opacity-30 hover:bg-surface-2">↓</button>
                 <button type="button" onClick={() => toggleSection(key)}
-                  className="text-xs px-2 py-1 rounded border border-neutral-300 text-neutral-600 hover:bg-neutral-50">
+                  className="text-xs px-2 py-1 rounded border border-line-2 text-ink-2 hover:bg-surface-2">
                   {removed ? "Restore section" : "✕ Remove section"}
                 </button>
               </div>
@@ -181,10 +181,10 @@ export default function IntakeBuilder({
                         className="mt-1 accent-neutral-900 w-4 h-4 shrink-0"
                       />
                       <div className="flex-1 min-w-0">
-                        <label className="block text-sm font-medium text-neutral-800">
+                        <label className="block text-sm font-medium text-ink">
                           {field.label}
                           {field.showIf && (
-                            <span className="ml-2 text-[10px] uppercase tracking-wide text-neutral-400">
+                            <span className="ml-2 text-[10px] uppercase tracking-wide text-ink-4">
                               {String(field.showIf.equals)} only
                             </span>
                           )}
@@ -211,14 +211,14 @@ export default function IntakeBuilder({
                       <span className="mt-1 w-4 h-4 shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <label className="block text-sm font-medium text-neutral-800">
+                          <label className="block text-sm font-medium text-ink">
                             {a.field.label}
-                            <span className="ml-2 text-[10px] uppercase tracking-wide text-neutral-400">custom</span>
+                            <span className="ml-2 text-[10px] uppercase tracking-wide text-ink-4">custom</span>
                           </label>
                           <button
                             type="button"
                             onClick={() => removeAddedField(a.field.key)}
-                            className="text-xs text-neutral-400 hover:text-red-600"
+                            className="text-xs text-ink-4 hover:text-red-600"
                           >
                             Remove
                           </button>
@@ -243,14 +243,14 @@ export default function IntakeBuilder({
 
       <div className="flex items-center gap-3 pt-1">
         <button type="button" onClick={saveDraft} disabled={isPending}
-          className="px-4 py-2 rounded-md border border-neutral-300 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50">
+          className="px-4 py-2 rounded-md border border-line-2 text-sm font-medium text-ink-2 hover:bg-surface-2 disabled:opacity-50">
           {isPending ? "Saving…" : "Save draft"}
         </button>
         <button type="button" onClick={send} disabled={isPending}
           className="px-4 py-2 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-700 disabled:opacity-50">
           Send intake form to client
         </button>
-        {saved && !isPending && <span className="text-xs text-neutral-600">Saved</span>}
+        {saved && !isPending && <span className="text-xs text-ink-2">Saved</span>}
       </div>
     </div>
   );
@@ -268,7 +268,7 @@ function PrefillInput({
   onChange: (v: unknown) => void;
 }) {
   const cls =
-    "w-full rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900";
+    "w-full rounded-md border border-line-2 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900";
   if (field.type === "textarea") {
     return (
       <textarea value={(value as string) ?? ""} onChange={(e) => onChange(e.target.value)}
@@ -277,7 +277,7 @@ function PrefillInput({
   }
   if (field.type === "select" || field.type === "radio") {
     return (
-      <select value={(value as string) ?? ""} onChange={(e) => onChange(e.target.value)} className={`${cls} bg-white`}>
+      <select value={(value as string) ?? ""} onChange={(e) => onChange(e.target.value)} className={`${cls} bg-surface`}>
         <option value="">Leave for client…</option>
         {field.options?.filter((o) => o.value).map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>
@@ -291,7 +291,7 @@ function PrefillInput({
         onChange={(e) => onChange(e.target.value)} placeholder={field.placeholder} className={cls} />
     );
   }
-  return <p className="text-xs text-neutral-400 italic">The client will fill this in.</p>;
+  return <p className="text-xs text-ink-4 italic">The client will fill this in.</p>;
 }
 
 // Inline "add a custom field to this section" control.
@@ -305,7 +305,7 @@ function AddFieldForm({ onAdd }: { onAdd: (label: string, type: Field["type"]) =
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-xs px-2.5 py-1 rounded border border-dashed border-neutral-300 text-neutral-600 hover:bg-neutral-50"
+        className="text-xs px-2.5 py-1 rounded border border-dashed border-line-2 text-ink-2 hover:bg-surface-2"
       >
         + Add field
       </button>
@@ -313,23 +313,23 @@ function AddFieldForm({ onAdd }: { onAdd: (label: string, type: Field["type"]) =
   }
 
   return (
-    <div className="flex items-end gap-2 border border-neutral-200 rounded-md p-2.5 bg-neutral-50">
+    <div className="flex items-end gap-2 border border-line rounded-md p-2.5 bg-page">
       <div className="flex-1">
-        <label className="block text-[11px] text-neutral-500 mb-1">New field label</label>
+        <label className="block text-[11px] text-ink-3 mb-1">New field label</label>
         <input
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="e.g. Preferred CMS"
-          className="w-full rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          className="w-full rounded-md border border-line-2 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
         />
       </div>
       <div>
-        <label className="block text-[11px] text-neutral-500 mb-1">Type</label>
+        <label className="block text-[11px] text-ink-3 mb-1">Type</label>
         <select
           value={type}
           onChange={(e) => setType(e.target.value as Field["type"])}
-          className="rounded-md border border-neutral-300 px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          className="rounded-md border border-line-2 px-2 py-1.5 text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-neutral-900"
         >
           <option value="text">Short text</option>
           <option value="textarea">Long text</option>
@@ -352,7 +352,7 @@ function AddFieldForm({ onAdd }: { onAdd: (label: string, type: Field["type"]) =
       <button
         type="button"
         onClick={() => { setOpen(false); setLabel(""); }}
-        className="px-2 py-1.5 text-sm text-neutral-500 hover:text-neutral-800"
+        className="px-2 py-1.5 text-sm text-ink-3 hover:text-neutral-800"
       >
         Cancel
       </button>

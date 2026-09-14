@@ -36,14 +36,14 @@ export default function ClientLoginLink({ projectId }: { projectId: string }) {
 
   if (creds) {
     return (
-      <div className="flex items-center gap-3 bg-neutral-50 border border-neutral-200 rounded-md px-3 py-2">
-        <div className="text-xs text-neutral-600 space-y-0.5">
-          <p><span className="text-neutral-600">Email</span> {creds.email}</p>
-          <p><span className="text-neutral-600">Password</span> {creds.password}</p>
+      <div className="flex items-center gap-3 bg-page border border-line rounded-md px-3 py-2">
+        <div className="text-xs text-ink-2 space-y-0.5">
+          <p><span className="text-ink-2">Email</span> {creds.email}</p>
+          <p><span className="text-ink-2">Password</span> {creds.password}</p>
         </div>
         <button
           onClick={handleCopy}
-          className="shrink-0 text-xs px-2.5 py-1 border border-neutral-300 rounded hover:bg-white transition-colors"
+          className="shrink-0 text-xs px-2.5 py-1 border border-line-2 rounded hover:bg-white transition-colors"
         >
           {copied ? "Copied!" : "Copy"}
         </button>
@@ -55,7 +55,7 @@ export default function ClientLoginLink({ projectId }: { projectId: string }) {
     <button
       onClick={handleGenerate}
       disabled={loading}
-      className="text-xs text-neutral-500 border border-neutral-300 px-3 py-1.5 rounded-md hover:bg-neutral-50 transition-colors disabled:opacity-50"
+      className="text-xs text-ink-3 border border-line-2 px-3 py-1.5 rounded-md hover:bg-surface-2 transition-colors disabled:opacity-50"
     >
       {loading ? "Generating…" : "Get client credentials"}
     </button>

@@ -51,15 +51,15 @@ export default function NewProjectButton({
       <Modal
         open={open}
         overlayClassName="theme-dark fixed inset-0 z-[100] flex items-center justify-center bg-black/40"
-        cardClassName="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6"
+        cardClassName="bg-surface rounded-lg shadow-xl w-full max-w-md mx-4 p-6"
       >
-            <h2 className="text-base font-semibold text-neutral-900 mb-5">
+            <h2 className="text-base font-semibold text-ink mb-5">
               Create project
             </h2>
 
             <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                <label className="block text-sm font-medium text-ink-2 mb-1">
                   Project name
                 </label>
                 <input
@@ -67,13 +67,13 @@ export default function NewProjectButton({
                   type="text"
                   required
                   placeholder="e.g. ALEM Store Website"
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                  className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
                 />
               </div>
 
               {/* Client — existing or new */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                <label className="block text-sm font-medium text-ink-2 mb-1">
                   Client
                 </label>
                 <input type="hidden" name="clientChoice" value={clientChoice} />
@@ -86,7 +86,7 @@ export default function NewProjectButton({
                       className={`flex-1 py-1.5 text-sm rounded-md border transition-colors ${
                         clientChoice === c
                           ? "border-neutral-900 bg-neutral-900 text-white"
-                          : "border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+                          : "border-line-2 text-ink-2 hover:bg-surface-2"
                       }`}
                     >
                       {c === "new" ? "New client" : "Existing client"}
@@ -100,13 +100,13 @@ export default function NewProjectButton({
                     required
                     defaultValue={prefillEmail ?? ""}
                     placeholder="client@example.com"
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                    className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
                   />
                 ) : (
                   <select
                     name="existingClientId"
                     required
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-white"
+                    className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-surface"
                   >
                     <option value="">Select a client…</option>
                     {clients.map((c) => (
@@ -119,13 +119,13 @@ export default function NewProjectButton({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                <label className="block text-sm font-medium text-ink-2 mb-1">
                   Project type
                 </label>
                 <select
                   name="type"
                   required
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-white"
+                  className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-surface"
                 >
                   <option value="">Select type…</option>
                   {PROJECT_TYPE_OPTIONS.map((t) => (
@@ -137,19 +137,19 @@ export default function NewProjectButton({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                <label className="block text-sm font-medium text-ink-2 mb-1">
                   Mode
                 </label>
                 <select
                   name="mode"
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-white"
+                  className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-surface"
                 >
                   <option value="PROJECT">Project (stages 1–8)</option>
                   <option value="ONGOING">Ongoing / Retainer</option>
                 </select>
               </div>
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p className="text-sm text-rose">{error}</p>}
 
               <div className="flex gap-3 pt-1">
                 <button
@@ -158,7 +158,7 @@ export default function NewProjectButton({
                     setOpen(false);
                     setError(null);
                   }}
-                  className="flex-1 py-2 border border-neutral-300 text-sm rounded-md hover:bg-neutral-50 transition-colors"
+                  className="flex-1 py-2 border border-line-2 text-sm rounded-md hover:bg-surface-2 transition-colors"
                 >
                   Cancel
                 </button>

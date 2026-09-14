@@ -27,7 +27,7 @@ export default function DeleteDocumentButton({
   return (
     <button
       onClick={handleDelete}
-      className="text-xs text-neutral-600 hover:text-red-600 transition-colors"
+      className="text-xs text-ink-2 hover:text-red-600 transition-colors"
     >
       Delete
     </button>

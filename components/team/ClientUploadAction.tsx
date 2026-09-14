@@ -25,7 +25,7 @@ export default function ClientUploadAction({
   }
 
   return (
-    <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+    <div className="flex items-center gap-3 bg-blue-fill border border-blue-200 rounded-lg px-4 py-3">
       {/* Open / download the file */}
       <a
         href={`/api/download?id=${assetId}`}
@@ -36,7 +36,7 @@ export default function ClientUploadAction({
         <p className="text-sm font-medium text-blue-900 truncate group-hover:underline">
           Client uploaded: {filename}
         </p>
-        <p className="text-xs text-blue-700 mt-0.5 capitalize">
+        <p className="text-xs text-blue mt-0.5 capitalize">
           {folder ?? "documents"} · {new Date(uploadedAt).toLocaleDateString()} · open file ↗
         </p>
       </a>

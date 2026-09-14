@@ -70,7 +70,7 @@ export default function EditableForm({
       {visibleSections.map((section) => (
         <section
           key={section.key}
-          className="border border-neutral-200 rounded-lg bg-white px-6 py-6"
+          className="border border-line rounded-lg bg-surface px-6 py-6"
         >
           <SectionRenderer
             section={section}
@@ -87,7 +87,7 @@ export default function EditableForm({
             type="button"
             onClick={handleSave}
             disabled={isPending}
-            className="px-4 py-2 rounded-md border border-neutral-300 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 transition-colors"
+            className="px-4 py-2 rounded-md border border-line-2 text-sm font-medium text-ink-2 hover:bg-surface-2 disabled:opacity-50 transition-colors"
           >
             {isPending ? "Saving…" : "Save draft"}
           </button>
@@ -111,12 +111,12 @@ export default function EditableForm({
             </button>
           )}
           {saved && !isPending && (
-            <span className="text-xs text-neutral-600">Saved</span>
+            <span className="text-xs text-ink-2">Saved</span>
           )}
         </div>
       )}
       {mode === "prefill" && (
-        <p className="text-xs text-neutral-500">
+        <p className="text-xs text-ink-3">
           Answers you fill in will be sent to the client to approve or change.
           Leave a field empty for the client to fill it in themselves.
         </p>

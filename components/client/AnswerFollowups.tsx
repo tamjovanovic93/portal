@@ -25,10 +25,10 @@ export default function AnswerFollowups({
   if (followups.length === 0) return null;
 
   return (
-    <div className="rounded-lg border border-amber-300 bg-amber-50 px-5 py-4 space-y-4">
+    <div className="rounded-lg border border-amber-300 bg-amber-fill px-5 py-4 space-y-4">
       <div>
         <p className="text-sm font-semibold text-amber-900">Your team needs you</p>
-        <p className="text-xs text-amber-700 mt-0.5">
+        <p className="text-xs text-amber mt-0.5">
           Please respond to the items below.
         </p>
       </div>
@@ -51,18 +51,18 @@ function EditRow({ documentId, followup }: { documentId: string; followup: Follo
 
   if (done) {
     return (
-      <div className="rounded-md bg-white border border-neutral-200 px-4 py-3">
-        <p className="text-sm text-neutral-700">{followup.label}</p>
-        <p className="text-xs text-green-700 mt-1">Approved ✓</p>
+      <div className="rounded-md bg-surface border border-line px-4 py-3">
+        <p className="text-sm text-ink-2">{followup.label}</p>
+        <p className="text-xs text-mint mt-1">Approved ✓</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-md bg-white border border-neutral-200 px-4 py-3">
-      <p className="text-sm font-medium text-neutral-800">{followup.label}</p>
-      <p className="text-xs text-neutral-500 mt-1">Your team changed this to:</p>
-      <p className="text-sm text-neutral-900 mt-0.5 whitespace-pre-wrap">{followup.value || "—"}</p>
+    <div className="rounded-md bg-surface border border-line px-4 py-3">
+      <p className="text-sm font-medium text-ink">{followup.label}</p>
+      <p className="text-xs text-ink-3 mt-1">Your team changed this to:</p>
+      <p className="text-sm text-ink mt-0.5 whitespace-pre-wrap">{followup.value || "—"}</p>
       <button
         type="button"
         onClick={() =>
@@ -87,23 +87,23 @@ function QuestionRow({ documentId, followup }: { documentId: string; followup: F
 
   if (done) {
     return (
-      <div className="rounded-md bg-white border border-neutral-200 px-4 py-3">
-        <p className="text-sm text-neutral-700">{followup.question}</p>
-        <p className="text-xs text-green-700 mt-1">Answer sent ✓</p>
+      <div className="rounded-md bg-surface border border-line px-4 py-3">
+        <p className="text-sm text-ink-2">{followup.question}</p>
+        <p className="text-xs text-mint mt-1">Answer sent ✓</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-md bg-white border border-neutral-200 px-4 py-3">
-      <p className="text-xs text-neutral-500">About: {followup.label}</p>
-      <p className="text-sm font-medium text-neutral-800 mt-0.5">{followup.question}</p>
+    <div className="rounded-md bg-surface border border-line px-4 py-3">
+      <p className="text-xs text-ink-3">About: {followup.label}</p>
+      <p className="text-sm font-medium text-ink mt-0.5">{followup.question}</p>
       <div className="mt-2 flex gap-2">
         <input
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           placeholder="Your answer…"
-          className="flex-1 rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          className="flex-1 rounded-md border border-line-2 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
         />
         <button
           type="button"

@@ -86,14 +86,14 @@ export default function NewEventModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+      <div className="bg-surface rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-sm font-semibold text-neutral-900">
+          <h2 className="text-sm font-semibold text-ink">
             {event ? "Edit event" : "New event"}
           </h2>
           <button
             onClick={onClose}
-            className="text-neutral-600 hover:text-neutral-600 text-lg leading-none"
+            className="text-ink-2 hover:text-neutral-600 text-lg leading-none"
           >
             ×
           </button>
@@ -101,13 +101,13 @@ export default function NewEventModal({
 
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs text-neutral-500 mb-1">Title</label>
+            <label className="block text-xs text-ink-3 mb-1">Title</label>
             <input
               name="title"
               required
               defaultValue={event?.title}
               placeholder="Event title"
-              className="w-full border border-neutral-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+              className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
             />
           </div>
 
@@ -119,14 +119,14 @@ export default function NewEventModal({
               onChange={(e) => setAllDay(e.target.checked)}
               className="accent-neutral-900"
             />
-            <label htmlFor="allDay" className="text-xs text-neutral-600">
+            <label htmlFor="allDay" className="text-xs text-ink-2">
               All day
             </label>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-neutral-500 mb-1">
+              <label className="block text-xs text-ink-3 mb-1">
                 {allDay ? "Date" : "Start"}
               </label>
               <input
@@ -134,12 +134,12 @@ export default function NewEventModal({
                 type={allDay ? "date" : "datetime-local"}
                 required
                 defaultValue={defaultStart}
-                className="w-full border border-neutral-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
               />
             </div>
             {!allDay && (
               <div>
-                <label className="block text-xs text-neutral-500 mb-1">
+                <label className="block text-xs text-ink-3 mb-1">
                   End (optional)
                 </label>
                 <input
@@ -148,18 +148,18 @@ export default function NewEventModal({
                   defaultValue={
                     event?.endAt ? toLocalDateTimeValue(event.endAt) : ""
                   }
-                  className="w-full border border-neutral-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                  className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900"
                 />
               </div>
             )}
           </div>
 
           <div>
-            <label className="block text-xs text-neutral-500 mb-1">Type</label>
+            <label className="block text-xs text-ink-3 mb-1">Type</label>
             <select
               name="type"
               defaultValue={event?.type ?? "APPOINTMENT"}
-              className="w-full border border-neutral-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 bg-white"
+              className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 bg-surface"
             >
               {EVENT_TYPE_OPTIONS.map((t) => (
                 <option key={t.value} value={t.value}>
@@ -170,13 +170,13 @@ export default function NewEventModal({
           </div>
 
           <div>
-            <label className="block text-xs text-neutral-500 mb-1">
+            <label className="block text-xs text-ink-3 mb-1">
               Project (optional)
             </label>
             <select
               name="projectId"
               defaultValue={event?.projectId ?? ""}
-              className="w-full border border-neutral-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 bg-white"
+              className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 bg-surface"
             >
               <option value="">— No project —</option>
               {projects.map((p) => (
@@ -188,7 +188,7 @@ export default function NewEventModal({
           </div>
 
           <div>
-            <label className="block text-xs text-neutral-500 mb-1">
+            <label className="block text-xs text-ink-3 mb-1">
               Description (optional)
             </label>
             <textarea
@@ -196,11 +196,11 @@ export default function NewEventModal({
               rows={2}
               defaultValue={event?.description ?? ""}
               placeholder="Notes, agenda, details…"
-              className="w-full border border-neutral-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 resize-none"
+              className="w-full border border-line rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 resize-none"
             />
           </div>
 
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          {error && <p className="text-xs text-rose">{error}</p>}
 
           <div className="flex items-center justify-between pt-1">
             {event ? (
@@ -219,7 +219,7 @@ export default function NewEventModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-3 py-1.5 text-sm text-neutral-600 hover:text-neutral-900"
+                className="px-3 py-1.5 text-sm text-ink-2 hover:text-ink"
               >
                 Cancel
               </button>

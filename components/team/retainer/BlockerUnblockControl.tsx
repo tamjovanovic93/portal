@@ -31,7 +31,7 @@ export default function BlockerUnblockControl({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-sm font-semibold px-3 py-1.5 rounded-md bg-green-100 text-green-900 border border-green-700 hover:bg-green-200 transition-colors"
+        className="text-sm font-semibold px-3 py-1.5 rounded-md bg-mint-fill text-green-900 border border-green-700 hover:bg-green-200 transition-colors"
       >
         Mark unblocked
       </button>
@@ -45,20 +45,20 @@ export default function BlockerUnblockControl({
         value={date}
         onChange={(e) => setDate(e.target.value)}
         disabled={isPending}
-        className="text-xs text-neutral-900 rounded border border-neutral-300 px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-neutral-900"
+        className="text-xs text-ink rounded border border-line-2 px-2 py-1 bg-surface focus:outline-none focus:ring-1 focus:ring-neutral-900"
       />
       <button
         type="button"
         onClick={confirm}
         disabled={isPending}
-        className="text-sm font-semibold px-3 py-1.5 rounded-md bg-green-100 text-green-900 border border-green-700 hover:bg-green-200 disabled:opacity-50 transition-colors"
+        className="text-sm font-semibold px-3 py-1.5 rounded-md bg-mint-fill text-green-900 border border-green-700 hover:bg-green-200 disabled:opacity-50 transition-colors"
       >
         {isPending ? "…" : "Confirm"}
       </button>
       <button
         type="button"
         onClick={() => setOpen(false)}
-        className="text-xs text-neutral-600 hover:text-neutral-700 transition-colors"
+        className="text-xs text-ink-2 hover:text-neutral-700 transition-colors"
       >
         Cancel
       </button>

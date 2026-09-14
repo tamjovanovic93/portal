@@ -63,8 +63,8 @@ export default function WireframeSection({
         onClick={() => inputRef.current?.click()}
         className={`border-2 border-dashed rounded-lg px-6 py-8 text-center cursor-pointer transition-colors ${
           dragging
-            ? "border-neutral-600 bg-neutral-100"
-            : "border-neutral-300 hover:border-neutral-400 bg-white"
+            ? "border-neutral-600 bg-inset"
+            : "border-line-2 hover:border-line-3 bg-surface"
         }`}
       >
         <input
@@ -75,39 +75,39 @@ export default function WireframeSection({
           onChange={(e) => uploadFiles(e.target.files)}
         />
         {uploading ? (
-          <p className="text-sm text-neutral-500">Uploading…</p>
+          <p className="text-sm text-ink-3">Uploading…</p>
         ) : (
           <>
-            <p className="text-sm text-neutral-600">
+            <p className="text-sm text-ink-2">
               Drop wireframes here or{" "}
-              <span className="font-medium text-neutral-900">click to browse</span>
+              <span className="font-medium text-ink">click to browse</span>
             </p>
-            <p className="text-xs text-neutral-600 mt-1">
+            <p className="text-xs text-ink-2 mt-1">
               PNG, JPG, PDF — shared with client automatically
             </p>
           </>
         )}
       </div>
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-rose">{error}</p>}
 
       {/* Uploaded file list */}
       {assets.length > 0 && (
-        <div className="border border-neutral-200 rounded-lg bg-white divide-y divide-neutral-100 overflow-hidden">
+        <div className="border border-line rounded-lg bg-surface divide-y divide-line overflow-hidden">
           {assets.map((asset, i) => (
             <div key={asset.id} className="flex items-center gap-3 px-4 py-3">
-              <span className="text-xs font-mono text-neutral-600 shrink-0 w-5">
+              <span className="text-xs font-mono text-ink-2 shrink-0 w-5">
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <span className="flex-1 text-sm text-neutral-800 truncate">
+              <span className="flex-1 text-sm text-ink truncate">
                 {asset.filename}
               </span>
-              <span className="text-xs text-neutral-600 shrink-0">
+              <span className="text-xs text-ink-2 shrink-0">
                 {new Date(asset.uploadedAt).toLocaleDateString()}
               </span>
               <a
                 href={`/api/download?id=${asset.id}`}
-                className="text-xs text-neutral-600 hover:text-neutral-700 transition-colors shrink-0"
+                className="text-xs text-ink-2 hover:text-neutral-700 transition-colors shrink-0"
                 onClick={(e) => e.stopPropagation()}
               >
                 ↓
@@ -119,7 +119,7 @@ export default function WireframeSection({
 
       {/* Feedback status line */}
       {assets.length > 0 && (
-        <p className="text-xs text-neutral-600 pt-1">
+        <p className="text-xs text-ink-2 pt-1">
           {feedbackStatus === "submitted"
             ? `Client feedback received${feedbackSubmittedAt ? ` · ${new Date(feedbackSubmittedAt).toLocaleDateString()}` : ""} — see below`
             : "Awaiting client feedback"}

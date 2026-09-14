@@ -58,22 +58,22 @@ export default function NewClientButton({
       <Modal open={open}>
               {created ? (
                 <>
-                  <h2 className="text-base font-semibold text-neutral-900 mb-1">Client created</h2>
-                  <p className="text-sm text-neutral-500 mb-5">
+                  <h2 className="text-base font-semibold text-ink mb-1">Client created</h2>
+                  <p className="text-sm text-ink-3 mb-5">
                     Share these login credentials with the client. The password is shown{" "}
                     <strong>once</strong> — copy it now.
                   </p>
-                  <div className="rounded-md border border-neutral-200 bg-neutral-50 p-4 space-y-3">
+                  <div className="rounded-md border border-line bg-page p-4 space-y-3">
                     <div>
-                      <p className="text-xs text-neutral-500">Email</p>
-                      <p className="text-sm font-medium text-neutral-900 break-all">{created.email}</p>
+                      <p className="text-xs text-ink-3">Email</p>
+                      <p className="text-sm font-medium text-ink break-all">{created.email}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-neutral-500">Temporary password</p>
+                      <p className="text-xs text-ink-3">Temporary password</p>
                       {created.tempPassword ? (
-                        <p className="text-sm font-mono font-medium text-neutral-900">{created.tempPassword}</p>
+                        <p className="text-sm font-mono font-medium text-ink">{created.tempPassword}</p>
                       ) : (
-                        <p className="text-sm text-neutral-500">
+                        <p className="text-sm text-ink-3">
                           Existing login reused — use “Reset password” on the client page if needed.
                         </p>
                       )}
@@ -97,7 +97,7 @@ export default function NewClientButton({
                     <button
                       type="button"
                       onClick={reset}
-                      className="flex-1 py-2 border border-neutral-300 text-sm rounded-md hover:bg-neutral-50 transition-colors"
+                      className="flex-1 py-2 border border-line-2 text-sm rounded-md hover:bg-surface-2 transition-colors"
                     >
                       Close
                     </button>
@@ -116,50 +116,50 @@ export default function NewClientButton({
                 </>
               ) : (
                 <>
-                  <h2 className="text-base font-semibold text-neutral-900 mb-1">New client</h2>
-                  <p className="text-sm text-neutral-500 mb-5">
+                  <h2 className="text-base font-semibold text-ink mb-1">New client</h2>
+                  <p className="text-sm text-ink-3 mb-5">
                     A login is provisioned and the Initial Client Form is created. No project is needed yet.
                   </p>
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-neutral-700 mb-1">Business name</label>
+                      <label className="block text-sm font-medium text-ink-2 mb-1">Business name</label>
                       <input
                         name="name"
                         type="text"
                         required
                         placeholder="e.g. ALEM Store"
-                        className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                        className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-neutral-700 mb-1">Email</label>
+                      <label className="block text-sm font-medium text-ink-2 mb-1">Email</label>
                       <input
                         name="email"
                         type="email"
                         required
                         placeholder="client@example.com"
-                        className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                        className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-neutral-700 mb-1">Mode</label>
+                      <label className="block text-sm font-medium text-ink-2 mb-1">Mode</label>
                       <select
                         name="mode"
                         defaultValue="PROJECT"
-                        className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-white"
+                        className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-surface"
                       >
                         <option value="PROJECT">Project</option>
                         <option value="ONGOING">Ongoing / Retainer</option>
                       </select>
                     </div>
 
-                    {error && <p className="text-sm text-red-600">{error}</p>}
+                    {error && <p className="text-sm text-rose">{error}</p>}
 
                     <div className="flex gap-3 pt-1">
                       <button
                         type="button"
                         onClick={reset}
-                        className="flex-1 py-2 border border-neutral-300 text-sm rounded-md hover:bg-neutral-50 transition-colors"
+                        className="flex-1 py-2 border border-line-2 text-sm rounded-md hover:bg-surface-2 transition-colors"
                       >
                         Cancel
                       </button>

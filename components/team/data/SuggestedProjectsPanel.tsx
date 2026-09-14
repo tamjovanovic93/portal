@@ -23,7 +23,7 @@ type Suggestion = {
 };
 
 const input =
-  "w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900";
+  "w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900";
 
 export default function SuggestedProjectsPanel({
   clientId,
@@ -53,9 +53,9 @@ export default function SuggestedProjectsPanel({
 
   if (!dataReady) {
     return (
-      <div className="rounded-lg border border-neutral-200 bg-white px-6 py-10 text-center">
-        <p className="text-sm font-medium text-neutral-900">Projects can&apos;t be generated yet</p>
-        <p className="text-sm text-neutral-500 mt-1">{notReadyReason}</p>
+      <div className="rounded-lg border border-line bg-surface px-6 py-10 text-center">
+        <p className="text-sm font-medium text-ink">Projects can&apos;t be generated yet</p>
+        <p className="text-sm text-ink-3 mt-1">{notReadyReason}</p>
       </div>
     );
   }
@@ -63,7 +63,7 @@ export default function SuggestedProjectsPanel({
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
-        <p className="text-sm text-neutral-600 max-w-xl">
+        <p className="text-sm text-ink-2 max-w-xl">
           The agent analyzes everything known about this client and proposes projects, each with a
           pre-filled brief. Review, edit, then approve to create real projects.
         </p>
@@ -75,10 +75,10 @@ export default function SuggestedProjectsPanel({
           {busy ? "Analyzing…" : suggestions.length ? "Generate more" : "Generate suggestions"}
         </button>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-rose">{error}</p>}
 
       {suggestions.length === 0 && !busy && (
-        <p className="text-sm text-neutral-500">No suggestions yet — generate them above.</p>
+        <p className="text-sm text-ink-3">No suggestions yet — generate them above.</p>
       )}
 
       {pending.length > 0 && (
@@ -92,13 +92,13 @@ export default function SuggestedProjectsPanel({
       {approved.length > 0 && (
         <Section title={`Approved (${approved.length})`}>
           {approved.map((s) => (
-            <div key={s.id} className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+            <div key={s.id} className="flex items-center justify-between rounded-lg border border-green-200 bg-mint-fill px-4 py-3">
               <div>
                 <p className="text-sm font-medium text-green-900">{s.name}</p>
-                {s.projectType && <p className="text-xs text-green-700">{s.projectType}</p>}
+                {s.projectType && <p className="text-xs text-mint">{s.projectType}</p>}
               </div>
               {s.approvedProjectId && (
-                <Link href={`/projects/${s.approvedProjectId}`} className="text-xs font-medium text-green-800 underline underline-offset-2">
+                <Link href={`/projects/${s.approvedProjectId}`} className="text-xs font-medium text-mint underline underline-offset-2">
                   Open project →
                 </Link>
               )}
@@ -110,8 +110,8 @@ export default function SuggestedProjectsPanel({
       {rejected.length > 0 && (
         <Section title={`Rejected (${rejected.length})`}>
           {rejected.map((s) => (
-            <div key={s.id} className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-2.5 opacity-70">
-              <p className="text-sm text-neutral-600 line-through">{s.name}</p>
+            <div key={s.id} className="rounded-lg border border-line bg-page px-4 py-2.5 opacity-70">
+              <p className="text-sm text-ink-2 line-through">{s.name}</p>
             </div>
           ))}
         </Section>
@@ -123,7 +123,7 @@ export default function SuggestedProjectsPanel({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">{title}</p>
+      <p className="text-xs font-semibold text-ink-3 uppercase tracking-wider">{title}</p>
       <div className="space-y-3">{children}</div>
     </div>
   );
@@ -177,23 +177,23 @@ function PendingCard({ s }: { s: Suggestion }) {
   }
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-4 space-y-3">
+    <div className="rounded-lg border border-line bg-surface p-4 space-y-3">
       <div className="flex gap-3">
         <input value={name} onChange={(e) => setName(e.target.value)} className={`${input} font-medium`} />
-        <select value={type} onChange={(e) => setType(e.target.value)} className={`${input} bg-white max-w-[190px]`}>
+        <select value={type} onChange={(e) => setType(e.target.value)} className={`${input} bg-surface max-w-[190px]`}>
           <option value="">Type…</option>
           {PROJECT_TYPES.map((t) => (
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
       </div>
-      {s.rationale && <p className="text-xs text-neutral-500">{s.rationale}</p>}
+      {s.rationale && <p className="text-xs text-ink-3">{s.rationale}</p>}
 
-      <button onClick={() => setOpen((o) => !o)} className="text-xs text-neutral-600 hover:text-neutral-900">
+      <button onClick={() => setOpen((o) => !o)} className="text-xs text-ink-2 hover:text-ink">
         {open ? "Hide brief ▲" : "Edit brief ▼"}
       </button>
       {open && (
-        <div className="space-y-3 border-t border-neutral-100 pt-3">
+        <div className="space-y-3 border-t border-line pt-3">
           <Field label="Overview">
             <textarea value={overview} onChange={(e) => setOverview(e.target.value)} rows={2} className={input} />
           </Field>
@@ -209,15 +209,15 @@ function PendingCard({ s }: { s: Suggestion }) {
         </div>
       )}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-rose">{error}</p>}
       <div className="flex items-center gap-2 pt-1">
-        <button onClick={save} disabled={!!busy} className="px-3 py-1.5 text-sm rounded-md border border-neutral-300 hover:bg-neutral-50 disabled:opacity-50">
+        <button onClick={save} disabled={!!busy} className="px-3 py-1.5 text-sm rounded-md border border-line-2 hover:bg-surface-2 disabled:opacity-50">
           {busy === "save" ? "Saving…" : "Save"}
         </button>
         <button onClick={approve} disabled={!!busy} className="px-3 py-1.5 text-sm rounded-md bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-50">
           {busy === "approve" ? "Approving…" : "Approve → create project"}
         </button>
-        <button onClick={reject} disabled={!!busy} className="px-3 py-1.5 text-sm rounded-md border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 ml-auto">
+        <button onClick={reject} disabled={!!busy} className="px-3 py-1.5 text-sm rounded-md border border-red-200 text-rose hover:bg-red-50 disabled:opacity-50 ml-auto">
           {busy === "reject" ? "…" : "Reject"}
         </button>
       </div>
@@ -228,7 +228,7 @@ function PendingCard({ s }: { s: Suggestion }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-neutral-600 mb-1">{label}</label>
+      <label className="block text-xs font-medium text-ink-2 mb-1">{label}</label>
       {children}
     </div>
   );

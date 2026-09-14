@@ -43,20 +43,20 @@ export default function ProjectStageTasks({
               className={`text-xs px-2.5 py-1.5 rounded-md border transition-colors ${
                 active
                   ? "border-neutral-900 bg-neutral-900 text-white"
-                  : "border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+                  : "border-line-2 text-ink-2 hover:bg-surface-2"
               }`}
               title={STAGE_LABELS[n]}
             >
               {n === 1 ? "1 · Planning" : `${n} · ${STAGE_LABELS[n]}`}
               {count > 0 && (
-                <span className={`ml-1.5 ${active ? "text-neutral-300" : "text-neutral-400"}`}>{count}</span>
+                <span className={`ml-1.5 ${active ? "text-ink-4" : "text-ink-4"}`}>{count}</span>
               )}
             </button>
           );
         })}
       </div>
 
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-ink-3">
         {stage === 1
           ? "Every scope item and its tasks — the full planning overview. Statuses start from Stage 2."
           : `Only the tasks placed in Stage ${stage}. Update status, assign people, add estimates and links, or move a task to another stage.`}

@@ -43,30 +43,30 @@ export default function EditClientButton({
       </button>
 
       <Modal open={open}>
-              <h2 className="text-base font-semibold text-neutral-900 mb-5">Edit client</h2>
+              <h2 className="text-base font-semibold text-ink mb-5">Edit client</h2>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Business name</label>
+                  <label className="block text-sm font-medium text-ink-2 mb-1">Business name</label>
                   <input
                     name="name"
                     type="text"
                     required
                     defaultValue={name}
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                    className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-ink-2 mb-1">Email</label>
                   <input
                     name="email"
                     type="email"
                     required
                     defaultValue={email}
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                    className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
                   />
                 </div>
 
-                {error && <p className="text-sm text-red-600">{error}</p>}
+                {error && <p className="text-sm text-rose">{error}</p>}
 
                 <div className="flex gap-3 pt-1">
                   <button
@@ -75,7 +75,7 @@ export default function EditClientButton({
                       setOpen(false);
                       setError(null);
                     }}
-                    className="flex-1 py-2 border border-neutral-300 text-sm rounded-md hover:bg-neutral-50 transition-colors"
+                    className="flex-1 py-2 border border-line-2 text-sm rounded-md hover:bg-surface-2 transition-colors"
                   >
                     Cancel
                   </button>

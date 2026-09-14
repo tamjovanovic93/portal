@@ -31,7 +31,7 @@ export default function AddMaterialForm({ projectId }: { projectId: string }) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900 border border-dashed border-neutral-300 hover:border-neutral-400 rounded-lg px-4 py-3 w-full transition-colors"
+        className="flex items-center gap-2 text-sm text-ink-3 hover:text-ink border border-dashed border-line-2 hover:border-line-3 rounded-lg px-4 py-3 w-full transition-colors"
       >
         <span className="text-lg leading-none">+</span> Add item
       </button>
@@ -42,11 +42,11 @@ export default function AddMaterialForm({ projectId }: { projectId: string }) {
     <form
       ref={formRef}
       onSubmit={handleSubmit}
-      className="border border-neutral-300 rounded-lg bg-white p-4 space-y-3"
+      className="border border-line-2 rounded-lg bg-surface p-4 space-y-3"
     >
       <div className="flex gap-3">
         <div className="flex-1">
-          <label className="block text-xs font-medium text-neutral-600 mb-1">
+          <label className="block text-xs font-medium text-ink-2 mb-1">
             What do we need?
           </label>
           <input
@@ -54,17 +54,17 @@ export default function AddMaterialForm({ projectId }: { projectId: string }) {
             type="text"
             required
             placeholder="e.g. Logo files in SVG format"
-            className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
           />
         </div>
         <div className="w-36">
-          <label className="block text-xs font-medium text-neutral-600 mb-1">
+          <label className="block text-xs font-medium text-ink-2 mb-1">
             Category
           </label>
           <select
             name="category"
             required
-            className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            className="w-full px-3 py-2 border border-line-2 rounded-md text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-neutral-900"
           >
             <option value="">Pick…</option>
             {MATERIAL_CATEGORY_OPTIONS.map((c) => (
@@ -78,29 +78,29 @@ export default function AddMaterialForm({ projectId }: { projectId: string }) {
 
       <div className="flex gap-3">
         <div className="flex-1">
-          <label className="block text-xs font-medium text-neutral-600 mb-1">
+          <label className="block text-xs font-medium text-ink-2 mb-1">
             Notes for client (optional)
           </label>
           <input
             name="notes"
             type="text"
             placeholder="e.g. Please include all colour variants"
-            className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            className="w-full px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
           />
         </div>
         <div className="w-36">
-          <label className="block text-xs font-medium text-neutral-600 mb-1">
+          <label className="block text-xs font-medium text-ink-2 mb-1">
             Due date (optional)
           </label>
           <input
             name="dueDate"
             type="date"
-            className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            className="w-full px-3 py-2 border border-line-2 rounded-md text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-neutral-900"
           />
         </div>
       </div>
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-rose">{error}</p>}
 
       <div className="flex gap-2 pt-1">
         <button
@@ -109,7 +109,7 @@ export default function AddMaterialForm({ projectId }: { projectId: string }) {
             setOpen(false);
             setError(null);
           }}
-          className="px-3 py-1.5 text-sm border border-neutral-300 rounded-md hover:bg-neutral-50 transition-colors"
+          className="px-3 py-1.5 text-sm border border-line-2 rounded-md hover:bg-surface-2 transition-colors"
         >
           Cancel
         </button>

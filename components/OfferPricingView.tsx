@@ -16,18 +16,18 @@ export default function OfferPricingView({ content }: { content: Record<string, 
         <div className="flex flex-wrap gap-6">
           {hasOneTime && (
             <div>
-              <p className="text-xs text-neutral-500">Price — one time</p>
-              <p className="text-lg font-semibold text-neutral-900">
+              <p className="text-xs text-ink-3">Price — one time</p>
+              <p className="text-lg font-semibold text-ink">
                 {formatMoney(pricing.oneTimePrice, pricing.currency)}
               </p>
             </div>
           )}
           {hasMonthly && (
             <div>
-              <p className="text-xs text-neutral-500">Price — monthly</p>
-              <p className="text-lg font-semibold text-neutral-900">
+              <p className="text-xs text-ink-3">Price — monthly</p>
+              <p className="text-lg font-semibold text-ink">
                 {formatMoney(pricing.monthlyPrice, pricing.currency)}
-                <span className="text-sm font-normal text-neutral-500"> / mo</span>
+                <span className="text-sm font-normal text-ink-3"> / mo</span>
               </p>
             </div>
           )}
@@ -36,8 +36,8 @@ export default function OfferPricingView({ content }: { content: Record<string, 
 
       {hasSchedule && (
         <div>
-          <p className="text-xs text-neutral-500 mb-2">Payment schedule</p>
-          <div className="border border-neutral-200 rounded-md overflow-hidden">
+          <p className="text-xs text-ink-3 mb-2">Payment schedule</p>
+          <div className="border border-line rounded-md overflow-hidden">
             {pricing.paymentSchedule.map((m, i) => (
               <div
                 key={m.id ?? i}
@@ -45,14 +45,14 @@ export default function OfferPricingView({ content }: { content: Record<string, 
                 style={{ borderTop: i ? "1px solid var(--border, #e5e5e5)" : "none" }}
               >
                 <div className="min-w-0">
-                  <span className="text-neutral-800">{m.name || `Milestone ${i + 1}`}</span>
+                  <span className="text-ink">{m.name || `Milestone ${i + 1}`}</span>
                   {m.date && (
-                    <span className="text-xs text-neutral-500 ml-2">
+                    <span className="text-xs text-ink-3 ml-2">
                       {new Date(m.date).toLocaleDateString()}
                     </span>
                   )}
                 </div>
-                <span className="text-neutral-900 font-medium shrink-0 ml-3">
+                <span className="text-ink font-medium shrink-0 ml-3">
                   {formatMoney(m.amount, pricing.currency)}
                 </span>
               </div>

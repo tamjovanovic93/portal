@@ -34,7 +34,7 @@ export default async function DashboardPage() {
   } = deriveDashboard(data);
 
   return (
-    <div style={{ padding: "28px 32px 60px", maxWidth: 1440, margin: "0 auto" }} className="space-y-6">
+    <div className="page-wrap page-wrap-xl space-y-6">
       {/* Header */}
       <div className="fade-up flex items-end justify-between gap-5">
         <div>

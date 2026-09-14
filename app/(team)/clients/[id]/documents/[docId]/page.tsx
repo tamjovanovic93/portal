@@ -68,12 +68,12 @@ export default async function ClientDocumentPage({
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-10 space-y-8">
-      <nav className="text-xs text-neutral-600 space-x-1.5">
+      <nav className="text-xs text-ink-2 space-x-1.5">
         <Link href="/clients" className="hover:text-neutral-700">Clients</Link>
         <span>›</span>
         <Link href={`/clients/${clientId}`} className="hover:text-neutral-700">{clientName}</Link>
         <span>›</span>
-        <span className="text-neutral-600">{doc.title}</span>
+        <span className="text-ink-2">{doc.title}</span>
       </nav>
 
       <OnboardingDocView

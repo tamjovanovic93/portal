@@ -24,7 +24,7 @@ function TextareaField({
       placeholder={field.placeholder}
       rows={field.rows ?? 4}
       disabled={disabled}
-      className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:bg-neutral-50 disabled:text-neutral-500 resize-y"
+      className="w-full rounded-md border border-line-2 px-3 py-2 text-sm text-ink placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:bg-neutral-50 disabled:text-neutral-500 resize-y"
     />
   );
 }
@@ -46,7 +46,7 @@ function SelectField({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
-      className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:bg-neutral-50 disabled:text-neutral-500 bg-white"
+      className="w-full rounded-md border border-line-2 px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:bg-neutral-50 disabled:text-neutral-500 bg-surface"
     >
       <option value="">Select…</option>
       {field.options?.map((opt) => (
@@ -82,7 +82,7 @@ function RadioField({
             disabled={disabled}
             className="accent-neutral-900"
           />
-          <span className="text-sm text-neutral-800">{opt.label}</span>
+          <span className="text-sm text-ink">{opt.label}</span>
         </label>
       ))}
     </div>
@@ -109,7 +109,7 @@ function CheckboxField({
         disabled={disabled}
         className="accent-neutral-900 w-4 h-4"
       />
-      <span className="text-sm text-neutral-800">{field.label}</span>
+      <span className="text-sm text-ink">{field.label}</span>
     </label>
   );
 }
@@ -144,7 +144,7 @@ function CheckboxGroupField({
             disabled={disabled}
             className="accent-neutral-900 w-4 h-4"
           />
-          <span className="text-sm text-neutral-800">{opt.label}</span>
+          <span className="text-sm text-ink">{opt.label}</span>
         </label>
       ))}
     </div>
@@ -163,9 +163,9 @@ function ChecklistItemField({
   disabled: boolean;
 }) {
   const RESULTS = [
-    { v: "pass", label: "Pass", cls: "border-green-300 text-green-700 bg-green-50" },
-    { v: "fail", label: "Fail", cls: "border-red-300 text-red-700 bg-red-50" },
-    { v: "na", label: "N/A", cls: "border-neutral-300 text-neutral-500 bg-neutral-50" },
+    { v: "pass", label: "Pass", cls: "border-green-300 text-mint bg-mint-fill" },
+    { v: "fail", label: "Fail", cls: "border-red-300 text-rose bg-rose-fill" },
+    { v: "na", label: "N/A", cls: "border-line-2 text-ink-3 bg-page" },
   ] as const;
 
   return (
@@ -180,7 +180,7 @@ function ChecklistItemField({
             className={`px-3 py-1 rounded border text-xs font-medium transition-colors ${
               value.result === v
                 ? cls
-                : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
+                : "border-line text-ink-2 hover:border-neutral-300"
             } disabled:opacity-50`}
           >
             {label}
@@ -194,7 +194,7 @@ function ChecklistItemField({
           onChange={(e) => onChange({ ...value, note: e.target.value })}
           placeholder="Note what failed…"
           disabled={disabled}
-          className="w-full rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:bg-neutral-50"
+          className="w-full rounded-md border border-line-2 px-3 py-1.5 text-sm text-ink placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:bg-neutral-50"
         />
       )}
     </div>
@@ -236,14 +236,14 @@ function RepeatableField({
   return (
     <div className="space-y-3">
       {value.length > 0 && (
-        <div className="border border-neutral-200 rounded-md overflow-hidden">
+        <div className="border border-line rounded-md overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-neutral-50 border-b border-neutral-200">
+            <thead className="bg-page border-b border-line">
               <tr>
                 {columns.map((col) => (
                   <th
                     key={col.key}
-                    className="px-3 py-2 text-left text-xs font-medium text-neutral-500"
+                    className="px-3 py-2 text-left text-xs font-medium text-ink-3"
                   >
                     {col.label}
                     {col.required && <span className="text-red-500 ml-0.5">*</span>}
@@ -252,7 +252,7 @@ function RepeatableField({
                 {!disabled && <th className="w-8" />}
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100">
+            <tbody className="divide-y divide-line">
               {value.map((row, rowIdx) => (
                 <tr key={rowIdx}>
                   {columns.map((col) => (
@@ -264,14 +264,14 @@ function RepeatableField({
                           placeholder={col.placeholder}
                           rows={2}
                           disabled={disabled}
-                          className="w-full text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none disabled:bg-transparent resize-none"
+                          className="w-full text-sm text-ink placeholder:text-neutral-500 focus:outline-none disabled:bg-transparent resize-none"
                         />
                       ) : col.type === "select" ? (
                         <select
                           value={row[col.key] ?? ""}
                           onChange={(e) => updateCell(rowIdx, col.key, e.target.value)}
                           disabled={disabled}
-                          className="w-full text-sm text-neutral-900 focus:outline-none disabled:bg-transparent bg-transparent"
+                          className="w-full text-sm text-ink focus:outline-none disabled:bg-transparent bg-transparent"
                         >
                           <option value="">—</option>
                           {col.options?.map((opt) => (
@@ -287,7 +287,7 @@ function RepeatableField({
                           onChange={(e) => updateCell(rowIdx, col.key, e.target.value)}
                           placeholder={col.placeholder}
                           disabled={disabled}
-                          className="w-full text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none disabled:bg-transparent"
+                          className="w-full text-sm text-ink placeholder:text-neutral-500 focus:outline-none disabled:bg-transparent"
                         />
                       )}
                     </td>
@@ -297,7 +297,7 @@ function RepeatableField({
                       <button
                         type="button"
                         onClick={() => removeRow(rowIdx)}
-                        className="text-neutral-500 hover:text-red-500 transition-colors text-lg leading-none"
+                        className="text-ink-3 hover:text-red-500 transition-colors text-lg leading-none"
                       >
                         ×
                       </button>
@@ -313,7 +313,7 @@ function RepeatableField({
         <button
           type="button"
           onClick={addRow}
-          className="text-xs text-neutral-500 hover:text-neutral-900 border border-dashed border-neutral-300 hover:border-neutral-400 rounded-md px-3 py-1.5 transition-colors"
+          className="text-xs text-ink-3 hover:text-ink border border-dashed border-line-2 hover:border-line-3 rounded-md px-3 py-1.5 transition-colors"
         >
           + Add row
         </button>
@@ -336,24 +336,24 @@ function SignatureField({
   return (
     <div className="flex gap-4">
       <div className="flex-1">
-        <label className="block text-xs text-neutral-500 mb-1">Full name</label>
+        <label className="block text-xs text-ink-3 mb-1">Full name</label>
         <input
           type="text"
           value={value.name}
           onChange={(e) => onChange({ ...value, name: e.target.value })}
           placeholder="Your full name"
           disabled={disabled}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:bg-neutral-50 disabled:text-neutral-500"
+          className="w-full rounded-md border border-line-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:bg-neutral-50 disabled:text-neutral-500"
         />
       </div>
       <div className="w-40">
-        <label className="block text-xs text-neutral-500 mb-1">Date</label>
+        <label className="block text-xs text-ink-3 mb-1">Date</label>
         <input
           type="date"
           value={value.date}
           onChange={(e) => onChange({ ...value, date: e.target.value })}
           disabled={disabled}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:bg-neutral-50 disabled:text-neutral-500"
+          className="w-full rounded-md border border-line-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:bg-neutral-50 disabled:text-neutral-500"
         />
       </div>
     </div>
@@ -377,14 +377,14 @@ function FieldWrapper({
       {!isInlineLabel && (
         <label
           htmlFor={field.key}
-          className="block text-sm font-medium text-neutral-800 mb-1.5"
+          className="block text-sm font-medium text-ink mb-1.5"
         >
           {field.label}
           {field.required && <span className="text-red-500 ml-0.5">*</span>}
         </label>
       )}
       {field.hint && (
-        <p className="text-xs text-neutral-500 mb-2">{field.hint}</p>
+        <p className="text-xs text-ink-3 mb-2">{field.hint}</p>
       )}
       {children}
     </div>
@@ -418,7 +418,7 @@ export function FieldRenderer({
             onChange={(e) => onChange(e.target.value)}
             placeholder={field.placeholder}
             disabled={disabled}
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:bg-neutral-50 disabled:text-neutral-500"
+            className="w-full rounded-md border border-line-2 px-3 py-2 text-sm text-ink placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:bg-neutral-50 disabled:text-neutral-500"
           />
         </FieldWrapper>
       );
@@ -538,9 +538,9 @@ export function SectionRenderer({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-base font-semibold text-neutral-900">{section.title}</h3>
+        <h3 className="text-base font-semibold text-ink">{section.title}</h3>
         {section.description && (
-          <p className="text-sm text-neutral-500 mt-1">{section.description}</p>
+          <p className="text-sm text-ink-3 mt-1">{section.description}</p>
         )}
       </div>
       <div className="space-y-5">

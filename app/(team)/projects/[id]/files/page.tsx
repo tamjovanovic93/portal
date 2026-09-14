@@ -31,12 +31,12 @@ export default async function FilesPage({
       <div className="mb-8">
         <Link
           href={`/projects/${id}`}
-          className="text-xs text-neutral-600 hover:text-neutral-900 mb-3 inline-block"
+          className="text-xs text-ink-2 hover:text-ink mb-3 inline-block"
         >
           ← {project.name}
         </Link>
-        <h1 className="text-xl font-semibold text-neutral-900">Files</h1>
-        <p className="text-sm text-neutral-500 mt-0.5">
+        <h1 className="text-xl font-semibold text-ink">Files</h1>
+        <p className="text-sm text-ink-3 mt-0.5">
           {assets.length} file{assets.length !== 1 ? "s" : ""}
         </p>
       </div>

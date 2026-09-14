@@ -93,7 +93,7 @@ export default async function ClientStreamPage({
   ];
 
   return (
-    <div style={{ padding: "28px 32px 60px", maxWidth: 1320, margin: "0 auto" }} className="space-y-6">
+    <div className="page-wrap page-wrap-lg space-y-6">
       <Link href="/clients" className="faint inline-flex items-center gap-1.5" style={{ fontSize: 12.5 }}>
         <Icon name="chevR" size={13} style={{ transform: "rotate(180deg)" }} /> Clients
       </Link>

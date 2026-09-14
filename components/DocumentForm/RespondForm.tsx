@@ -123,7 +123,7 @@ export default function RespondForm({
   // Banner offering to approve all still-pending suggested answers at once.
   const approveAllBar =
     pendingPrefillCount > 0 ? (
-      <div className="flex items-center justify-between gap-3 rounded-md border border-blue-200 bg-blue-50 px-4 py-3">
+      <div className="flex items-center justify-between gap-3 rounded-md border border-blue-200 bg-blue-fill px-4 py-3">
         <p className="text-sm text-blue-900">
           Your team pre-filled{" "}
           <span className="font-semibold">
@@ -145,7 +145,7 @@ export default function RespondForm({
   // clickable to jump straight to it.
   const unresolvedNotice =
     unresolvedList.length > 0 ? (
-      <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
+      <div className="rounded-md border border-amber-300 bg-amber-fill px-4 py-3">
         <p className="text-sm font-medium text-amber-900 mb-2">
           Before finalizing, please approve the following answers:
         </p>
@@ -174,9 +174,9 @@ export default function RespondForm({
     if (c?.prefill && status === "pending" && !isEditing) {
       return (
         <div key={field.key} id={`field-${field.key}`} className="scroll-mt-24 rounded-md border border-blue-200 bg-blue-50/50 px-4 py-3">
-          <p className="text-sm font-medium text-neutral-800 mb-1">{field.label}</p>
-          <p className="text-xs text-neutral-500 mb-2">Your team suggested:</p>
-          <p className="text-sm text-neutral-900 mb-3 whitespace-pre-wrap">
+          <p className="text-sm font-medium text-ink mb-1">{field.label}</p>
+          <p className="text-xs text-ink-3 mb-2">Your team suggested:</p>
+          <p className="text-sm text-ink mb-3 whitespace-pre-wrap">
             {displayValue(field, content[field.key])}
           </p>
           <div className="flex gap-2">
@@ -185,7 +185,7 @@ export default function RespondForm({
               Approve
             </button>
             <button type="button" onClick={() => beginChange(field.key)}
-              className="px-3 py-1.5 rounded-md border border-neutral-300 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-colors">
+              className="px-3 py-1.5 rounded-md border border-line-2 text-xs font-medium text-ink-2 hover:bg-surface-2 transition-colors">
               Change my answer
             </button>
           </div>
@@ -197,16 +197,16 @@ export default function RespondForm({
       return (
         <div key={field.key} className="rounded-md border border-green-200 bg-green-50/50 px-4 py-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-neutral-800">{field.label}</p>
+            <p className="text-sm font-medium text-ink">{field.label}</p>
             <button type="button" onClick={() => beginChange(field.key)}
-              className="text-xs text-neutral-500 hover:text-neutral-800">
+              className="text-xs text-ink-3 hover:text-neutral-800">
               Change
             </button>
           </div>
-          <p className="text-sm text-neutral-900 mt-1 whitespace-pre-wrap">
+          <p className="text-sm text-ink mt-1 whitespace-pre-wrap">
             {displayValue(field, content[field.key])}
           </p>
-          <p className="text-xs text-green-700 mt-1">Approved ✓</p>
+          <p className="text-xs text-mint mt-1">Approved ✓</p>
         </div>
       );
     }
@@ -222,18 +222,18 @@ export default function RespondForm({
   // ── Success confirmation (after submit) ──
   if (submitted) {
     return (
-      <div className="rounded-lg border border-green-200 bg-green-50 px-6 py-8 text-center space-y-3">
+      <div className="rounded-lg border border-green-200 bg-mint-fill px-6 py-8 text-center space-y-3">
         <div className="mx-auto w-12 h-12 rounded-full bg-green-600 text-white flex items-center justify-center">
           <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
         </div>
         <h3 className="text-lg font-semibold text-green-900">
           Thank you — your intake form has been submitted.
         </h3>
-        <p className="text-sm text-green-800 max-w-md mx-auto">
+        <p className="text-sm text-mint max-w-md mx-auto">
           Our team is reviewing your answers and preparing the next stage of your project.
           You&apos;ll be notified here when your Project Brief is ready for review.
         </p>
-        <a href="/portal" className="inline-block mt-2 text-sm text-neutral-900 underline underline-offset-2">
+        <a href="/portal" className="inline-block mt-2 text-sm text-ink underline underline-offset-2">
           Back to portal
         </a>
       </div>
@@ -259,7 +259,7 @@ export default function RespondForm({
     }
 
     if (steps.length === 0) {
-      return <p className="text-sm text-neutral-500">This form has no questions to complete.</p>;
+      return <p className="text-sm text-ink-3">This form has no questions to complete.</p>;
     }
 
     const idx = Math.min(step, steps.length - 1);
@@ -272,10 +272,10 @@ export default function RespondForm({
         {/* Progress */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-medium text-neutral-600">
+            <span className="text-xs font-medium text-ink-2">
               Step {idx + 1} of {steps.length}
             </span>
-            <span className="text-xs font-medium text-neutral-600">{pct}% complete</span>
+            <span className="text-xs font-medium text-ink-2">{pct}% complete</span>
           </div>
           <div className="h-1.5 w-full rounded-full bg-neutral-200 overflow-hidden">
             <div className="h-full rounded-full bg-neutral-900 transition-all" style={{ width: `${pct}%` }} />
@@ -284,11 +284,11 @@ export default function RespondForm({
 
         {approveAllBar}
 
-        <section className="border border-neutral-200 rounded-lg bg-white px-6 py-6 space-y-6">
+        <section className="border border-line rounded-lg bg-surface px-6 py-6 space-y-6">
           <div>
-            <h3 className="text-base font-semibold text-neutral-900">{current.title}</h3>
+            <h3 className="text-base font-semibold text-ink">{current.title}</h3>
             {current.description && (
-              <p className="text-sm text-neutral-500 mt-1">{current.description}</p>
+              <p className="text-sm text-ink-3 mt-1">{current.description}</p>
             )}
           </div>
           <div className="space-y-5">{current.fields.map(renderField)}</div>
@@ -300,7 +300,7 @@ export default function RespondForm({
             type="button"
             onClick={() => { setError(null); setStep(idx - 1); }}
             disabled={idx === 0 || isPending}
-            className="px-4 py-2 rounded-md border border-neutral-300 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 transition-colors"
+            className="px-4 py-2 rounded-md border border-line-2 text-sm font-medium text-ink-2 hover:bg-surface-2 disabled:opacity-40 transition-colors"
           >
             ← Back
           </button>
@@ -309,7 +309,7 @@ export default function RespondForm({
               type="button"
               onClick={() => startTransition(async () => { await saveDocument(documentId, content); })}
               disabled={isPending}
-              className="px-3 py-2 rounded-md text-sm font-medium text-neutral-500 hover:text-neutral-800 disabled:opacity-50"
+              className="px-3 py-2 rounded-md text-sm font-medium text-ink-3 hover:text-neutral-800 disabled:opacity-50"
             >
               Save &amp; finish later
             </button>
@@ -335,7 +335,7 @@ export default function RespondForm({
           </div>
         </div>
         {unresolvedNotice}
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-rose">{error}</p>}
       </div>
     );
   }
@@ -345,11 +345,11 @@ export default function RespondForm({
     <div className="space-y-10">
       {approveAllBar}
       {visibleSections.map((section) => (
-        <section key={section.key} className="border border-neutral-200 rounded-lg bg-white px-6 py-6 space-y-6">
+        <section key={section.key} className="border border-line rounded-lg bg-surface px-6 py-6 space-y-6">
           <div>
-            <h3 className="text-base font-semibold text-neutral-900">{section.title}</h3>
+            <h3 className="text-base font-semibold text-ink">{section.title}</h3>
             {section.description && (
-              <p className="text-sm text-neutral-500 mt-1">{section.description}</p>
+              <p className="text-sm text-ink-3 mt-1">{section.description}</p>
             )}
           </div>
           <div className="space-y-5">
@@ -363,7 +363,7 @@ export default function RespondForm({
           type="button"
           onClick={() => startTransition(async () => { await saveDocument(documentId, content); })}
           disabled={isPending}
-          className="px-4 py-2 rounded-md border border-neutral-300 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 transition-colors"
+          className="px-4 py-2 rounded-md border border-line-2 text-sm font-medium text-ink-2 hover:bg-surface-2 disabled:opacity-50 transition-colors"
         >
           {isPending ? "Saving…" : "Save draft"}
         </button>
@@ -377,7 +377,7 @@ export default function RespondForm({
         </button>
       </div>
       {unresolvedNotice}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-rose">{error}</p>}
     </div>
   );
 }

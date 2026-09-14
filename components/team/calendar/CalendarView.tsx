@@ -133,22 +133,22 @@ export default function CalendarView({
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="p-1.5 rounded hover:bg-neutral-100 text-neutral-600"
+              className="p-1.5 rounded hover:bg-surface-2 text-ink-2"
             >
               ‹
             </button>
-            <h2 className="text-base font-semibold text-neutral-900 w-44 text-center">
+            <h2 className="text-base font-semibold text-ink w-44 text-center">
               {MONTH_NAMES[month - 1]} {year}
             </h2>
             <button
               onClick={() => navigate(1)}
-              className="p-1.5 rounded hover:bg-neutral-100 text-neutral-600"
+              className="p-1.5 rounded hover:bg-surface-2 text-ink-2"
             >
               ›
             </button>
             <button
               onClick={goToday}
-              className="ml-1 text-xs px-2.5 py-1 rounded border border-neutral-200 hover:bg-neutral-50 text-neutral-600"
+              className="ml-1 text-xs px-2.5 py-1 rounded border border-line hover:bg-surface-2 text-ink-2"
             >
               Today
             </button>
@@ -166,7 +166,7 @@ export default function CalendarView({
           {DAY_NAMES.map((d) => (
             <div
               key={d}
-              className="text-center text-xs text-neutral-600 font-medium py-1"
+              className="text-center text-xs text-ink-2 font-medium py-1"
             >
               {d}
             </div>
@@ -174,7 +174,7 @@ export default function CalendarView({
         </div>
 
         {/* Calendar grid */}
-        <div className="grid grid-cols-7 border-l border-t border-neutral-200">
+        <div className="grid grid-cols-7 border-l border-t border-line">
           {grid.map(({ date, isCurrentMonth }, i) => {
             const dayEvents = eventsForDay(date);
             const isToday = isSameDay(date, today);
@@ -184,8 +184,8 @@ export default function CalendarView({
               <div
                 key={i}
                 onClick={() => setSelectedDay(date)}
-                className={`border-r border-b border-neutral-200 p-1.5 min-h-[80px] cursor-pointer hover:bg-neutral-50 transition-colors ${
-                  isSelected ? "bg-neutral-50 ring-inset ring-1 ring-neutral-400" : ""
+                className={`border-r border-b border-line p-1.5 min-h-[80px] cursor-pointer hover:bg-surface-2 transition-colors ${
+                  isSelected ? "bg-page ring-inset ring-1 ring-neutral-400" : ""
                 }`}
               >
                 <div
@@ -193,8 +193,8 @@ export default function CalendarView({
                     isToday
                       ? "bg-neutral-900 text-white"
                       : isCurrentMonth
-                      ? "text-neutral-900"
-                      : "text-neutral-500"
+                      ? "text-ink"
+                      : "text-ink-3"
                   }`}
                 >
                   {date.getDate()}
@@ -216,7 +216,7 @@ export default function CalendarView({
                     </div>
                   ))}
                   {dayEvents.length > 3 && (
-                    <div className="text-xs text-neutral-600 px-1">
+                    <div className="text-xs text-ink-2 px-1">
                       +{dayEvents.length - 3} more
                     </div>
                   )}
@@ -233,7 +233,7 @@ export default function CalendarView({
           ).map(([k, v]) => (
             <div key={k} className="flex items-center gap-1.5">
               <div className={`w-2.5 h-2.5 rounded-full ${EVENT_TYPE_COLORS[k]}`} />
-              <span className="text-xs text-neutral-500">{v}</span>
+              <span className="text-xs text-ink-3">{v}</span>
             </div>
           ))}
         </div>
@@ -244,19 +244,19 @@ export default function CalendarView({
         {selectedDay ? (
           <div>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold text-neutral-700">
+              <p className="text-xs font-semibold text-ink-2">
                 {formatDateLabel(selectedDay)}
               </p>
               <button
                 onClick={() => openNew(selectedDay)}
-                className="text-xs text-neutral-500 hover:text-neutral-900"
+                className="text-xs text-ink-3 hover:text-ink"
               >
                 + Add
               </button>
             </div>
 
             {selectedEvents.length === 0 ? (
-              <p className="text-xs text-neutral-600 py-4 text-center">
+              <p className="text-xs text-ink-2 py-4 text-center">
                 No events — click + Add to create one.
               </p>
             ) : (
@@ -264,7 +264,7 @@ export default function CalendarView({
                 {selectedEvents.map((ev) => (
                   <div
                     key={ev.id}
-                    className="border border-neutral-200 rounded-lg p-3 cursor-pointer hover:border-neutral-400 transition-colors"
+                    className="border border-line rounded-lg p-3 cursor-pointer hover:border-line-3 transition-colors"
                     onClick={() => ev.sourceType === "manual" && openEdit(ev)}
                   >
                     <div className="flex items-start gap-2">
@@ -274,10 +274,10 @@ export default function CalendarView({
                         }`}
                       />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-neutral-900 truncate">
+                        <p className="text-sm font-medium text-ink truncate">
                           {ev.title}
                         </p>
-                        <p className="text-xs text-neutral-600 mt-0.5">
+                        <p className="text-xs text-ink-2 mt-0.5">
                           {ev.allDay
                             ? "All day"
                             : formatTime(ev.startAt)}
@@ -288,13 +288,13 @@ export default function CalendarView({
                           <Link
                             href={`/projects/${ev.projectId}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="text-xs text-blue-600 hover:underline mt-0.5 block truncate"
+                            className="text-xs text-blue hover:underline mt-0.5 block truncate"
                           >
                             {ev.projectName}
                           </Link>
                         )}
                         {ev.description && (
-                          <p className="text-xs text-neutral-500 mt-1 line-clamp-2">
+                          <p className="text-xs text-ink-3 mt-1 line-clamp-2">
                             {ev.description}
                           </p>
                         )}
@@ -306,7 +306,7 @@ export default function CalendarView({
             )}
           </div>
         ) : (
-          <div className="text-xs text-neutral-600 text-center pt-12">
+          <div className="text-xs text-ink-2 text-center pt-12">
             Click a day to see events
           </div>
         )}

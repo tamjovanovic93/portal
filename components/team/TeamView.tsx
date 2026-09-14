@@ -12,7 +12,7 @@ export default function TeamView({ members }: { members: TeamMember[] }) {
   const selected = members.find((m) => m.id === sel) ?? members[0];
 
   return (
-    <div style={{ padding: "28px 32px 60px", maxWidth: 1320, margin: "0 auto" }}>
+    <div className="page-wrap page-wrap-lg">
       <div className="fade-up flex items-end justify-between gap-5" style={{ marginBottom: 24 }}>
         <div>
           <div className="eyebrow" style={{ marginBottom: 10 }}>THE TEAM</div>

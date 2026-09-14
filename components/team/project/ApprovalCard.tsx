@@ -7,16 +7,16 @@ type Variant = "pending" | "approved" | "revise";
 
 const STYLES: Record<Variant, { bg: string; border: string; title: string; badge: string; badgeText: string }> = {
   pending: {
-    bg: "bg-blue-50", border: "border-blue-200",
+    bg: "bg-blue-fill", border: "border-blue-200",
     title: "text-blue-900", badge: "bg-blue-200", badgeText: "text-blue-800",
   },
   approved: {
-    bg: "bg-green-50", border: "border-green-200",
-    title: "text-green-900", badge: "bg-green-200", badgeText: "text-green-800",
+    bg: "bg-mint-fill", border: "border-green-200",
+    title: "text-green-900", badge: "bg-green-200", badgeText: "text-mint",
   },
   revise: {
-    bg: "bg-amber-50", border: "border-amber-200",
-    title: "text-amber-900", badge: "bg-amber-200", badgeText: "text-amber-800",
+    bg: "bg-amber-fill", border: "border-amber-200",
+    title: "text-amber-900", badge: "bg-amber-200", badgeText: "text-amber",
   },
 };
 

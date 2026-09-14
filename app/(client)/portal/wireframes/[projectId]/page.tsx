@@ -32,12 +32,12 @@ export default async function WireframeReviewPage({
   if (project.assets.length === 0) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-20 text-center">
-        <p className="text-neutral-500 text-sm">
+        <p className="text-ink-3 text-sm">
           No wireframes have been shared yet. Check back shortly.
         </p>
         <Link
           href="/portal"
-          className="mt-4 inline-block text-sm text-neutral-500 hover:text-neutral-900 underline underline-offset-2"
+          className="mt-4 inline-block text-sm text-ink-3 hover:text-ink underline underline-offset-2"
         >
           ← Back to portal
         </Link>
@@ -60,21 +60,21 @@ export default async function WireframeReviewPage({
       {/* Back link */}
       <Link
         href="/portal"
-        className="text-xs text-neutral-600 hover:text-neutral-700 transition-colors"
+        className="text-xs text-ink-2 hover:text-neutral-700 transition-colors"
       >
         ← Back to portal
       </Link>
 
       {/* Header */}
       <div>
-        <h1 className="text-xl font-semibold text-neutral-900">Wireframe Review</h1>
-        <p className="text-sm text-neutral-500 mt-0.5">{project.name}</p>
+        <h1 className="text-xl font-semibold text-ink">Wireframe Review</h1>
+        <p className="text-sm text-ink-3 mt-0.5">{project.name}</p>
         {isSubmitted ? (
-          <div className="mt-3 text-sm text-green-800 bg-green-50 border border-green-200 rounded-md px-4 py-3">
+          <div className="mt-3 text-sm text-mint bg-mint-fill border border-green-200 rounded-md px-4 py-3">
             ✓ Your feedback has been submitted — thank you. We&apos;ll review it and be in touch shortly.
           </div>
         ) : (
-          <p className="text-sm text-neutral-500 mt-3">
+          <p className="text-sm text-ink-3 mt-3">
             Go through each screen below and share your thoughts. We&apos;ll use your feedback to move into the full design.
           </p>
         )}

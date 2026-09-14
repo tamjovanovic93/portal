@@ -36,26 +36,26 @@ export default function DeliverableApproval({
 
   if (done === "approved") {
     return (
-      <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3">
-        <p className="text-sm font-medium text-green-800">✓ Approved — thank you.</p>
-        <p className="text-xs text-green-700 mt-0.5">{taskName}</p>
+      <div className="rounded-lg border border-green-200 bg-mint-fill px-4 py-3">
+        <p className="text-sm font-medium text-mint">✓ Approved — thank you.</p>
+        <p className="text-xs text-mint mt-0.5">{taskName}</p>
       </div>
     );
   }
   if (done === "changes") {
     return (
-      <div className="rounded-lg border border-neutral-200 bg-white px-4 py-3">
-        <p className="text-sm font-medium text-neutral-600">Changes requested — we&apos;ll revise and come back to you.</p>
-        <p className="text-xs text-neutral-600 mt-0.5">{taskName}</p>
+      <div className="rounded-lg border border-line bg-surface px-4 py-3">
+        <p className="text-sm font-medium text-ink-2">Changes requested — we&apos;ll revise and come back to you.</p>
+        <p className="text-xs text-ink-2 mt-0.5">{taskName}</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4 space-y-3">
+    <div className="rounded-lg border border-amber-200 bg-amber-fill px-4 py-4 space-y-3">
       <div>
-        <p className="text-sm font-medium text-neutral-900">{taskName}</p>
-        {description && <p className="text-xs text-neutral-500 mt-0.5">{description}</p>}
+        <p className="text-sm font-medium text-ink">{taskName}</p>
+        {description && <p className="text-xs text-ink-3 mt-0.5">{description}</p>}
       </div>
 
       {mode === "idle" ? (
@@ -70,7 +70,7 @@ export default function DeliverableApproval({
           <button
             onClick={() => setMode("changes")}
             disabled={loading}
-            className="px-4 py-2 border border-neutral-300 text-neutral-700 text-sm font-medium rounded-md hover:bg-white disabled:opacity-50 transition-colors"
+            className="px-4 py-2 border border-line-2 text-ink-2 text-sm font-medium rounded-md hover:bg-white disabled:opacity-50 transition-colors"
           >
             Request changes
           </button>
@@ -82,7 +82,7 @@ export default function DeliverableApproval({
             onChange={(e) => setNotes(e.target.value)}
             placeholder="What would you like changed?"
             rows={3}
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 resize-none"
+            className="w-full rounded-md border border-line-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 resize-none"
           />
           <div className="flex gap-2">
             <button
@@ -95,7 +95,7 @@ export default function DeliverableApproval({
             <button
               onClick={() => setMode("idle")}
               disabled={loading}
-              className="px-4 py-2 text-neutral-500 text-sm hover:text-neutral-800 transition-colors"
+              className="px-4 py-2 text-ink-3 text-sm hover:text-neutral-800 transition-colors"
             >
               Cancel
             </button>
@@ -103,7 +103,7 @@ export default function DeliverableApproval({
         </div>
       )}
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-rose">{error}</p>}
     </div>
   );
 }

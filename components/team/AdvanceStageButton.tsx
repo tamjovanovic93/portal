@@ -41,7 +41,7 @@ export default function AdvanceStageButton({
         }
         className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${
           blocked
-            ? "bg-neutral-100 text-neutral-600 cursor-not-allowed"
+            ? "bg-inset text-ink-2 cursor-not-allowed"
             : "bg-neutral-900 text-white hover:bg-neutral-800"
         } disabled:opacity-50`}
       >

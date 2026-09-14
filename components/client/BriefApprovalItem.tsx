@@ -35,8 +35,8 @@ export default function BriefApprovalItem({
 
   if (state !== "pending") {
     return (
-      <div className="rounded-lg border border-neutral-200 bg-white px-4 py-3">
-        <p className={`text-sm font-medium ${state === "approved" ? "text-green-700" : "text-neutral-500"}`}>
+      <div className="rounded-lg border border-line bg-surface px-4 py-3">
+        <p className={`text-sm font-medium ${state === "approved" ? "text-mint" : "text-ink-3"}`}>
           {state === "approved" ? "✓ Approved — thank you." : "Noted — we'll revise and come back to you."}
         </p>
       </div>
@@ -44,17 +44,17 @@ export default function BriefApprovalItem({
   }
 
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4 space-y-3">
+    <div className="rounded-lg border border-amber-200 bg-amber-fill px-4 py-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           {type && (
-            <p className="text-xs font-medium text-amber-700 uppercase tracking-wide mb-1">
+            <p className="text-xs font-medium text-amber uppercase tracking-wide mb-1">
               {MESSAGE_TYPE_LABELS[type] ?? type}
             </p>
           )}
-          <p className="text-sm text-neutral-900 leading-relaxed">{text}</p>
+          <p className="text-sm text-ink leading-relaxed">{text}</p>
           {notes && (
-            <p className="text-xs text-neutral-500 mt-1">{notes}</p>
+            <p className="text-xs text-ink-3 mt-1">{notes}</p>
           )}
         </div>
       </div>
@@ -69,7 +69,7 @@ export default function BriefApprovalItem({
         <button
           onClick={() => handle("no")}
           disabled={loading}
-          className="px-4 py-2 border border-neutral-300 text-neutral-700 text-sm font-medium rounded-md hover:bg-white disabled:opacity-50 transition-colors"
+          className="px-4 py-2 border border-line-2 text-ink-2 text-sm font-medium rounded-md hover:bg-white disabled:opacity-50 transition-colors"
         >
           Request changes
         </button>

@@ -13,10 +13,10 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_STYLE: Record<string, string> = {
-  NOT_STARTED: "text-neutral-600",
-  IN_PROGRESS: "text-blue-600",
-  GATE_PENDING: "text-amber-600",
-  COMPLETE: "text-neutral-900",
+  NOT_STARTED: "text-ink-2",
+  IN_PROGRESS: "text-blue",
+  GATE_PENDING: "text-amber",
+  COMPLETE: "text-ink",
 };
 
 type StageRow = {
@@ -87,9 +87,9 @@ export default function StageProgressBar({
             >
               <div className="h-3.5 flex items-center justify-center">
                 {gateUnresolved && (
-                  <LockIcon className={`w-3 h-3 ${isGate ? "text-amber-500" : "text-neutral-600"}`} />
+                  <LockIcon className={`w-3 h-3 ${isGate ? "text-amber-500" : "text-ink-2"}`} />
                 )}
-                {gatePassed && <CheckIcon className="w-3 h-3 text-neutral-900" />}
+                {gatePassed && <CheckIcon className="w-3 h-3 text-ink" />}
               </div>
               <div
                 className={`h-2 w-full rounded-full transition-opacity ${pipBg} ${
@@ -101,10 +101,10 @@ export default function StageProgressBar({
               <span
                 className={`text-xs transition-colors ${
                   isCurrent
-                    ? "text-neutral-900 font-semibold"
+                    ? "text-ink font-semibold"
                     : isDone
-                    ? "text-neutral-700"
-                    : "text-neutral-600 group-hover:text-neutral-600"
+                    ? "text-ink-2"
+                    : "text-ink-2 group-hover:text-neutral-600"
                 }`}
               >
                 {n}
@@ -116,16 +116,16 @@ export default function StageProgressBar({
 
       {/* Current-stage caption — name always visible, with gate status */}
       <div className="mt-2 flex items-center gap-2 flex-wrap">
-        <span className="text-sm font-semibold text-neutral-900">
+        <span className="text-sm font-semibold text-ink">
           Stage {currentStage} · {STAGE_LABELS[currentStage]}
         </span>
         {gateLocked ? (
-          <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded font-medium bg-amber-100 text-amber-700">
+          <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded font-medium bg-amber-fill text-amber">
             <LockIcon className="w-3 h-3" />
             {currentStatus === "GATE_PENDING" ? "Gate pending" : "Gate ahead"}
           </span>
         ) : currentHasGate && currentGateApproved ? (
-          <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded font-medium bg-green-100 text-green-700">
+          <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded font-medium bg-mint-fill text-mint">
             <CheckIcon className="w-3 h-3" />
             Gate approved
           </span>
@@ -133,29 +133,29 @@ export default function StageProgressBar({
       </div>
 
       {expanded !== null && (
-        <div className="mt-2 border border-neutral-200 rounded-lg p-4 bg-white">
+        <div className="mt-2 border border-line rounded-lg p-4 bg-surface">
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-neutral-600">
+                <span className="text-xs font-mono text-ink-2">
                   {String(expanded).padStart(2, "0")}
                 </span>
-                <h3 className="text-sm font-semibold text-neutral-900">
+                <h3 className="text-sm font-semibold text-ink">
                   {STAGE_LABELS[expanded]}
                 </h3>
                 {isGatedStage(expanded) && (
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-700">
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-inset text-ink-2">
                     gate
                   </span>
                 )}
               </div>
-              <p className="text-xs text-neutral-700 mt-0.5">
+              <p className="text-xs text-ink-2 mt-0.5">
                 {STAGE_INFO[expanded]?.description}
               </p>
               {statusMap[expanded] && (
                 <p
                   className={`text-xs mt-1 font-medium ${
-                    STATUS_STYLE[statusMap[expanded].status] ?? "text-neutral-600"
+                    STATUS_STYLE[statusMap[expanded].status] ?? "text-ink-2"
                   }`}
                 >
                   {STATUS_LABEL[statusMap[expanded].status] ?? statusMap[expanded].status}
@@ -165,7 +165,7 @@ export default function StageProgressBar({
             <div className="flex items-center gap-2 shrink-0">
               <Link
                 href={`/projects/${projectId}/stage/${expanded}`}
-                className="text-xs text-neutral-700 hover:text-neutral-900 border border-neutral-200 px-2.5 py-1 rounded-md transition-colors"
+                className="text-xs text-ink-2 hover:text-ink border border-line px-2.5 py-1 rounded-md transition-colors"
               >
                 Docs →
               </Link>

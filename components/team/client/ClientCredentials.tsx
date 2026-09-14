@@ -48,33 +48,19 @@ export default function ClientCredentials({
                 navigator.clipboard.writeText(`Email: ${email}\nPassword: ${password}`);
                 setCopied(true);
               }}
-              className="btn-mini"
+              className="btn-mini btn-mini-wide"
               style={{ marginTop: 6 }}
             >
               {copied ? "Copied ✓" : "Copy credentials"}
             </button>
           </div>
         ) : (
-          <button type="button" onClick={generate} disabled={isPending} className="btn-mini">
+          <button type="button" onClick={generate} disabled={isPending} className="btn-mini btn-mini-wide">
             {isPending ? "Generating…" : "Generate temporary password"}
           </button>
         )}
         {error && <p style={{ color: "var(--rose)", fontSize: 12 }}>{error}</p>}
       </div>
-
-      <style jsx>{`
-        .btn-mini {
-          font-size: 12px;
-          font-weight: 500;
-          padding: 5px 11px;
-          border-radius: 6px;
-          background: #171717;
-          color: #fff;
-        }
-        .btn-mini:disabled {
-          opacity: 0.5;
-        }
-      `}</style>
     </div>
   );
 }

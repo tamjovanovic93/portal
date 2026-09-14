@@ -62,17 +62,17 @@ export default function MaterialRow({
 
   if (editing) {
     return (
-      <div className="px-4 py-3 space-y-3 bg-neutral-50">
+      <div className="px-4 py-3 space-y-3 bg-page">
         <div className="flex gap-3">
           <input
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            className="flex-1 px-2 py-1.5 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            className="flex-1 px-2 py-1.5 border border-line-2 rounded text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
           />
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-32 px-2 py-1.5 border border-neutral-300 rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            className="w-32 px-2 py-1.5 border border-line-2 rounded text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-neutral-900"
           >
             {MATERIAL_CATEGORIES.map((c) => (
               <option key={c} value={c}>{c}</option>
@@ -81,7 +81,7 @@ export default function MaterialRow({
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="w-28 px-2 py-1.5 border border-neutral-300 rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            className="w-28 px-2 py-1.5 border border-line-2 rounded text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-neutral-900"
           >
             {MATERIAL_STATUSES.map((s) => (
               <option key={s} value={s}>{MATERIAL_STATUS_LABEL[s]}</option>
@@ -93,19 +93,19 @@ export default function MaterialRow({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Notes for client"
-            className="flex-1 px-2 py-1.5 border border-neutral-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            className="flex-1 px-2 py-1.5 border border-line-2 rounded text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
           />
           <input
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
-            className="w-36 px-2 py-1.5 border border-neutral-300 rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            className="w-36 px-2 py-1.5 border border-line-2 rounded text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-neutral-900"
           />
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setEditing(false)}
-            className="px-3 py-1 text-xs border border-neutral-300 rounded hover:bg-neutral-100 transition-colors"
+            className="px-3 py-1 text-xs border border-line-2 rounded hover:bg-surface-2 transition-colors"
           >
             Cancel
           </button>
@@ -119,7 +119,7 @@ export default function MaterialRow({
           <button
             onClick={handleDelete}
             disabled={loading}
-            className="ml-auto px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors"
+            className="ml-auto px-3 py-1 text-xs text-rose hover:bg-red-50 rounded transition-colors"
           >
             Delete
           </button>
@@ -146,14 +146,14 @@ export default function MaterialRow({
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className={`text-sm ${item.status === "verified" ? "line-through text-neutral-600" : "text-neutral-800"}`}>
+        <p className={`text-sm ${item.status === "verified" ? "line-through text-ink-2" : "text-ink"}`}>
           {item.label}
         </p>
         {item.notes && (
-          <p className="text-xs text-neutral-600 mt-0.5">{item.notes}</p>
+          <p className="text-xs text-ink-2 mt-0.5">{item.notes}</p>
         )}
         {item.dueDate && (
-          <p className="text-xs text-neutral-600 mt-0.5">
+          <p className="text-xs text-ink-2 mt-0.5">
             Due {new Date(item.dueDate).toLocaleDateString()}
           </p>
         )}
@@ -162,7 +162,7 @@ export default function MaterialRow({
       {/* Edit button — visible on hover */}
       <button
         onClick={() => setEditing(true)}
-        className="shrink-0 text-xs text-neutral-600 opacity-0 group-hover:opacity-100 hover:text-neutral-700 transition-all"
+        className="shrink-0 text-xs text-ink-2 opacity-0 group-hover:opacity-100 hover:text-neutral-700 transition-all"
       >
         Edit
       </button>

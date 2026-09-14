@@ -319,7 +319,7 @@ export default async function ProjectPage({
       <div className="mb-6">
         <Link
           href="/dashboard"
-          className="text-xs text-neutral-600 hover:text-neutral-700 mb-3 inline-block"
+          className="text-xs text-ink-2 hover:text-neutral-700 mb-3 inline-block"
         >
           ← Projects
         </Link>
@@ -328,25 +328,25 @@ export default async function ProjectPage({
             <div className="flex items-center gap-2">
               <h1 className="page-title" style={{ fontSize: 26 }}>{project.name}</h1>
               {project.mode === "ONGOING" && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium">
+                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-fill text-blue font-medium">
                   Retainer
                 </span>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-neutral-700">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-ink-2">
               <Link
                 href={`/clients/${project.clientId}`}
-                className="font-medium text-neutral-900 hover:underline underline-offset-2"
+                className="font-medium text-ink hover:underline underline-offset-2"
               >
                 {project.client.name ?? project.client.email}
               </Link>
-              <span className="text-neutral-700">·</span>
+              <span className="text-ink-2">·</span>
               <span>{PROJECT_TYPE_LABELS[project.type] ?? project.type}</span>
-              <span className="text-neutral-700">·</span>
+              <span className="text-ink-2">·</span>
               <span>
                 Stage {project.currentStage} — {STAGE_LABELS[project.currentStage]}
               </span>
-              <span className="text-neutral-700">·</span>
+              <span className="text-ink-2">·</span>
               <span>
                 Started{" "}
                 {new Date(project.createdAt).toLocaleDateString("en-AU", {
@@ -355,7 +355,7 @@ export default async function ProjectPage({
                   year: "numeric",
                 })}
               </span>
-              <span className="text-neutral-700">·</span>
+              <span className="text-ink-2">·</span>
               <span>Project</span>
             </div>
           </div>
@@ -363,7 +363,7 @@ export default async function ProjectPage({
             <NewProjectButton
               prefillEmail={project.client.email}
               label="+ New engagement"
-              triggerClassName="text-sm text-neutral-600 border border-neutral-300 px-3 py-1.5 rounded-md hover:bg-neutral-50 transition-colors"
+              triggerClassName="text-sm text-ink-2 border border-line-2 px-3 py-1.5 rounded-md hover:bg-surface-2 transition-colors"
             />
             <ClientLoginLink projectId={id} />
           </div>
@@ -386,68 +386,68 @@ export default async function ProjectPage({
       </div>
 
       {/* ── Status summary card — everything at a glance, before the scroll ──── */}
-      <div className="mb-6 bg-white border border-neutral-200 rounded-lg p-5">
+      <div className="mb-6 bg-surface border border-line rounded-lg p-5">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {/* Current stage */}
           <div>
-            <p className="text-xs text-neutral-700 mb-1">Current stage</p>
-            <p className="text-base font-semibold text-neutral-900 leading-tight">
+            <p className="text-xs text-ink-2 mb-1">Current stage</p>
+            <p className="text-base font-semibold text-ink leading-tight">
               {STAGE_LABELS[project.currentStage]}
             </p>
-            <p className="text-xs text-neutral-700 mt-0.5">Stage {project.currentStage} of {STAGE_COUNT}</p>
+            <p className="text-xs text-ink-2 mt-0.5">Stage {project.currentStage} of {STAGE_COUNT}</p>
           </div>
           {/* Gate status */}
           <div>
-            <p className="text-xs text-neutral-700 mb-1">Gate</p>
+            <p className="text-xs text-ink-2 mb-1">Gate</p>
             {gateStatus === "pending" ? (
-              <span className="inline-flex items-center gap-1 text-sm font-semibold text-amber-700">
+              <span className="inline-flex items-center gap-1 text-sm font-semibold text-amber">
                 <svg className="w-3.5 h-3.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><rect x="2.5" y="5.5" width="7" height="5" rx="1" /><path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" /></svg>
                 Pending
               </span>
             ) : gateStatus === "approved" ? (
-              <span className="inline-flex items-center gap-1 text-sm font-semibold text-green-700">
+              <span className="inline-flex items-center gap-1 text-sm font-semibold text-mint">
                 <svg className="w-3.5 h-3.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 6.5l2.5 2.5 4.5-5" /></svg>
                 Approved
               </span>
             ) : gateStatus === "ahead" ? (
-              <span className="text-sm font-semibold text-neutral-600">Gate ahead</span>
+              <span className="text-sm font-semibold text-ink-2">Gate ahead</span>
             ) : (
-              <span className="text-sm font-semibold text-neutral-600">No gate</span>
+              <span className="text-sm font-semibold text-ink-2">No gate</span>
             )}
           </div>
           {/* Materials pending */}
           <div>
-            <p className="text-xs text-neutral-700 mb-1">Materials pending</p>
-            <p className={`text-base font-semibold ${pendingMaterials.length > 0 ? "text-amber-700" : "text-neutral-900"}`}>
+            <p className="text-xs text-ink-2 mb-1">Materials pending</p>
+            <p className={`text-base font-semibold ${pendingMaterials.length > 0 ? "text-amber" : "text-ink"}`}>
               {pendingMaterials.length}
             </p>
-            <p className="text-xs text-neutral-700 mt-0.5">{receivedMaterials}/{project.materials.length} received</p>
+            <p className="text-xs text-ink-2 mt-0.5">{receivedMaterials}/{project.materials.length} received</p>
           </div>
           {/* Open client items */}
           <div>
-            <p className="text-xs text-neutral-700 mb-1">Open client items</p>
-            <p className={`text-base font-semibold ${openClientItems > 0 ? "text-blue-700" : "text-neutral-900"}`}>
+            <p className="text-xs text-ink-2 mb-1">Open client items</p>
+            <p className={`text-base font-semibold ${openClientItems > 0 ? "text-blue" : "text-ink"}`}>
               {openClientItems}
             </p>
-            <p className="text-xs text-neutral-700 mt-0.5">awaiting your review</p>
+            <p className="text-xs text-ink-2 mt-0.5">awaiting your review</p>
           </div>
         </div>
         {/* Most-urgent action */}
-        <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center gap-2">
+        <div className="mt-4 pt-4 border-t border-line flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full shrink-0 ${URGENT_DOT[mostUrgent.tone]}`} />
-          <span className="text-xs text-neutral-700">Next up</span>
-          <span className="text-sm font-medium text-neutral-900 truncate">{mostUrgent.text}</span>
+          <span className="text-xs text-ink-2">Next up</span>
+          <span className="text-sm font-medium text-ink truncate">{mostUrgent.text}</span>
         </div>
       </div>
 
       {/* ── Project setup — completed card (onboarding lives on the client) ──── */}
       {setupComplete && (
-        <div className="mb-6 bg-white border border-neutral-200 rounded-lg px-5 py-4 flex items-center justify-between gap-3">
+        <div className="mb-6 bg-surface border border-line rounded-lg px-5 py-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-green-600 text-white text-[11px] font-semibold flex items-center justify-center">✓</span>
             <div>
-              <p className="text-sm font-semibold text-neutral-900">Project setup — completed</p>
-              <p className="text-xs text-neutral-700 mt-0.5">
+              <p className="text-sm font-semibold text-ink">Project setup — completed</p>
+              <p className="text-xs text-ink-2 mt-0.5">
                 Onboarding, intake, and brief are done. The record stays available.
               </p>
             </div>
@@ -455,7 +455,7 @@ export default async function ProjectPage({
           {databaseGenerated && (
             <Link
               href={`/clients/${project.clientId}/data`}
-              className="text-sm text-neutral-900 font-medium border border-neutral-400 px-4 py-2 rounded-md hover:bg-neutral-50 transition-colors shrink-0"
+              className="text-sm text-ink font-medium border border-neutral-400 px-4 py-2 rounded-md hover:bg-surface-2 transition-colors shrink-0"
             >
               Data →
             </Link>
@@ -464,8 +464,8 @@ export default async function ProjectPage({
       )}
 
       {/* ── Stage progress bar ───────────────────────────────────────────────── */}
-      <div className="mb-6 bg-white border border-neutral-200 rounded-lg p-4">
-        <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-3">
+      <div className="mb-6 bg-surface border border-line rounded-lg p-4">
+        <p className="text-xs font-semibold text-ink-2 uppercase tracking-wider mb-3">
           Stage progress — click to expand
         </p>
         <StageProgressBar
@@ -481,15 +481,15 @@ export default async function ProjectPage({
 
       {/* ── Tasks — stage-tabbed board (Stage 1 planning, Stage 2+ Kanban) ───── */}
       <div className="mb-6">
-        <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-3">
+        <p className="text-xs font-semibold text-ink-2 uppercase tracking-wider mb-3">
           Tasks
         </p>
         {!tasksAvailable ? (
-          <p className="text-sm text-neutral-600">
+          <p className="text-sm text-ink-2">
             Tasks become available from the Strategy stage (stage 1).
           </p>
         ) : projectStageTasks.length === 0 ? (
-          <p className="text-sm text-neutral-600">
+          <p className="text-sm text-ink-2">
             No tasks yet. Approve “Sync Scope to Tasks” on the brief to generate them.
           </p>
         ) : (
@@ -500,21 +500,21 @@ export default async function ProjectPage({
       {/* ── Needs your attention (team must act) ─────────────────────────────── */}
       {hasActions && (
         <div className="mb-6">
-          <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
+          <p className="text-xs font-semibold text-ink-2 uppercase tracking-wider mb-2">
             Needs your attention
           </p>
           <div className="space-y-2">
             {docsToReview.map((doc) => (
               <div
                 key={doc.id}
-                className="flex items-center justify-between gap-3 bg-green-50 border border-green-200 rounded-lg px-4 py-3"
+                className="flex items-center justify-between gap-3 bg-mint-fill border border-green-200 rounded-lg px-4 py-3"
               >
                 <Link
                   href={`/projects/${id}/stage/${doc.stageNumber}/documents/${doc.id}`}
                   className="min-w-0 flex-1 group"
                 >
                   <p className="text-sm font-medium text-green-900 group-hover:underline">{doc.title}</p>
-                  <p className="text-xs text-green-700 mt-0.5">
+                  <p className="text-xs text-mint mt-0.5">
                     Submitted by client
                     {doc.completedAt && <> · {new Date(doc.completedAt).toLocaleDateString()}</>}
                     {" · "}Stage {doc.stageNumber} — {STAGE_LABELS[doc.stageNumber]}
@@ -523,56 +523,56 @@ export default async function ProjectPage({
                 <div className="flex items-center gap-2 shrink-0">
                   <Link
                     href={`/projects/${id}/stage/${doc.stageNumber}/documents/${doc.id}`}
-                    className="text-xs px-2 py-0.5 rounded-full bg-green-200 text-green-800 font-medium"
+                    className="text-xs px-2 py-0.5 rounded-full bg-green-200 text-mint font-medium"
                   >
                     Review →
                   </Link>
                   <MarkReviewedButton
                     documentId={doc.id}
-                    className="text-xs px-2.5 py-1 rounded-full bg-white border border-green-300 text-green-800 font-medium hover:bg-green-100 transition-colors shrink-0"
+                    className="text-xs px-2.5 py-1 rounded-full bg-surface border border-green-300 text-mint font-medium hover:bg-green-100 transition-colors shrink-0"
                   />
                 </div>
               </div>
             ))}
             {wireframeFeedbackActive && wireframeFeedbackDoc && (
-              <div className="flex items-center justify-between gap-3 bg-violet-50 border border-violet-300 border-l-4 border-l-violet-500 rounded-lg px-5 py-4">
+              <div className="flex items-center justify-between gap-3 bg-purple-fill border border-violet-300 border-l-4 border-l-violet-500 rounded-lg px-5 py-4">
                 <Link href={`/projects/${id}/stage/${WIREFRAME_STAGE}`} className="flex items-center gap-3 min-w-0 flex-1 group">
                   <span className="flex items-center justify-center w-8 h-8 rounded-full bg-violet-200 text-violet-800 shrink-0">
                     <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M14 8c0 2.8-2.7 5-6 5-.9 0-1.7-.2-2.5-.5L2 13l.8-2.8C2.3 9.5 2 8.8 2 8c0-2.8 2.7-5 6-5s6 2.2 6 5Z" /></svg>
                   </span>
                   <div>
                     <p className="text-base font-semibold text-violet-900 group-hover:underline">Wireframe feedback received</p>
-                    <p className="text-xs text-violet-700 mt-0.5">
+                    <p className="text-xs text-purple mt-0.5">
                       Client has reviewed the wireframes and left feedback
                       {wireframeFeedbackDoc.completedAt && <> · {new Date(wireframeFeedbackDoc.completedAt).toLocaleDateString()}</>}
                     </p>
                   </div>
                 </Link>
-                <MarkReviewedButton documentId={wireframeFeedbackDoc.id} className="text-xs px-2.5 py-1 rounded-full bg-white border border-violet-300 text-violet-800 font-medium hover:bg-violet-100 transition-colors shrink-0" />
+                <MarkReviewedButton documentId={wireframeFeedbackDoc.id} className="text-xs px-2.5 py-1 rounded-full bg-surface border border-violet-300 text-violet-800 font-medium hover:bg-violet-100 transition-colors shrink-0" />
               </div>
             )}
             {designFeedbackActive && designFeedbackDoc && (
-              <div className="flex items-center justify-between gap-3 bg-violet-50 border border-violet-300 border-l-4 border-l-violet-500 rounded-lg px-5 py-4">
+              <div className="flex items-center justify-between gap-3 bg-purple-fill border border-violet-300 border-l-4 border-l-violet-500 rounded-lg px-5 py-4">
                 <Link href={`/projects/${id}/stage/${DESIGN_STAGE}`} className="flex items-center gap-3 min-w-0 flex-1 group">
                   <span className="flex items-center justify-center w-8 h-8 rounded-full bg-violet-200 text-violet-800 shrink-0">
                     <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M14 8c0 2.8-2.7 5-6 5-.9 0-1.7-.2-2.5-.5L2 13l.8-2.8C2.3 9.5 2 8.8 2 8c0-2.8 2.7-5 6-5s6 2.2 6 5Z" /></svg>
                   </span>
                   <div>
                     <p className="text-base font-semibold text-violet-900 group-hover:underline">Design feedback received</p>
-                    <p className="text-xs text-violet-700 mt-0.5">
+                    <p className="text-xs text-purple mt-0.5">
                       Client has reviewed the designs and left feedback
                       {designFeedbackDoc.completedAt && <> · {new Date(designFeedbackDoc.completedAt).toLocaleDateString()}</>}
                     </p>
                   </div>
                 </Link>
-                <MarkReviewedButton documentId={designFeedbackDoc.id} className="text-xs px-2.5 py-1 rounded-full bg-white border border-violet-300 text-violet-800 font-medium hover:bg-violet-100 transition-colors shrink-0" />
+                <MarkReviewedButton documentId={designFeedbackDoc.id} className="text-xs px-2.5 py-1 rounded-full bg-surface border border-violet-300 text-violet-800 font-medium hover:bg-violet-100 transition-colors shrink-0" />
               </div>
             )}
             {submittedMaterials.map((m) => (
-              <div key={m.id} className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+              <div key={m.id} className="flex items-center justify-between bg-blue-fill border border-blue-200 rounded-lg px-4 py-3">
                 <div>
                   <p className="text-sm font-medium text-blue-900">{m.label}</p>
-                  <p className="text-xs text-blue-700 mt-0.5 capitalize">
+                  <p className="text-xs text-blue mt-0.5 capitalize">
                     {m.category} · Submitted by client — needs review
                   </p>
                 </div>
@@ -606,10 +606,10 @@ export default async function ProjectPage({
       {/* ── Generated copy (internal — send only if you choose to) ───────────── */}
       {generatedCopy.length > 0 && (
         <div className="mb-6">
-          <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">
+          <p className="text-xs font-semibold text-ink-2 uppercase tracking-wider mb-1">
             Generated copy — internal
           </p>
-          <p className="text-xs text-neutral-500 mb-2">
+          <p className="text-xs text-ink-3 mb-2">
             Draft copy the agent generated. It is not visible to the client. Send an item only if you want the client to approve it.
           </p>
           <div className="space-y-2">
@@ -630,22 +630,22 @@ export default async function ProjectPage({
       {/* ── Waiting on client (in-flight, no team action) ────────────────────── */}
       {hasWaiting && (
         <div className="mb-6">
-          <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
+          <p className="text-xs font-semibold text-ink-2 uppercase tracking-wider mb-2">
             Waiting on client
           </p>
           <div className="space-y-2">
             {gateStages.map((s) => (
-              <div key={s.id} className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-300 border-l-4 border-l-amber-500 rounded-lg px-5 py-4">
+              <div key={s.id} className="flex items-center justify-between gap-3 bg-amber-fill border border-amber-300 border-l-4 border-l-amber-500 rounded-lg px-5 py-4">
                 <div className="flex items-center gap-3">
-                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-200 text-amber-800 shrink-0">
+                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-200 text-amber shrink-0">
                     <svg className="w-4 h-4" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><rect x="2.5" y="5.5" width="7" height="5" rx="1" /><path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" /></svg>
                   </span>
                   <div>
                     <p className="text-base font-semibold text-amber-900">Gate pending — {STAGE_LABELS[s.stageNumber]}</p>
-                    <p className="text-xs text-amber-700 mt-0.5">Waiting for client approval to advance</p>
+                    <p className="text-xs text-amber mt-0.5">Waiting for client approval to advance</p>
                   </div>
                 </div>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-200 text-amber-800 font-medium shrink-0">Waiting</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-200 text-amber font-medium shrink-0">Waiting</span>
               </div>
             ))}
             {pendingApprovals.map((item) => (
@@ -660,20 +660,20 @@ export default async function ProjectPage({
               />
             ))}
             {pendingMaterials.slice(0, 3).map((m) => (
-              <div key={m.id} className="flex items-center justify-between bg-white border border-neutral-200 rounded-lg px-4 py-2">
+              <div key={m.id} className="flex items-center justify-between bg-surface border border-line rounded-lg px-4 py-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                  <p className="text-sm text-neutral-700 truncate">{m.label}</p>
-                  <span className="text-xs text-neutral-600 capitalize shrink-0">
+                  <p className="text-sm text-ink-2 truncate">{m.label}</p>
+                  <span className="text-xs text-ink-2 capitalize shrink-0">
                     {m.category}
                     {m.dueDate && <> · due {new Date(m.dueDate).toLocaleDateString()}</>}
                   </span>
                 </div>
-                <span className="text-xs text-neutral-700 shrink-0 ml-2">Pending</span>
+                <span className="text-xs text-ink-2 shrink-0 ml-2">Pending</span>
               </div>
             ))}
             {pendingMaterials.length > 3 && (
-              <p className="text-xs text-neutral-600 pl-4">
+              <p className="text-xs text-ink-2 pl-4">
                 +{pendingMaterials.length - 3} more pending material
                 {pendingMaterials.length - 3 !== 1 ? "s" : ""}
               </p>
@@ -685,20 +685,20 @@ export default async function ProjectPage({
       {/* ── Recently completed (history of former action items) ──────────────── */}
       {hasCompleted && (
         <details className="mb-6 group">
-          <summary className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2 cursor-pointer hover:text-neutral-900 select-none list-none">
+          <summary className="text-xs font-semibold text-ink-2 uppercase tracking-wider mb-2 cursor-pointer hover:text-ink select-none list-none">
             Recently completed ({docsHandled.length + clientApproved.length})
           </summary>
           <div className="space-y-2 mt-2">
             {docsHandled.map((doc) => (
-              <div key={doc.id} className="flex items-center justify-between gap-3 bg-white border border-neutral-200 rounded-lg px-4 py-3">
+              <div key={doc.id} className="flex items-center justify-between gap-3 bg-surface border border-line rounded-lg px-4 py-3">
                 <Link href={`/projects/${id}/stage/${doc.stageNumber}/documents/${doc.id}`} className="min-w-0 flex-1 group">
-                  <p className="text-sm text-neutral-700 group-hover:underline">{doc.title}</p>
-                  <p className="text-xs text-neutral-500 mt-0.5">
+                  <p className="text-sm text-ink-2 group-hover:underline">{doc.title}</p>
+                  <p className="text-xs text-ink-3 mt-0.5">
                     Reviewed{doc.handledAt && <> · {new Date(doc.handledAt).toLocaleDateString()}</>}
                     {" · "}Stage {doc.stageNumber} — {STAGE_LABELS[doc.stageNumber]}
                   </p>
                 </Link>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-medium shrink-0">Reviewed ✓</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-mint-fill text-mint font-medium shrink-0">Reviewed ✓</span>
               </div>
             ))}
             {clientApproved.map((item) => (
@@ -719,7 +719,7 @@ export default async function ProjectPage({
       {/* ── Materials checklist ──────────────────────────────────────────────── */}
       <div className="mb-6">
         <div className="flex items-center justify-between gap-4 mb-3">
-          <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider">
+          <p className="text-xs font-semibold text-ink-2 uppercase tracking-wider">
             Materials checklist
           </p>
           {project.materials.length > 0 && (
@@ -730,7 +730,7 @@ export default async function ProjectPage({
                   style={{ width: `${Math.round((receivedMaterials / project.materials.length) * 100)}%` }}
                 />
               </div>
-              <span className="text-xs font-medium text-neutral-700 tabular-nums">
+              <span className="text-xs font-medium text-ink-2 tabular-nums">
                 {receivedMaterials} / {project.materials.length} received
               </span>
             </div>
@@ -740,7 +740,7 @@ export default async function ProjectPage({
           <AddMaterialForm projectId={id} />
         </div>
         {project.materials.length === 0 ? (
-          <p className="text-sm text-neutral-600 text-center py-8">
+          <p className="text-sm text-ink-2 text-center py-8">
             Add items above to build the checklist.
           </p>
         ) : (
@@ -750,10 +750,10 @@ export default async function ProjectPage({
               if (catItems.length === 0) return null;
               return (
                 <section key={cat}>
-                  <h3 className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1.5 capitalize">
+                  <h3 className="text-xs font-semibold text-ink-2 uppercase tracking-wider mb-1.5 capitalize">
                     {cat}
                   </h3>
-                  <div className="divide-y divide-neutral-100 border border-neutral-200 rounded-lg bg-white overflow-hidden">
+                  <div className="divide-y divide-line border border-line rounded-lg bg-surface overflow-hidden">
                     {catItems.map((item) => (
                       <MaterialRow
                         key={item.id}
@@ -766,7 +766,7 @@ export default async function ProjectPage({
                           dueDate: item.dueDate?.toISOString() ?? null,
                         }}
                         statusLabel={MATERIAL_STATUS_LABEL[item.status] ?? item.status}
-                        statusStyle={MATERIAL_STATUS_TEXT_CLASS[item.status] ?? "text-neutral-700"}
+                        statusStyle={MATERIAL_STATUS_TEXT_CLASS[item.status] ?? "text-ink-2"}
                       />
                     ))}
                   </div>
@@ -779,7 +779,7 @@ export default async function ProjectPage({
 
       {/* ── Files — folders (same section retainers have) ────────────────────── */}
       <div className="mb-8">
-        <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-3">
+        <p className="text-xs font-semibold text-ink-2 uppercase tracking-wider mb-3">
           Files
         </p>
         <ProjectFiles projectId={id} clientId={clientId} briefGenerated={databaseGenerated} assets={assetRows} />
@@ -790,32 +790,32 @@ export default async function ProjectPage({
 
         {/* Latest uploads */}
         <div>
-          <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-3">
+          <p className="text-xs font-semibold text-ink-2 uppercase tracking-wider mb-3">
             Latest uploads
           </p>
           {project.assets.length === 0 ? (
-            <p className="text-sm text-neutral-600 py-4">No files uploaded yet.</p>
+            <p className="text-sm text-ink-2 py-4">No files uploaded yet.</p>
           ) : (
-            <div className="border border-neutral-200 rounded-lg bg-white divide-y divide-neutral-100 overflow-hidden">
+            <div className="border border-line rounded-lg bg-surface divide-y divide-line overflow-hidden">
               {project.assets.slice(0, 5).map((a) => (
                 <div key={a.id} className="flex items-center gap-3 px-4 py-3">
                   <div className="flex-1 min-w-0">
                     <a
                       href={`/api/download?id=${a.id}`}
-                      className="text-sm text-neutral-800 hover:underline truncate block"
+                      className="text-sm text-ink hover:underline truncate block"
                     >
                       {a.filename}
                     </a>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       {a.stageNumber && (
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-700">
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-inset text-ink-2">
                           {STAGE_LABELS[a.stageNumber]}
                         </span>
                       )}
-                      <span className="text-xs text-neutral-600">
+                      <span className="text-xs text-ink-2">
                         {formatBytes(a.sizeBytes)}
                       </span>
-                      <span className="text-xs text-neutral-600">
+                      <span className="text-xs text-ink-2">
                         {new Date(a.uploadedAt).toLocaleDateString()}
                       </span>
                     </div>
@@ -823,8 +823,8 @@ export default async function ProjectPage({
                   <span
                     className={`shrink-0 text-xs px-1.5 py-0.5 rounded font-medium ${
                       a.visibility === "SHARED"
-                        ? "bg-blue-50 text-blue-700"
-                        : "bg-neutral-100 text-neutral-700"
+                        ? "bg-blue-fill text-blue"
+                        : "bg-inset text-ink-2"
                     }`}
                   >
                     {a.visibility === "SHARED" ? "Shared" : "Internal"}
@@ -834,7 +834,7 @@ export default async function ProjectPage({
             </div>
           )}
           {project.assets.length > 5 && (
-            <p className="text-xs text-neutral-600 mt-2">
+            <p className="text-xs text-ink-2 mt-2">
               +{project.assets.length - 5} more —{" "}
               <Link
                 href={`/projects/${id}?tab=files`}
@@ -850,54 +850,54 @@ export default async function ProjectPage({
         <div className="space-y-6">
           {/* Brief snapshot */}
           <div>
-            <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-3">
+            <p className="text-xs font-semibold text-ink-2 uppercase tracking-wider mb-3">
               Data snapshot
             </p>
-            <div className="border border-neutral-200 rounded-lg bg-white p-4 space-y-2.5">
+            <div className="border border-line rounded-lg bg-surface p-4 space-y-2.5">
               {company ? (
                 <>
                   <div className="flex items-start gap-3">
-                    <span className="text-xs text-neutral-600 w-20 shrink-0 pt-0.5">Company</span>
-                    <span className="text-sm text-neutral-800">
+                    <span className="text-xs text-ink-2 w-20 shrink-0 pt-0.5">Company</span>
+                    <span className="text-sm text-ink">
                       {company.company_name ?? project.client.name ?? "—"}
                     </span>
                   </div>
                   {company.industry && (
                     <div className="flex items-start gap-3">
-                      <span className="text-xs text-neutral-600 w-20 shrink-0 pt-0.5">Industry</span>
-                      <span className="text-sm text-neutral-800">{company.industry}</span>
+                      <span className="text-xs text-ink-2 w-20 shrink-0 pt-0.5">Industry</span>
+                      <span className="text-sm text-ink">{company.industry}</span>
                     </div>
                   )}
                   {company.brand_essence && (
                     <div className="flex items-start gap-3">
-                      <span className="text-xs text-neutral-600 w-20 shrink-0 pt-0.5">Essence</span>
-                      <span className="text-sm text-neutral-800">{company.brand_essence}</span>
+                      <span className="text-xs text-ink-2 w-20 shrink-0 pt-0.5">Essence</span>
+                      <span className="text-sm text-ink">{company.brand_essence}</span>
                     </div>
                   )}
                   {company.current_challenge && (
                     <div className="flex items-start gap-3">
-                      <span className="text-xs text-neutral-600 w-20 shrink-0 pt-0.5">Challenge</span>
-                      <span className="text-sm text-neutral-800">{company.current_challenge}</span>
+                      <span className="text-xs text-ink-2 w-20 shrink-0 pt-0.5">Challenge</span>
+                      <span className="text-sm text-ink">{company.current_challenge}</span>
                     </div>
                   )}
                 </>
               ) : (
-                <p className="text-sm text-neutral-600">No company data yet.</p>
+                <p className="text-sm text-ink-2">No company data yet.</p>
               )}
               {primaryGoals.length > 0 && (
-                <div className="pt-2 border-t border-neutral-100 space-y-1">
-                  <p className="text-xs text-neutral-600 mb-1">Primary goals</p>
+                <div className="pt-2 border-t border-line space-y-1">
+                  <p className="text-xs text-ink-2 mb-1">Primary goals</p>
                   {primaryGoals.map((g, i) => (
-                    <p key={i} className="text-sm text-neutral-800">
+                    <p key={i} className="text-sm text-ink">
                       {(g.goal_description as string) ?? "—"}
                     </p>
                   ))}
                 </div>
               )}
-              <div className="pt-1.5 border-t border-neutral-100">
+              <div className="pt-1.5 border-t border-line">
                 <Link
                   href={`/clients/${project.clientId}/data`}
-                  className="text-xs text-neutral-700 hover:text-neutral-800 transition-colors"
+                  className="text-xs text-ink-2 hover:text-neutral-800 transition-colors"
                 >
                   View all data →
                 </Link>
@@ -907,13 +907,13 @@ export default async function ProjectPage({
 
           {/* Activity log */}
           <div>
-            <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-3">
+            <p className="text-xs font-semibold text-ink-2 uppercase tracking-wider mb-3">
               Activity
             </p>
             {activityItems.length === 0 ? (
-              <p className="text-sm text-neutral-600">No activity yet.</p>
+              <p className="text-sm text-ink-2">No activity yet.</p>
             ) : (
-              <div className="border border-neutral-200 rounded-lg bg-white divide-y divide-neutral-100 overflow-hidden">
+              <div className="border border-line rounded-lg bg-surface divide-y divide-line overflow-hidden">
                 {activityItems.map((item, i) => (
                   <div key={i} className="flex items-start gap-3 px-4 py-3">
                     <div
@@ -926,12 +926,12 @@ export default async function ProjectPage({
                       }`}
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-neutral-800">{item.label}</p>
+                      <p className="text-sm text-ink">{item.label}</p>
                       {item.sub && (
-                        <p className="text-xs text-neutral-600">{item.sub}</p>
+                        <p className="text-xs text-ink-2">{item.sub}</p>
                       )}
                     </div>
-                    <span className="shrink-0 text-xs text-neutral-600">
+                    <span className="shrink-0 text-xs text-ink-2">
                       {new Date(item.date).toLocaleDateString()}
                     </span>
                   </div>
@@ -943,16 +943,16 @@ export default async function ProjectPage({
       </div>
 
       {/* ── Tabs ─────────────────────────────────────────────────────────────── */}
-      <div className="border-t border-neutral-200 pt-6">
-        <nav className="flex gap-1 border-b border-neutral-200 mb-6">
+      <div className="border-t border-line pt-6">
+        <nav className="flex gap-1 border-b border-line mb-6">
           {TABS.map(({ tabId, label }) => (
             <Link
               key={tabId}
               href={`/projects/${id}?tab=${tabId}`}
               className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 activeTab === tabId
-                  ? "border-neutral-900 text-neutral-900"
-                  : "border-transparent text-neutral-700 hover:text-neutral-700"
+                  ? "border-neutral-900 text-ink"
+                  : "border-transparent text-ink-2 hover:text-neutral-700"
               }`}
             >
               {label}
@@ -960,7 +960,7 @@ export default async function ProjectPage({
           ))}
           <Link
             href={`/clients/${project.clientId}/data`}
-            className="px-4 py-2.5 text-sm font-medium text-neutral-700 hover:text-neutral-700 transition-colors border-b-2 border-transparent -mb-px"
+            className="px-4 py-2.5 text-sm font-medium text-ink-2 hover:text-neutral-700 transition-colors border-b-2 border-transparent -mb-px"
           >
             Data ↗
           </Link>
@@ -975,47 +975,47 @@ export default async function ProjectPage({
         {activeTab === "approvals" && (
           <div>
             {project.approvals.length === 0 ? (
-              <p className="text-sm text-neutral-600 text-center py-12">
+              <p className="text-sm text-ink-2 text-center py-12">
                 No approvals recorded yet.
               </p>
             ) : (
-              <div className="border border-neutral-200 rounded-lg bg-white overflow-hidden">
+              <div className="border border-line rounded-lg bg-surface overflow-hidden">
                 <table className="w-full text-sm">
-                  <thead className="border-b border-neutral-200 bg-neutral-50">
+                  <thead className="border-b border-line bg-page">
                     <tr>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-700 uppercase tracking-wider">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-ink-2 uppercase tracking-wider">
                         Stage
                       </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-700 uppercase tracking-wider">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-ink-2 uppercase tracking-wider">
                         Approved by
                       </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-700 uppercase tracking-wider">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-ink-2 uppercase tracking-wider">
                         Method
                       </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-700 uppercase tracking-wider">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-ink-2 uppercase tracking-wider">
                         Date
                       </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-700 uppercase tracking-wider">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-ink-2 uppercase tracking-wider">
                         Notes
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-100">
+                  <tbody className="divide-y divide-line">
                     {project.approvals.map((a) => (
                       <tr key={a.id}>
-                        <td className="px-4 py-3 font-medium text-neutral-900">
+                        <td className="px-4 py-3 font-medium text-ink">
                           {STAGE_LABELS[a.stageNumber ?? 0] ?? `Stage ${a.stageNumber}`}
                         </td>
-                        <td className="px-4 py-3 text-neutral-600">
+                        <td className="px-4 py-3 text-ink-2">
                           {a.approvedBy.name ?? a.approvedBy.email}
                         </td>
-                        <td className="px-4 py-3 text-neutral-600">
+                        <td className="px-4 py-3 text-ink-2">
                           {APPROVAL_METHOD_LABEL[a.method] ?? a.method}
                         </td>
-                        <td className="px-4 py-3 text-neutral-700">
+                        <td className="px-4 py-3 text-ink-2">
                           {new Date(a.approvedAt).toLocaleDateString()}
                         </td>
-                        <td className="px-4 py-3 text-neutral-700 text-xs">
+                        <td className="px-4 py-3 text-ink-2 text-xs">
                           {a.notes ?? "—"}
                         </td>
                       </tr>
@@ -1028,71 +1028,71 @@ export default async function ProjectPage({
             {/* Brief item acknowledgements */}
             {(ackedMessages.length > 0 || ackedSlogans.length > 0) && (
               <div className="mt-6">
-                <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-3">
+                <p className="text-xs font-semibold text-ink-2 uppercase tracking-wider mb-3">
                   Brief &amp; messaging acknowledgements
                 </p>
-                <div className="border border-neutral-200 rounded-lg bg-white overflow-hidden">
+                <div className="border border-line rounded-lg bg-surface overflow-hidden">
                   <table className="w-full text-sm">
-                    <thead className="border-b border-neutral-200 bg-neutral-50">
+                    <thead className="border-b border-line bg-page">
                       <tr>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-700 uppercase tracking-wider">Type</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-700 uppercase tracking-wider">Content</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-700 uppercase tracking-wider">Client decision</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-700 uppercase tracking-wider">Seen by</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-700 uppercase tracking-wider">Seen at</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-ink-2 uppercase tracking-wider">Type</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-ink-2 uppercase tracking-wider">Content</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-ink-2 uppercase tracking-wider">Client decision</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-ink-2 uppercase tracking-wider">Seen by</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-ink-2 uppercase tracking-wider">Seen at</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-neutral-100">
+                    <tbody className="divide-y divide-line">
                       {ackedMessages.map((m) => (
                         <tr key={m.message_id}>
-                          <td className="px-4 py-3 text-neutral-700 capitalize whitespace-nowrap">
+                          <td className="px-4 py-3 text-ink-2 capitalize whitespace-nowrap">
                             {(m.message_type as string) ?? "Message"}
                           </td>
-                          <td className="px-4 py-3 text-neutral-900 max-w-xs truncate">
+                          <td className="px-4 py-3 text-ink max-w-xs truncate">
                             {(m.message_text as string) ?? "—"}
                           </td>
                           <td className="px-4 py-3">
                             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                               m.approved === "yes"
-                                ? "bg-green-100 text-green-800"
+                                ? "bg-mint-fill text-mint"
                                 : m.approved === "no"
-                                ? "bg-amber-100 text-amber-800"
-                                : "bg-neutral-100 text-neutral-600"
+                                ? "bg-amber-fill text-amber"
+                                : "bg-inset text-ink-2"
                             }`}>
                               {m.approved === "yes" ? "Approved" : m.approved === "no" ? "Changes requested" : "Pending"}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-neutral-600">
+                          <td className="px-4 py-3 text-ink-2">
                             {m.team_acknowledged_by ? (acknowledgerMap[m.team_acknowledged_by] ?? "—") : "—"}
                           </td>
-                          <td className="px-4 py-3 text-neutral-700 whitespace-nowrap">
+                          <td className="px-4 py-3 text-ink-2 whitespace-nowrap">
                             {m.team_acknowledged_at ? new Date(m.team_acknowledged_at).toLocaleString() : "—"}
                           </td>
                         </tr>
                       ))}
                       {ackedSlogans.map((s) => (
                         <tr key={s.slogan_id}>
-                          <td className="px-4 py-3 text-neutral-700 capitalize whitespace-nowrap">
+                          <td className="px-4 py-3 text-ink-2 capitalize whitespace-nowrap">
                             {(s.type as string) ?? "Slogan"}
                           </td>
-                          <td className="px-4 py-3 text-neutral-900 max-w-xs truncate">
+                          <td className="px-4 py-3 text-ink max-w-xs truncate">
                             {(s.slogan_text as string) ?? "—"}
                           </td>
                           <td className="px-4 py-3">
                             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                               s.approved === "yes"
-                                ? "bg-green-100 text-green-800"
+                                ? "bg-mint-fill text-mint"
                                 : s.approved === "no"
-                                ? "bg-amber-100 text-amber-800"
-                                : "bg-neutral-100 text-neutral-600"
+                                ? "bg-amber-fill text-amber"
+                                : "bg-inset text-ink-2"
                             }`}>
                               {s.approved === "yes" ? "Approved" : s.approved === "no" ? "Changes requested" : "Pending"}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-neutral-600">
+                          <td className="px-4 py-3 text-ink-2">
                             {s.team_acknowledged_by ? (acknowledgerMap[s.team_acknowledged_by] ?? "—") : "—"}
                           </td>
-                          <td className="px-4 py-3 text-neutral-700 whitespace-nowrap">
+                          <td className="px-4 py-3 text-ink-2 whitespace-nowrap">
                             {s.team_acknowledged_at ? new Date(s.team_acknowledged_at).toLocaleString() : "—"}
                           </td>
                         </tr>

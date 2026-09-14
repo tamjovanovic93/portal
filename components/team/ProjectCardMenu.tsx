@@ -64,7 +64,7 @@ export default function ProjectCardMenu({
           setOpen((o) => !o);
         }}
         disabled={busy}
-        className="flex items-center justify-center w-6 h-6 rounded hover:bg-neutral-100 text-neutral-600 hover:text-neutral-600 transition-colors"
+        className="flex items-center justify-center w-6 h-6 rounded hover:bg-surface-2 text-ink-2 hover:text-neutral-600 transition-colors"
         aria-label="Project options"
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
@@ -75,18 +75,18 @@ export default function ProjectCardMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-neutral-200 rounded-md shadow-lg z-30 py-1">
+        <div className="absolute right-0 top-full mt-1 w-36 bg-surface border border-line rounded-md shadow-lg z-30 py-1">
           <button
             onClick={handleArchive}
             disabled={busy}
-            className="w-full text-left px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+            className="w-full text-left px-3 py-2 text-sm text-ink-2 hover:bg-surface-2 disabled:opacity-50"
           >
             {isArchived ? "Restore" : "Archive"}
           </button>
           <button
             onClick={handleDelete}
             disabled={busy}
-            className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+            className="w-full text-left px-3 py-2 text-sm text-rose hover:bg-red-50 disabled:opacity-50"
           >
             Delete
           </button>

@@ -30,12 +30,12 @@ export default function SendCopyCard({
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 bg-white border border-neutral-200 rounded-lg px-4 py-3">
+    <div className="flex items-center justify-between gap-3 bg-surface border border-line rounded-lg px-4 py-3">
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-neutral-800">
-          {label} <span className="text-xs text-neutral-500 font-normal">· internal draft</span>
+        <p className="text-sm font-medium text-ink">
+          {label} <span className="text-xs text-ink-3 font-normal">· internal draft</span>
         </p>
-        <p className="text-xs mt-0.5 truncate text-neutral-600">{text}</p>
+        <p className="text-xs mt-0.5 truncate text-ink-2">{text}</p>
       </div>
       <button
         type="button"

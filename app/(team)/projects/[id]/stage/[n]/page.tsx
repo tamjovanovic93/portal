@@ -26,9 +26,9 @@ const REACTION_LABELS: Record<string, string> = {
 };
 
 const REACTION_BADGE: Record<string, string> = {
-  happy: "bg-green-100 text-green-800",
-  tweaks: "bg-amber-100 text-amber-800",
-  rethink: "bg-red-100 text-red-800",
+  happy: "bg-mint-fill text-mint",
+  tweaks: "bg-amber-fill text-amber",
+  rethink: "bg-rose-fill text-red-800",
 };
 
 async function CreateDocumentButton({
@@ -70,7 +70,7 @@ async function SendButton({ documentId }: { documentId: string }) {
     <form action={handleSend}>
       <button
         type="submit"
-        className="text-xs px-2.5 py-1 rounded border border-blue-300 text-blue-700 hover:bg-blue-50 transition-colors"
+        className="text-xs px-2.5 py-1 rounded border border-blue-300 text-blue hover:bg-blue-50 transition-colors"
       >
         Send to client
       </button>
@@ -243,7 +243,7 @@ export default async function StagePage({
   return (
     <div className="max-w-3xl mx-auto px-6 py-10 space-y-8">
       {/* Breadcrumb */}
-      <nav className="text-xs text-neutral-600 space-x-1.5">
+      <nav className="text-xs text-ink-2 space-x-1.5">
         <Link href="/dashboard" className="hover:text-neutral-700">
           Projects
         </Link>
@@ -252,18 +252,18 @@ export default async function StagePage({
           {project.name}
         </Link>
         <span>›</span>
-        <span className="text-neutral-600">
+        <span className="text-ink-2">
           Stage {stageNumber} — {stageLabel(stageNumber)}
         </span>
       </nav>
 
       {/* Stage header */}
       <div>
-        <h1 className="text-xl font-semibold text-neutral-900">
+        <h1 className="text-xl font-semibold text-ink">
           Stage {String(stageNumber).padStart(2, "0")} — {stageLabel(stageNumber)}
         </h1>
         {stageRow && (
-          <p className="text-sm text-neutral-500 mt-1 capitalize">
+          <p className="text-sm text-ink-3 mt-1 capitalize">
             Status: {stageRow.status.toLowerCase().replace("_", " ")}
           </p>
         )}
@@ -274,10 +274,10 @@ export default async function StagePage({
       {isProjectMode && (
         <div>
           <div className="mb-3">
-            <h2 className="text-sm font-semibold text-neutral-900">
+            <h2 className="text-sm font-semibold text-ink">
               {stageNumber === 1 ? "Planning — all tasks" : "Tasks for this stage"}
             </h2>
-            <p className="text-xs text-neutral-500 mt-0.5">
+            <p className="text-xs text-ink-3 mt-0.5">
               {stageNumber === 1
                 ? "Every scope item and its tasks. Add notes, assign people and estimates; statuses start from Stage 2."
                 : "Update status, assign people, add estimates and links, or move a task to another stage."}
@@ -297,8 +297,8 @@ export default async function StagePage({
         <>
           <div>
             <div className="mb-3">
-              <h2 className="text-sm font-semibold text-neutral-900">Wireframes</h2>
-              <p className="text-xs text-neutral-500 mt-0.5">
+              <h2 className="text-sm font-semibold text-ink">Wireframes</h2>
+              <p className="text-xs text-ink-3 mt-0.5">
                 Upload all pages and screens. They&apos;re shared with the client automatically for review.
               </p>
             </div>
@@ -313,10 +313,10 @@ export default async function StagePage({
           {/* Client feedback — shown as a dedicated section once submitted */}
           {wireframeFeedback.status === "submitted" && (
             <div>
-              <h2 className="text-sm font-semibold text-neutral-900 mb-4">
+              <h2 className="text-sm font-semibold text-ink mb-4">
                 Client Wireframe Feedback
                 {wireframeFeedback.submittedAt && (
-                  <span className="ml-2 text-xs font-normal text-neutral-600">
+                  <span className="ml-2 text-xs font-normal text-ink-2">
                     received {new Date(wireframeFeedback.submittedAt).toLocaleDateString()}
                   </span>
                 )}
@@ -325,11 +325,11 @@ export default async function StagePage({
               <div className="space-y-3">
                 {/* Overall direction */}
                 {wireframeFeedback.overall && (
-                  <div className="bg-white border border-neutral-200 rounded-lg px-5 py-4">
-                    <p className="text-xs font-medium text-neutral-600 uppercase tracking-wide mb-1">
+                  <div className="bg-surface border border-line rounded-lg px-5 py-4">
+                    <p className="text-xs font-medium text-ink-2 uppercase tracking-wide mb-1">
                       Overall direction
                     </p>
-                    <p className="text-sm font-medium text-neutral-900">
+                    <p className="text-sm font-medium text-ink">
                       {OVERALL_LABELS[wireframeFeedback.overall] ?? wireframeFeedback.overall}
                     </p>
                   </div>
@@ -342,26 +342,26 @@ export default async function StagePage({
                   return (
                     <div
                       key={asset.id}
-                      className="bg-white border border-neutral-200 rounded-lg px-5 py-4 space-y-2"
+                      className="bg-surface border border-line rounded-lg px-5 py-4 space-y-2"
                     >
                       <div className="flex items-center justify-between gap-4">
-                        <p className="text-sm font-medium text-neutral-900 truncate">
+                        <p className="text-sm font-medium text-ink truncate">
                           {label}
                         </p>
                         {page?.reaction ? (
                           <span
                             className={`text-xs font-medium shrink-0 px-2.5 py-1 rounded-full ${
-                              REACTION_BADGE[page.reaction] ?? "bg-neutral-100 text-neutral-600"
+                              REACTION_BADGE[page.reaction] ?? "bg-inset text-ink-2"
                             }`}
                           >
                             {REACTION_LABELS[page.reaction] ?? page.reaction}
                           </span>
                         ) : (
-                          <span className="text-xs text-neutral-600 shrink-0">No reaction left</span>
+                          <span className="text-xs text-ink-2 shrink-0">No reaction left</span>
                         )}
                       </div>
                       {page?.comment ? (
-                        <p className="text-sm text-neutral-600 border-t border-neutral-100 pt-2">
+                        <p className="text-sm text-ink-2 border-t border-line pt-2">
                           &ldquo;{page.comment}&rdquo;
                         </p>
                       ) : null}
@@ -371,11 +371,11 @@ export default async function StagePage({
 
                 {/* Final notes */}
                 {wireframeFeedback.finalNotes && (
-                  <div className="bg-white border border-neutral-200 rounded-lg px-5 py-4">
-                    <p className="text-xs font-medium text-neutral-600 uppercase tracking-wide mb-1">
+                  <div className="bg-surface border border-line rounded-lg px-5 py-4">
+                    <p className="text-xs font-medium text-ink-2 uppercase tracking-wide mb-1">
                       Additional notes
                     </p>
-                    <p className="text-sm text-neutral-600">
+                    <p className="text-sm text-ink-2">
                       &ldquo;{wireframeFeedback.finalNotes}&rdquo;
                     </p>
                   </div>
@@ -391,8 +391,8 @@ export default async function StagePage({
         <>
           <div>
             <div className="mb-3">
-              <h2 className="text-sm font-semibold text-neutral-900">Design Mockup</h2>
-              <p className="text-xs text-neutral-500 mt-0.5">
+              <h2 className="text-sm font-semibold text-ink">Design Mockup</h2>
+              <p className="text-xs text-ink-3 mt-0.5">
                 Upload design files or add links (Figma, staging preview, etc.). Shared with the client automatically.
               </p>
             </div>
@@ -408,10 +408,10 @@ export default async function StagePage({
           {/* Client feedback breakdown */}
           {designFeedback.status === "submitted" && (
             <div>
-              <h2 className="text-sm font-semibold text-neutral-900 mb-4">
+              <h2 className="text-sm font-semibold text-ink mb-4">
                 Client Design Feedback
                 {designFeedback.submittedAt && (
-                  <span className="ml-2 text-xs font-normal text-neutral-600">
+                  <span className="ml-2 text-xs font-normal text-ink-2">
                     received {new Date(designFeedback.submittedAt).toLocaleDateString()}
                   </span>
                 )}
@@ -421,11 +421,11 @@ export default async function StagePage({
                 {/* Verdict */}
                 {designFeedback.verdict && (
                   <div className={`border rounded-lg px-5 py-4 ${
-                    designFeedback.verdict === "approved" ? "border-green-200 bg-green-50"
-                    : designFeedback.verdict === "approved_with_revisions" ? "border-amber-200 bg-amber-50"
-                    : "border-red-200 bg-red-50"
+                    designFeedback.verdict === "approved" ? "border-green-200 bg-mint-fill"
+                    : designFeedback.verdict === "approved_with_revisions" ? "border-amber-200 bg-amber-fill"
+                    : "border-red-200 bg-rose-fill"
                   }`}>
-                    <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1">Verdict</p>
+                    <p className="text-xs font-medium text-ink-3 uppercase tracking-wide mb-1">Verdict</p>
                     <p className={`text-sm font-semibold ${
                       designFeedback.verdict === "approved" ? "text-green-900"
                       : designFeedback.verdict === "approved_with_revisions" ? "text-amber-900"
@@ -440,9 +440,9 @@ export default async function StagePage({
 
                 {/* Revisions with status tracking */}
                 {designFeedback.revisions && designFeedback.revisions.filter(r => r.whatToChange).length > 0 && designFeedback.documentId && (
-                  <div className="bg-white border border-neutral-200 rounded-lg px-5 py-4">
+                  <div className="bg-surface border border-line rounded-lg px-5 py-4">
                     <div className="flex items-center justify-between mb-4">
-                      <p className="text-xs font-medium text-neutral-600 uppercase tracking-wide">
+                      <p className="text-xs font-medium text-ink-2 uppercase tracking-wide">
                         Revision requests — {designFeedback.revisions.filter(r => r.whatToChange).length}
                       </p>
                       {(() => {
@@ -450,7 +450,7 @@ export default async function StagePage({
                         const done = Object.values(statuses).filter(s => s === "done" || s === "wont_fix").length;
                         const total = designFeedback.revisions!.filter(r => r.whatToChange).length;
                         return done > 0 ? (
-                          <span className="text-xs text-neutral-600">{done} of {total} resolved</span>
+                          <span className="text-xs text-ink-2">{done} of {total} resolved</span>
                         ) : null;
                       })()}
                     </div>
@@ -464,11 +464,11 @@ export default async function StagePage({
 
                 {/* Areas */}
                 {designFeedback.areas && designFeedback.areas.length > 0 && (
-                  <div className="bg-white border border-neutral-200 rounded-lg px-5 py-4">
-                    <p className="text-xs font-medium text-neutral-600 uppercase tracking-wide mb-2">Areas flagged</p>
+                  <div className="bg-surface border border-line rounded-lg px-5 py-4">
+                    <p className="text-xs font-medium text-ink-2 uppercase tracking-wide mb-2">Areas flagged</p>
                     <div className="flex flex-wrap gap-1.5">
                       {designFeedback.areas.map((area) => (
-                        <span key={area} className="text-xs px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-700 capitalize">
+                        <span key={area} className="text-xs px-2.5 py-1 rounded-full bg-inset text-ink-2 capitalize">
                           {area.replace(/_/g, " ")}
                         </span>
                       ))}
@@ -478,24 +478,24 @@ export default async function StagePage({
 
                 {/* What's working */}
                 {designFeedback.happyWith && (
-                  <div className="bg-white border border-neutral-200 rounded-lg px-5 py-4">
-                    <p className="text-xs font-medium text-neutral-600 uppercase tracking-wide mb-1">What&apos;s working well</p>
-                    <p className="text-sm text-neutral-600">&ldquo;{designFeedback.happyWith}&rdquo;</p>
+                  <div className="bg-surface border border-line rounded-lg px-5 py-4">
+                    <p className="text-xs font-medium text-ink-2 uppercase tracking-wide mb-1">What&apos;s working well</p>
+                    <p className="text-sm text-ink-2">&ldquo;{designFeedback.happyWith}&rdquo;</p>
                   </div>
                 )}
 
                 {/* Anything else */}
                 {designFeedback.anythingElse && (
-                  <div className="bg-white border border-neutral-200 rounded-lg px-5 py-4">
-                    <p className="text-xs font-medium text-neutral-600 uppercase tracking-wide mb-1">Additional notes</p>
-                    <p className="text-sm text-neutral-600">&ldquo;{designFeedback.anythingElse}&rdquo;</p>
+                  <div className="bg-surface border border-line rounded-lg px-5 py-4">
+                    <p className="text-xs font-medium text-ink-2 uppercase tracking-wide mb-1">Additional notes</p>
+                    <p className="text-sm text-ink-2">&ldquo;{designFeedback.anythingElse}&rdquo;</p>
                   </div>
                 )}
 
                 {/* Client attachments */}
                 {designFeedback.attachments && designFeedback.attachments.length > 0 && (
-                  <div className="bg-white border border-neutral-200 rounded-lg px-5 py-4">
-                    <p className="text-xs font-medium text-neutral-600 uppercase tracking-wide mb-3">
+                  <div className="bg-surface border border-line rounded-lg px-5 py-4">
+                    <p className="text-xs font-medium text-ink-2 uppercase tracking-wide mb-3">
                       Reference files from client — {designFeedback.attachments.length}
                     </p>
                     <div className="space-y-2">
@@ -505,15 +505,15 @@ export default async function StagePage({
                           href={`/api/download?id=${att.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-3 px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-md hover:border-neutral-400 transition-colors group"
+                          className="flex items-center gap-3 px-3 py-2 bg-page border border-line rounded-md hover:border-line-3 transition-colors group"
                         >
-                          <svg className="w-4 h-4 text-neutral-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <svg className="w-4 h-4 text-ink-2 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
                           </svg>
-                          <span className="text-sm text-neutral-700 flex-1 truncate group-hover:underline">
+                          <span className="text-sm text-ink-2 flex-1 truncate group-hover:underline">
                             {att.filename}
                           </span>
-                          <span className="text-xs text-neutral-600 shrink-0">Download ↓</span>
+                          <span className="text-xs text-ink-2 shrink-0">Download ↓</span>
                         </a>
                       ))}
                     </div>
@@ -537,14 +537,14 @@ export default async function StagePage({
             return (
               <section
                 key={templateType}
-                className="border border-neutral-200 rounded-lg bg-white overflow-hidden"
+                className="border border-line rounded-lg bg-surface overflow-hidden"
               >
-                <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-line">
                   <div>
-                    <h2 className="text-sm font-semibold text-neutral-900">
+                    <h2 className="text-sm font-semibold text-ink">
                       {label}
                     </h2>
-                    <p className="text-xs text-neutral-600 mt-0.5">
+                    <p className="text-xs text-ink-2 mt-0.5">
                       {template?.description ?? ""}
                       {" · "}
                       <span className="capitalize">{audience}</span>
@@ -559,11 +559,11 @@ export default async function StagePage({
                 </div>
 
                 {stageDocs.length === 0 ? (
-                  <p className="px-5 py-4 text-sm text-neutral-600">
+                  <p className="px-5 py-4 text-sm text-ink-2">
                     No documents yet.
                   </p>
                 ) : (
-                  <ul className="divide-y divide-neutral-100">
+                  <ul className="divide-y divide-line">
                     {stageDocs.map((doc) => (
                       <li
                         key={doc.id}
@@ -572,11 +572,11 @@ export default async function StagePage({
                         <div>
                           <Link
                             href={`/projects/${projectId}/stage/${stageNumber}/documents/${doc.id}`}
-                            className="text-sm font-medium text-neutral-800 hover:underline"
+                            className="text-sm font-medium text-ink hover:underline"
                           >
                             {doc.title}
                           </Link>
-                          <p className="text-xs text-neutral-600 mt-0.5">
+                          <p className="text-xs text-ink-2 mt-0.5">
                             {new Date(doc.createdAt).toLocaleDateString()}
                             {doc.sentAt && (
                               <> · Sent {new Date(doc.sentAt).toLocaleDateString()}</>
@@ -589,7 +589,7 @@ export default async function StagePage({
                         <div className="flex items-center gap-2">
                           <span
                             className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              DOC_STATUS_CLASS[doc.status] ?? "bg-neutral-100 text-neutral-500"
+                              DOC_STATUS_CLASS[doc.status] ?? "bg-inset text-ink-3"
                             }`}
                           >
                             {DOC_STATUS_LABEL[doc.status] ?? doc.status}

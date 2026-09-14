@@ -60,14 +60,14 @@ export default function MaterialItem({
   }
 
   return (
-    <div className={`rounded-lg border bg-white transition-colors ${
-      isResolved ? "border-neutral-200 opacity-70" : "border-neutral-200"
+    <div className={`rounded-lg border bg-surface transition-colors ${
+      isResolved ? "border-line opacity-70" : "border-line"
     }`}>
       <div className="flex items-start gap-3 px-4 py-3">
         {/* Status indicator */}
         <div
           className={`mt-0.5 h-4 w-4 rounded border shrink-0 flex items-center justify-center ${
-            isResolved ? "bg-neutral-900 border-neutral-900" : "border-neutral-300"
+            isResolved ? "bg-neutral-900 border-neutral-900" : "border-line-2"
           }`}
         >
           {isResolved && (
@@ -78,30 +78,30 @@ export default function MaterialItem({
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className={`text-sm ${isResolved ? "line-through text-neutral-600" : "text-neutral-800"}`}>
+          <p className={`text-sm ${isResolved ? "line-through text-ink-2" : "text-ink"}`}>
             {item.label}
           </p>
           {item.notes && !isResolved && (
-            <p className="text-xs text-neutral-500 mt-0.5">{item.notes}</p>
+            <p className="text-xs text-ink-3 mt-0.5">{item.notes}</p>
           )}
           {item.dueDate && !isResolved && (
-            <p className="text-xs text-neutral-600 mt-0.5">
+            <p className="text-xs text-ink-2 mt-0.5">
               Needed by {new Date(item.dueDate).toLocaleDateString()}
             </p>
           )}
           {(attachedFile ?? (isResolved && item.fileRef)) && (
-            <p className="text-xs text-blue-600 mt-0.5">
+            <p className="text-xs text-blue mt-0.5">
               📎 {attachedFile ?? item.fileRef?.split("/").pop()}
             </p>
           )}
           {status === "submitted" && !attachedFile && !item.fileRef && (
-            <p className="text-xs text-blue-600 mt-0.5">Submitted — we&apos;ll confirm receipt shortly.</p>
+            <p className="text-xs text-blue mt-0.5">Submitted — we&apos;ll confirm receipt shortly.</p>
           )}
           {status === "verified" && (
             <p className="text-xs text-green-600 mt-0.5">Received and verified.</p>
           )}
           {uploadError && (
-            <p className="text-xs text-red-600 mt-0.5">{uploadError}</p>
+            <p className="text-xs text-rose mt-0.5">{uploadError}</p>
           )}
         </div>
 
@@ -117,13 +117,13 @@ export default function MaterialItem({
             <button
               onClick={() => inputRef.current?.click()}
               disabled={uploading}
-              className="text-xs px-2.5 py-1 border border-neutral-300 rounded hover:bg-neutral-50 transition-colors disabled:opacity-50"
+              className="text-xs px-2.5 py-1 border border-line-2 rounded hover:bg-surface-2 transition-colors disabled:opacity-50"
             >
               {uploading ? "Uploading…" : "Attach file"}
             </button>
             <button
               onClick={() => setShowMarkDone((v) => !v)}
-              className="text-xs px-2.5 py-1 border border-neutral-300 rounded hover:bg-neutral-50 transition-colors"
+              className="text-xs px-2.5 py-1 border border-line-2 rounded hover:bg-surface-2 transition-colors"
             >
               Mark done
             </button>
@@ -132,10 +132,10 @@ export default function MaterialItem({
       </div>
 
       {showMarkDone && !isResolved && (
-        <div className="px-4 pb-3 border-t border-neutral-100 pt-3 flex gap-2">
+        <div className="px-4 pb-3 border-t border-line pt-3 flex gap-2">
           <button
             onClick={() => setShowMarkDone(false)}
-            className="px-3 py-1.5 text-sm border border-neutral-300 rounded hover:bg-neutral-50 transition-colors"
+            className="px-3 py-1.5 text-sm border border-line-2 rounded hover:bg-surface-2 transition-colors"
           >
             Cancel
           </button>

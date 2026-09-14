@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 // Portal-rendered modal shell shared by the create/edit dialogs. The class
 // strings are exactly the ones each dialog used inline, so nothing moves.
 const DEFAULT_OVERLAY = "theme-dark fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4";
-const DEFAULT_CARD = "bg-white rounded-lg shadow-xl w-full max-w-md p-6";
+const DEFAULT_CARD = "bg-surface rounded-lg shadow-xl w-full max-w-md p-6";
 
 const subscribeNoop = () => () => {};
 

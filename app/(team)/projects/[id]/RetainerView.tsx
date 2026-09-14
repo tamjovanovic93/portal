@@ -24,31 +24,31 @@ async function NewCycleForm({ projectId }: { projectId: string }) {
   }
 
   return (
-    <details className="group border border-neutral-200 rounded-lg bg-white overflow-hidden">
-      <summary className="flex items-center justify-between px-5 py-4 cursor-pointer list-none select-none hover:bg-neutral-50 transition-colors">
-        <span className="text-sm font-medium text-neutral-700">New cycle</span>
-        <span className="text-neutral-600 group-open:rotate-45 transition-transform text-lg leading-none">+</span>
+    <details className="group border border-line rounded-lg bg-surface overflow-hidden">
+      <summary className="flex items-center justify-between px-5 py-4 cursor-pointer list-none select-none hover:bg-surface-2 transition-colors">
+        <span className="text-sm font-medium text-ink-2">New cycle</span>
+        <span className="text-ink-2 group-open:rotate-45 transition-transform text-lg leading-none">+</span>
       </summary>
-      <form action={handleCreate} className="px-5 pb-5 pt-1 grid grid-cols-3 gap-3 border-t border-neutral-100">
+      <form action={handleCreate} className="px-5 pb-5 pt-1 grid grid-cols-3 gap-3 border-t border-line">
         <div>
-          <label className="block text-xs text-neutral-700 mb-1">Cycle name</label>
+          <label className="block text-xs text-ink-2 mb-1">Cycle name</label>
           <input name="name" required placeholder="e.g. June 2026"
-            className="w-full text-sm rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+            className="w-full text-sm rounded-md border border-line-2 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
         </div>
         <div>
-          <label className="block text-xs text-neutral-700 mb-1">Start date</label>
+          <label className="block text-xs text-ink-2 mb-1">Start date</label>
           <input name="startDate" type="date" required
-            className="w-full text-sm rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+            className="w-full text-sm rounded-md border border-line-2 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
         </div>
         <div>
-          <label className="block text-xs text-neutral-700 mb-1">End date (optional)</label>
+          <label className="block text-xs text-ink-2 mb-1">End date (optional)</label>
           <input name="endDate" type="date"
-            className="w-full text-sm rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
+            className="w-full text-sm rounded-md border border-line-2 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900" />
         </div>
         <div className="col-span-3">
-          <label className="block text-xs text-neutral-700 mb-1">Focus — what needs to happen (optional)</label>
+          <label className="block text-xs text-ink-2 mb-1">Focus — what needs to happen (optional)</label>
           <textarea name="focus" rows={2} placeholder="e.g. Launch summer campaign, finalise landing page"
-            className="w-full text-sm rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900 resize-none" />
+            className="w-full text-sm rounded-md border border-line-2 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-900 resize-none" />
         </div>
         <button type="submit"
           className="col-span-3 justify-self-start text-sm px-4 py-2 rounded-md bg-neutral-900 text-white hover:bg-neutral-700 transition-colors">
@@ -152,25 +152,25 @@ export default async function RetainerView({ projectId }: { projectId: string })
     <div className="p-8 max-w-6xl space-y-6">
       {/* Header */}
       <div>
-        <Link href="/dashboard" className="text-xs text-neutral-600 hover:text-neutral-700 mb-3 inline-block">
+        <Link href="/dashboard" className="text-xs text-ink-2 hover:text-neutral-700 mb-3 inline-block">
           ← Projects
         </Link>
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
               <h1 className="page-title" style={{ fontSize: 26 }}>{project.name}</h1>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium">Retainer</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-blue-fill text-blue font-medium">Retainer</span>
             </div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-neutral-700">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-ink-2">
               <Link
                 href={`/clients/${project.clientId}`}
-                className="font-medium text-neutral-900 hover:underline underline-offset-2"
+                className="font-medium text-ink hover:underline underline-offset-2"
               >
                 {project.client.name ?? project.client.email}
               </Link>
-              <span className="text-neutral-700">·</span>
+              <span className="text-ink-2">·</span>
               <span>{PROJECT_TYPE_LABELS[project.type] ?? project.type}</span>
-              <span className="text-neutral-700">·</span>
+              <span className="text-ink-2">·</span>
               <span>{openTasks} open task{openTasks !== 1 ? "s" : ""} across {activeCycles.length} active cycle{activeCycles.length !== 1 ? "s" : ""}</span>
             </div>
           </div>
@@ -178,7 +178,7 @@ export default async function RetainerView({ projectId }: { projectId: string })
             <NewProjectButton
               prefillEmail={project.client.email}
               label="+ New engagement"
-              triggerClassName="text-sm text-neutral-600 border border-neutral-300 px-3 py-1.5 rounded-md hover:bg-neutral-50 transition-colors"
+              triggerClassName="text-sm text-ink-2 border border-line-2 px-3 py-1.5 rounded-md hover:bg-surface-2 transition-colors"
             />
             <ClientLoginLink projectId={projectId} />
           </div>
@@ -190,21 +190,21 @@ export default async function RetainerView({ projectId }: { projectId: string })
 
       {/* Health summary — at-a-glance retainer state as stat chips */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-lg border border-neutral-200 bg-white px-4 py-3">
-          <p className="text-2xl font-semibold text-neutral-900 tabular-nums leading-none">{openTasks}</p>
-          <p className="text-xs text-neutral-700 mt-1.5">Open task{openTasks !== 1 ? "s" : ""}</p>
+        <div className="rounded-lg border border-line bg-surface px-4 py-3">
+          <p className="text-2xl font-semibold text-ink tabular-nums leading-none">{openTasks}</p>
+          <p className="text-xs text-ink-2 mt-1.5">Open task{openTasks !== 1 ? "s" : ""}</p>
         </div>
-        <div className={`rounded-lg border px-4 py-3 ${blockers.length > 0 ? "border-red-200 bg-red-50" : "border-neutral-200 bg-white"}`}>
-          <p className={`text-2xl font-semibold tabular-nums leading-none ${blockers.length > 0 ? "text-red-700" : "text-neutral-300"}`}>{blockers.length}</p>
-          <p className={`text-xs mt-1.5 ${blockers.length > 0 ? "text-red-700" : "text-neutral-700"}`}>Blocker{blockers.length !== 1 ? "s" : ""}</p>
+        <div className={`rounded-lg border px-4 py-3 ${blockers.length > 0 ? "border-red-200 bg-rose-fill" : "border-line bg-surface"}`}>
+          <p className={`text-2xl font-semibold tabular-nums leading-none ${blockers.length > 0 ? "text-rose" : "text-ink-4"}`}>{blockers.length}</p>
+          <p className={`text-xs mt-1.5 ${blockers.length > 0 ? "text-rose" : "text-ink-2"}`}>Blocker{blockers.length !== 1 ? "s" : ""}</p>
         </div>
-        <div className={`rounded-lg border px-4 py-3 ${awaitingClientTasks.length > 0 ? "border-amber-200 bg-amber-50" : "border-neutral-200 bg-white"}`}>
-          <p className={`text-2xl font-semibold tabular-nums leading-none ${awaitingClientTasks.length > 0 ? "text-amber-700" : "text-neutral-300"}`}>{awaitingClientTasks.length}</p>
-          <p className={`text-xs mt-1.5 ${awaitingClientTasks.length > 0 ? "text-amber-700" : "text-neutral-700"}`}>Awaiting client</p>
+        <div className={`rounded-lg border px-4 py-3 ${awaitingClientTasks.length > 0 ? "border-amber-200 bg-amber-fill" : "border-line bg-surface"}`}>
+          <p className={`text-2xl font-semibold tabular-nums leading-none ${awaitingClientTasks.length > 0 ? "text-amber" : "text-ink-4"}`}>{awaitingClientTasks.length}</p>
+          <p className={`text-xs mt-1.5 ${awaitingClientTasks.length > 0 ? "text-amber" : "text-ink-2"}`}>Awaiting client</p>
         </div>
-        <div className={`rounded-lg border px-4 py-3 ${overdueTasks.length > 0 ? "border-red-200 bg-red-50" : "border-neutral-200 bg-white"}`}>
-          <p className={`text-2xl font-semibold tabular-nums leading-none ${overdueTasks.length > 0 ? "text-red-700" : "text-neutral-300"}`}>{overdueTasks.length}</p>
-          <p className={`text-xs mt-1.5 ${overdueTasks.length > 0 ? "text-red-700" : "text-neutral-700"}`}>Overdue</p>
+        <div className={`rounded-lg border px-4 py-3 ${overdueTasks.length > 0 ? "border-red-200 bg-rose-fill" : "border-line bg-surface"}`}>
+          <p className={`text-2xl font-semibold tabular-nums leading-none ${overdueTasks.length > 0 ? "text-rose" : "text-ink-4"}`}>{overdueTasks.length}</p>
+          <p className={`text-xs mt-1.5 ${overdueTasks.length > 0 ? "text-rose" : "text-ink-2"}`}>Overdue</p>
         </div>
       </div>
 
@@ -215,7 +215,7 @@ export default async function RetainerView({ projectId }: { projectId: string })
             <Link
               key={`sub-${m.id}`}
               href={`/projects/${projectId}/materials`}
-              className="flex items-center justify-between gap-3 bg-blue-50 border border-blue-300 border-l-4 border-l-blue-500 rounded-lg px-5 py-4 hover:border-blue-400 transition-colors"
+              className="flex items-center justify-between gap-3 bg-blue-fill border border-blue-300 border-l-4 border-l-blue rounded-lg px-5 py-4 hover:border-blue-400 transition-colors"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-200 text-blue-800 shrink-0">
@@ -227,7 +227,7 @@ export default async function RetainerView({ projectId }: { projectId: string })
                   <p className="text-base font-semibold text-blue-900 truncate">
                     Client submitted — {m.label}
                   </p>
-                  <p className="text-xs text-blue-700 mt-0.5 capitalize">
+                  <p className="text-xs text-blue mt-0.5 capitalize">
                     {m.category} · submitted {new Date(m.updatedAt).toLocaleDateString()} · review &amp; confirm receipt
                   </p>
                 </div>
@@ -247,18 +247,18 @@ export default async function RetainerView({ projectId }: { projectId: string })
           {blockers.map((t) => (
             <div
               key={`blk-${t.id}`}
-              className="bg-white border border-red-200 border-l-4 border-l-red-500 rounded-lg px-5 py-3 flex flex-wrap items-center justify-between gap-3"
+              className="bg-surface border border-red-200 border-l-4 border-l-red-500 rounded-lg px-5 py-3 flex flex-wrap items-center justify-between gap-3"
             >
               <div className="min-w-0">
-                <p className="text-xs text-red-600 font-medium uppercase tracking-wide mb-0.5">
+                <p className="text-xs text-rose font-medium uppercase tracking-wide mb-0.5">
                   Blocker · {t.cycleName}
                 </p>
-                <p className="text-sm font-semibold text-neutral-900">{t.name}</p>
+                <p className="text-sm font-semibold text-ink">{t.name}</p>
               </div>
               <div className="flex items-center gap-4 flex-wrap">
-                <span className="text-xs text-neutral-700">
+                <span className="text-xs text-ink-2">
                   Resolver:{" "}
-                  <span className="font-medium text-neutral-800">
+                  <span className="font-medium text-ink">
                     {t.blockerResolver
                       ? OWNER_ROLE_LABEL[t.blockerResolver]
                       : t.ownerRole
@@ -275,12 +275,12 @@ export default async function RetainerView({ projectId }: { projectId: string })
           {(awaitingClientTasks.length > 0 || overdueTasks.length > 0) && (
             <div className="flex flex-wrap gap-2">
               {awaitingClientTasks.length > 0 && (
-                <span className="text-xs px-3 py-1.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 font-medium">
+                <span className="text-xs px-3 py-1.5 rounded-md bg-amber-fill border border-amber-200 text-amber font-medium">
                   {awaitingClientTasks.length} awaiting client approval
                 </span>
               )}
               {overdueTasks.length > 0 && (
-                <span className="text-xs px-3 py-1.5 rounded-md bg-red-50 border border-red-200 text-red-700 font-medium">
+                <span className="text-xs px-3 py-1.5 rounded-md bg-rose-fill border border-red-200 text-rose font-medium">
                   {overdueTasks.length} task{overdueTasks.length !== 1 ? "s" : ""} overdue
                 </span>
               )}
@@ -291,16 +291,16 @@ export default async function RetainerView({ projectId }: { projectId: string })
 
       {/* Current cycle — name + what needs to happen */}
       {activeCycles.length > 0 && (
-        <section className="rounded-lg border border-neutral-200 bg-neutral-50 px-5 py-4">
-          <p className="text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-2">
+        <section className="rounded-lg border border-line bg-page px-5 py-4">
+          <p className="text-xs font-semibold text-ink-2 uppercase tracking-wider mb-2">
             Current cycle{activeCycles.length > 1 ? "s" : ""}
           </p>
           <div className="space-y-2">
             {activeCycles.map((c) => (
               <div key={c.id}>
-                <p className="text-sm font-medium text-neutral-900">{c.name}</p>
-                <p className="text-sm text-neutral-600">
-                  {c.focus ?? <span className="text-neutral-600">No focus set — add one on the cycle below.</span>}
+                <p className="text-sm font-medium text-ink">{c.name}</p>
+                <p className="text-sm text-ink-2">
+                  {c.focus ?? <span className="text-ink-2">No focus set — add one on the cycle below.</span>}
                 </p>
               </div>
             ))}
@@ -326,7 +326,7 @@ export default async function RetainerView({ projectId }: { projectId: string })
         </div>
       ) : (
         closedCycles.length === 0 && (
-          <p className="text-sm text-neutral-600 text-center py-12">
+          <p className="text-sm text-ink-2 text-center py-12">
             No cycles yet. Create one to start tracking retainer work.
           </p>
         )
@@ -335,7 +335,7 @@ export default async function RetainerView({ projectId }: { projectId: string })
       {/* Closed cycles */}
       {closedCycles.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-xs font-semibold text-neutral-700 uppercase tracking-wider">Closed cycles</h2>
+          <h2 className="text-xs font-semibold text-ink-2 uppercase tracking-wider">Closed cycles</h2>
           {closedCycles.map((c) => (
             <CycleBoard key={c.id} cycle={toBoardCycle(c)} projectId={projectId} roster={roster} />
           ))}
@@ -345,14 +345,14 @@ export default async function RetainerView({ projectId }: { projectId: string })
       {/* Materials checklist */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xs font-semibold text-neutral-700 uppercase tracking-wider">Materials checklist</h2>
+          <h2 className="text-xs font-semibold text-ink-2 uppercase tracking-wider">Materials checklist</h2>
           {project.materials.length > 0 && (
-            <span className="text-xs text-neutral-600">{project.materials.length} item{project.materials.length !== 1 ? "s" : ""}</span>
+            <span className="text-xs text-ink-2">{project.materials.length} item{project.materials.length !== 1 ? "s" : ""}</span>
           )}
         </div>
         <div className="mb-3"><AddMaterialForm projectId={projectId} /></div>
         {project.materials.length === 0 ? (
-          <p className="text-sm text-neutral-600 text-center py-6">Add items above to build the checklist.</p>
+          <p className="text-sm text-ink-2 text-center py-6">Add items above to build the checklist.</p>
         ) : (
           <div className="space-y-5">
             {MATERIAL_CATEGORIES.map((cat) => {
@@ -360,8 +360,8 @@ export default async function RetainerView({ projectId }: { projectId: string })
               if (items.length === 0) return null;
               return (
                 <section key={cat}>
-                  <h3 className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1.5 capitalize">{cat}</h3>
-                  <div className="divide-y divide-neutral-100 border border-neutral-200 rounded-lg bg-white overflow-hidden">
+                  <h3 className="text-xs font-semibold text-ink-2 uppercase tracking-wider mb-1.5 capitalize">{cat}</h3>
+                  <div className="divide-y divide-line border border-line rounded-lg bg-surface overflow-hidden">
                     {items.map((item) => (
                       <MaterialRow
                         key={item.id}
@@ -371,7 +371,7 @@ export default async function RetainerView({ projectId }: { projectId: string })
                           dueDate: item.dueDate?.toISOString() ?? null,
                         }}
                         statusLabel={MATERIAL_STATUS_LABEL[item.status] ?? item.status}
-                        statusStyle={MATERIAL_STATUS_TEXT_CLASS[item.status] ?? "text-neutral-700"}
+                        statusStyle={MATERIAL_STATUS_TEXT_CLASS[item.status] ?? "text-ink-2"}
                       />
                     ))}
                   </div>
@@ -384,7 +384,7 @@ export default async function RetainerView({ projectId }: { projectId: string })
 
       {/* Files — folders */}
       <div>
-        <h2 className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-3">Files</h2>
+        <h2 className="text-xs font-semibold text-ink-2 uppercase tracking-wider mb-3">Files</h2>
         <ProjectFiles
           clientId={project.clientId}
           projectId={projectId}

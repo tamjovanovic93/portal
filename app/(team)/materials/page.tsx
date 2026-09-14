@@ -38,7 +38,7 @@ export default async function MaterialsPage() {
   const grouped = [...groups.values()];
 
   return (
-    <div style={{ padding: "28px 32px 60px", maxWidth: 1100, margin: "0 auto" }} className="space-y-6">
+    <div className="page-wrap page-wrap-md space-y-6">
       <div className="fade-up flex items-end justify-between gap-5">
         <div>
           <Eyebrow style={{ marginBottom: 10 }}>WAITING 0N CLIENTS</Eyebrow>

@@ -39,7 +39,7 @@ export default function DeleteClientButton({
     <button
       onClick={handleDelete}
       disabled={busy}
-      className="px-3 py-2 text-sm rounded-md border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
+      className="px-3 py-2 text-sm rounded-md border border-red-200 text-rose hover:bg-red-50 disabled:opacity-50 transition-colors"
     >
       {busy ? "Deleting…" : "Delete client"}
     </button>

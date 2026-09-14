@@ -26,7 +26,7 @@ const FOLDERS: { key: string; label: string; match: string[] }[] = [
 
 function FolderIcon({ open }: { open: boolean }) {
   return (
-    <svg className={`w-5 h-5 shrink-0 ${open ? "text-neutral-700" : "text-neutral-600"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <svg className={`w-5 h-5 shrink-0 ${open ? "text-ink-2" : "text-ink-2"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
     </svg>
   );
@@ -51,15 +51,15 @@ function AssetRow({ asset }: { asset: FolderAsset }) {
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 group">
       <div className="flex-1 min-w-0">
-        <a href={`/api/download?id=${asset.id}`} className="text-sm font-medium text-neutral-800 hover:underline truncate block">
+        <a href={`/api/download?id=${asset.id}`} className="text-sm font-medium text-ink hover:underline truncate block">
           {asset.filename}
         </a>
-        <p className="text-xs text-neutral-700 mt-0.5">
+        <p className="text-xs text-ink-2 mt-0.5">
           {formatBytesKb(asset.sizeBytes)}
           {asset.sizeBytes ? " · " : ""}
           {new Date(asset.uploadedAt).toLocaleDateString()}
-          {asset.isClientUpload && !approved && <span className="ml-2 text-amber-700 font-medium">Client · new</span>}
-          {asset.visibility === "SHARED" && <span className="ml-2 text-blue-700">Shared</span>}
+          {asset.isClientUpload && !approved && <span className="ml-2 text-amber font-medium">Client · new</span>}
+          {asset.visibility === "SHARED" && <span className="ml-2 text-blue">Shared</span>}
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
@@ -68,7 +68,7 @@ function AssetRow({ asset }: { asset: FolderAsset }) {
             Approve
           </button>
         )}
-        <button onClick={handleDelete} disabled={loading} className="text-xs text-neutral-700 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+        <button onClick={handleDelete} disabled={loading} className="text-xs text-ink-2 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
           Delete
         </button>
       </div>
@@ -135,13 +135,13 @@ export default function ProjectFiles({
               type="button"
               onClick={() => setOpen(isOpen ? null : f.key)}
               className={`flex items-center gap-2.5 rounded-lg border px-4 py-3 text-left transition-colors ${
-                isOpen ? "border-neutral-900 bg-neutral-50" : "border-neutral-200 bg-white hover:border-neutral-400"
+                isOpen ? "border-neutral-900 bg-page" : "border-line bg-surface hover:border-line-3"
               }`}
             >
               <FolderIcon open={isOpen} />
               <div className="min-w-0">
-                <p className="text-sm font-medium text-neutral-900 truncate">{f.label}</p>
-                <p className="text-xs text-neutral-700">
+                <p className="text-sm font-medium text-ink truncate">{f.label}</p>
+                <p className="text-xs text-ink-2">
                   {count} file{count !== 1 ? "s" : ""}
                 </p>
               </div>
@@ -152,13 +152,13 @@ export default function ProjectFiles({
 
       {/* Open folder contents */}
       {open && (
-        <div className="border border-neutral-200 rounded-lg bg-white overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 bg-neutral-50">
-            <p className="text-sm font-semibold text-neutral-900">
+        <div className="border border-line rounded-lg bg-surface overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-line bg-page">
+            <p className="text-sm font-semibold text-ink">
               {FOLDERS.find((f) => f.key === open)!.label}
             </p>
             <div className="flex items-center gap-3">
-              <label className="flex items-center gap-1.5 text-xs text-neutral-600 cursor-pointer">
+              <label className="flex items-center gap-1.5 text-xs text-ink-2 cursor-pointer">
                 <input type="checkbox" checked={shareNext} onChange={(e) => setShareNext(e.target.checked)} className="accent-neutral-900" />
                 Share with client
               </label>
@@ -178,24 +178,24 @@ export default function ProjectFiles({
           {open === "brief" && briefGenerated && (
             <Link
               href={`/clients/${clientId}/data`}
-              className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 hover:bg-neutral-50 transition-colors group"
+              className="flex items-center justify-between px-4 py-3 border-b border-line hover:bg-surface-2 transition-colors group"
             >
               <div className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-neutral-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <svg className="w-4 h-4 text-ink-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </svg>
-                <span className="text-sm font-medium text-neutral-800 group-hover:underline">Brief & client database</span>
+                <span className="text-sm font-medium text-ink group-hover:underline">Brief & client database</span>
               </div>
-              <span className="text-xs text-neutral-700 group-hover:text-neutral-900">Open →</span>
+              <span className="text-xs text-ink-2 group-hover:text-neutral-900">Open →</span>
             </Link>
           )}
 
           {assetsFor(open).length === 0 ? (
-            <p className="px-4 py-6 text-sm text-neutral-700 text-center">
+            <p className="px-4 py-6 text-sm text-ink-2 text-center">
               {open === "brief" && briefGenerated ? "No extra files in this folder yet." : "No files yet — upload one above."}
             </p>
           ) : (
-            <div className="divide-y divide-neutral-100">
+            <div className="divide-y divide-line">
               {assetsFor(open).map((a) => (
                 <AssetRow key={a.id} asset={a} />
               ))}

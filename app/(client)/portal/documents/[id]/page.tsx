@@ -36,10 +36,10 @@ export default async function ClientDocumentPage({
   if (doc.status === "DRAFT") {
     return (
       <div className="max-w-2xl mx-auto px-6 py-20 text-center">
-        <p className="text-neutral-500 text-sm">
+        <p className="text-ink-3 text-sm">
           This document isn&apos;t ready for you yet. Your team will share it when it&apos;s ready.
         </p>
-        <Link href="/portal" className="mt-6 inline-block text-sm text-neutral-900 underline underline-offset-2">
+        <Link href="/portal" className="mt-6 inline-block text-sm text-ink underline underline-offset-2">
           Back to portal
         </Link>
       </div>
@@ -52,15 +52,15 @@ export default async function ClientDocumentPage({
   const content = (doc.content ?? {}) as FormContent;
 
   const backLink = (
-    <Link href="/portal" className="text-xs text-neutral-600 hover:text-neutral-700 transition-colors">
+    <Link href="/portal" className="text-xs text-ink-2 hover:text-neutral-700 transition-colors">
       ← Back to portal
     </Link>
   );
   const header = (
     <div>
-      <h1 className="text-xl font-semibold text-neutral-900">{doc.title}</h1>
+      <h1 className="text-xl font-semibold text-ink">{doc.title}</h1>
       {template.description && (
-        <p className="text-sm text-neutral-500 mt-1">{template.description}</p>
+        <p className="text-sm text-ink-3 mt-1">{template.description}</p>
       )}
     </div>
   );
@@ -76,11 +76,11 @@ export default async function ClientDocumentPage({
       <div className="max-w-2xl mx-auto px-6 py-10 space-y-8">
         {backLink}
         {header}
-        <div className="border border-neutral-200 rounded-lg bg-white px-6 py-6 space-y-4">
+        <div className="border border-line rounded-lg bg-surface px-6 py-6 space-y-4">
           {template.sections[0].fields.map((field) => (
             <div key={field.key}>
-              <p className="text-xs text-neutral-500">{field.label}</p>
-              <p className="text-sm text-neutral-900 whitespace-pre-wrap">
+              <p className="text-xs text-ink-3">{field.label}</p>
+              <p className="text-sm text-ink whitespace-pre-wrap">
                 {(content[field.key] as string) || "—"}
               </p>
             </div>
@@ -111,7 +111,7 @@ export default async function ClientDocumentPage({
         <div className="max-w-2xl mx-auto px-6 py-10 space-y-8">
           {backLink}
           {header}
-          <div className="rounded-lg border border-green-200 bg-green-50 px-6 py-8 text-center space-y-3">
+          <div className="rounded-lg border border-green-200 bg-mint-fill px-6 py-8 text-center space-y-3">
             <div className="mx-auto w-12 h-12 rounded-full bg-green-600 text-white flex items-center justify-center">
               <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
             </div>
@@ -120,7 +120,7 @@ export default async function ClientDocumentPage({
                 <h3 className="text-lg font-semibold text-green-900">
                   Thank you — your intake form has been submitted.
                 </h3>
-                <p className="text-sm text-green-800 max-w-md mx-auto">
+                <p className="text-sm text-mint max-w-md mx-auto">
                   Our team is reviewing your answers and preparing the next stage of your project.
                   You&apos;ll be notified here when your Project Brief is ready for review.
                 </p>
@@ -128,7 +128,7 @@ export default async function ClientDocumentPage({
             ) : (
               <>
                 <h3 className="text-lg font-semibold text-green-900">This form is complete.</h3>
-                <p className="text-sm text-green-800 max-w-md mx-auto">
+                <p className="text-sm text-mint max-w-md mx-auto">
                   Thanks — your team has what they need for now and will be in touch with the next step.
                 </p>
               </>
@@ -145,7 +145,7 @@ export default async function ClientDocumentPage({
         {header}
         <AnswerFollowups documentId={doc.id} followups={followups} />
         <details className="group">
-          <summary className="text-sm text-neutral-600 cursor-pointer hover:text-neutral-900 select-none">
+          <summary className="text-sm text-ink-2 cursor-pointer hover:text-ink select-none">
             View your submitted answers
           </summary>
           <div className="mt-4">
@@ -172,7 +172,7 @@ export default async function ClientDocumentPage({
       {backLink}
       {header}
       {readOnly && (
-        <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2 inline-block">
+        <p className="text-xs text-mint bg-mint-fill border border-green-200 rounded-md px-3 py-2 inline-block">
           You&apos;ve already submitted this form.
         </p>
       )}

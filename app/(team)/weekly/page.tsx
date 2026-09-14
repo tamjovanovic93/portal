@@ -92,7 +92,7 @@ export default async function WeeklyPage() {
   const rangeLabel = `${weekStart.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${days[6].toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
 
   return (
-    <div style={{ padding: "28px 32px 60px", maxWidth: 1100, margin: "0 auto" }} className="space-y-6">
+    <div className="page-wrap page-wrap-md space-y-6">
       <div className="fade-up flex items-end justify-between gap-5">
         <div>
           <Eyebrow style={{ marginBottom: 10 }}>THIS WEEK · {rangeLabel.toUpperCase()}</Eyebrow>

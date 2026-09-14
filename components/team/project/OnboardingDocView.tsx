@@ -60,24 +60,24 @@ export default function OnboardingDocView({
     <>
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-neutral-900">{doc.title}</h1>
+          <h1 className="text-xl font-semibold text-ink">{doc.title}</h1>
           {template.description && (
-            <p className="text-sm text-neutral-500 mt-1">{template.description}</p>
+            <p className="text-sm text-ink-3 mt-1">{template.description}</p>
           )}
         </div>
         <div className="flex items-center gap-3 shrink-0 ml-4">
-          <span className="text-xs text-neutral-600">{DOC_STATUS_LABEL[doc.status] ?? doc.status}</span>
+          <span className="text-xs text-ink-2">{DOC_STATUS_LABEL[doc.status] ?? doc.status}</span>
           {doc.status === "DRAFT" && deleteControl}
         </div>
       </div>
 
       {isCollab && doc.status === "SENT" && (
-        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 inline-block">
+        <p className="text-xs text-amber bg-amber-fill border border-amber-200 rounded-md px-3 py-2 inline-block">
           Sent to the client — waiting for them to complete it.
         </p>
       )}
       {isCollab && doc.status === "APPROVED" && (
-        <p className="text-xs text-neutral-600">
+        <p className="text-xs text-ink-2">
           Client completed this form. Review each answer below — you can change an answer
           (the client re-approves) or ask a question about it.
         </p>
@@ -92,11 +92,11 @@ export default function OnboardingDocView({
             initialFormAnswers={initialFormAnswers}
           />
         ) : (
-          <div className="border border-neutral-200 rounded-lg bg-white px-6 py-6 space-y-4">
+          <div className="border border-line rounded-lg bg-surface px-6 py-6 space-y-4">
             {template.sections[0].fields.map((field) => (
               <div key={field.key}>
-                <p className="text-xs text-neutral-500">{field.label}</p>
-                <p className="text-sm text-neutral-900 whitespace-pre-wrap">
+                <p className="text-xs text-ink-3">{field.label}</p>
+                <p className="text-sm text-ink whitespace-pre-wrap">
                   {(content[field.key] as string) || "—"}
                 </p>
               </div>

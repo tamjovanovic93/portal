@@ -14,8 +14,8 @@ export type OfferQuestion = {
 export default function OfferQuestionsAdmin({ questions }: { questions: OfferQuestion[] }) {
   if (questions.length === 0) return null;
   return (
-    <div className="border border-neutral-200 rounded-lg bg-white px-6 py-5 space-y-4">
-      <p className="text-sm font-semibold text-neutral-900">Client questions about this offer</p>
+    <div className="border border-line rounded-lg bg-surface px-6 py-5 space-y-4">
+      <p className="text-sm font-semibold text-ink">Client questions about this offer</p>
       {questions.map((q) => (
         <QuestionRow key={q.id} q={q} />
       ))}
@@ -30,9 +30,9 @@ function QuestionRow({ q }: { q: OfferQuestion }) {
 
   return (
     <div className="space-y-1.5">
-      <p className="text-sm text-neutral-800">{q.questionText}</p>
+      <p className="text-sm text-ink">{q.questionText}</p>
       {saved && q.answerText ? (
-        <p className="text-sm text-neutral-600">↳ {q.answerText}</p>
+        <p className="text-sm text-ink-2">↳ {q.answerText}</p>
       ) : (
         <div className="flex items-start gap-2">
           <textarea
@@ -40,7 +40,7 @@ function QuestionRow({ q }: { q: OfferQuestion }) {
             onChange={(e) => { setAnswer(e.target.value); setSaved(false); }}
             rows={2}
             placeholder="Reply to the client…"
-            className="flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            className="flex-1 rounded-md border border-line-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
           />
           <button
             type="button"

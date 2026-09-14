@@ -213,7 +213,7 @@ export default async function ClientDataPage({
   const primaryObjective = objectives.find((o) => str(o.level) === "primary") ?? objectives[0];
 
   return (
-    <div style={{ padding: "28px 32px 60px", maxWidth: 1100, margin: "0 auto" }} className="space-y-6">
+    <div className="page-wrap page-wrap-md space-y-6">
       {/* Breadcrumb */}
       <nav className="faint flex items-center gap-1.5" style={{ fontSize: 12 }}>
         <Link href="/clients">Clients</Link>

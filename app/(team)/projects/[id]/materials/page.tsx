@@ -39,16 +39,16 @@ export default async function MaterialsPage({
       <div className="mb-8">
         <Link
           href={`/projects/${id}`}
-          className="text-xs text-neutral-600 hover:text-neutral-700 mb-3 inline-block"
+          className="text-xs text-ink-2 hover:text-neutral-700 mb-3 inline-block"
         >
           ← {project.name}
         </Link>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-neutral-900">
+            <h1 className="text-xl font-semibold text-ink">
               Materials checklist
             </h1>
-            <p className="text-sm text-neutral-500 mt-0.5">
+            <p className="text-sm text-ink-3 mt-0.5">
               {totalCount === 0
                 ? "No items yet"
                 : `${totalCount} item${totalCount !== 1 ? "s" : ""} · ${pendingCount} pending`}
@@ -62,7 +62,7 @@ export default async function MaterialsPage({
       </div>
 
       {totalCount === 0 ? (
-        <p className="text-sm text-neutral-600 text-center py-12">
+        <p className="text-sm text-ink-2 text-center py-12">
           Add items above to build the checklist.
         </p>
       ) : (
@@ -72,10 +72,10 @@ export default async function MaterialsPage({
             if (catItems.length === 0) return null;
             return (
               <section key={cat}>
-                <h2 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2 capitalize">
+                <h2 className="text-xs font-semibold text-ink-3 uppercase tracking-wider mb-2 capitalize">
                   {cat}
                 </h2>
-                <div className="divide-y divide-neutral-100 border border-neutral-200 rounded-lg bg-white overflow-hidden">
+                <div className="divide-y divide-line border border-line rounded-lg bg-surface overflow-hidden">
                   {catItems.map((item) => (
                     <MaterialRow
                       key={item.id}
@@ -88,7 +88,7 @@ export default async function MaterialsPage({
                         dueDate: item.dueDate?.toISOString() ?? null,
                       }}
                       statusLabel={MATERIAL_STATUS_LABEL[item.status] ?? item.status}
-                      statusStyle={MATERIAL_STATUS_TEXT_CLASS[item.status] ?? "text-neutral-500"}
+                      statusStyle={MATERIAL_STATUS_TEXT_CLASS[item.status] ?? "text-ink-3"}
                     />
                   ))}
                 </div>

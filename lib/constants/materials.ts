@@ -26,9 +26,9 @@ export const MATERIAL_STATUS_LABEL: Record<string, string> = {
 
 // Text colour classes used next to the label on project-level pages.
 export const MATERIAL_STATUS_TEXT_CLASS: Record<string, string> = {
-  pending: "text-neutral-600",
-  submitted: "text-blue-600",
-  received: "text-amber-600",
+  pending: "text-ink-2",
+  submitted: "text-blue",
+  received: "text-amber",
   verified: "text-green-600",
 };
 

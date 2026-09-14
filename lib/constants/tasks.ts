@@ -31,9 +31,9 @@ export const TASK_TYPE_LABEL: Record<TaskType, string> = {
 };
 
 export const TASK_TYPE_CLASS: Record<TaskType, string> = {
-  DELIVERABLE: "bg-blue-50 text-blue-700",
-  INTERNAL: "bg-neutral-100 text-neutral-500",
-  FIX_UPDATE: "bg-amber-50 text-amber-700",
+  DELIVERABLE: "bg-blue-fill text-blue",
+  INTERNAL: "bg-inset text-ink-3",
+  FIX_UPDATE: "bg-amber-fill text-amber",
 };
 
 // Staged project tasks (Stage 2+): four statuses surfaced. NEEDS_APPROVAL and

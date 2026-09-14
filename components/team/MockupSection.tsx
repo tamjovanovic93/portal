@@ -20,9 +20,9 @@ const VERDICT_LABELS: Record<string, string> = {
 };
 
 const VERDICT_STYLE: Record<string, string> = {
-  approved: "text-green-700",
-  approved_with_revisions: "text-amber-700",
-  revisions_required: "text-red-700",
+  approved: "text-mint",
+  approved_with_revisions: "text-amber",
+  revisions_required: "text-rose",
 };
 
 export default function MockupSection({
@@ -108,7 +108,7 @@ export default function MockupSection({
         onDrop={(e) => { e.preventDefault(); setDragging(false); uploadFiles(e.dataTransfer.files); }}
         onClick={() => inputRef.current?.click()}
         className={`border-2 border-dashed rounded-lg px-6 py-6 text-center cursor-pointer transition-colors ${
-          dragging ? "border-neutral-600 bg-neutral-100" : "border-neutral-300 hover:border-neutral-400 bg-white"
+          dragging ? "border-neutral-600 bg-inset" : "border-line-2 hover:border-line-3 bg-surface"
         }`}
       >
         <input
@@ -119,46 +119,46 @@ export default function MockupSection({
           onChange={(e) => uploadFiles(e.target.files)}
         />
         {uploading ? (
-          <p className="text-sm text-neutral-500">Uploading…</p>
+          <p className="text-sm text-ink-3">Uploading…</p>
         ) : (
           <>
-            <p className="text-sm text-neutral-600">
+            <p className="text-sm text-ink-2">
               Drop design files here or{" "}
-              <span className="font-medium text-neutral-900">click to browse</span>
+              <span className="font-medium text-ink">click to browse</span>
             </p>
-            <p className="text-xs text-neutral-600 mt-1">
+            <p className="text-xs text-ink-2 mt-1">
               PNG, JPG, PDF — shared with client automatically
             </p>
           </>
         )}
       </div>
-      {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
+      {uploadError && <p className="text-xs text-rose">{uploadError}</p>}
 
       {/* Add link */}
       {addingLink ? (
-        <form onSubmit={handleAddLink} className="border border-neutral-200 rounded-lg bg-white p-4 space-y-3">
-          <p className="text-xs font-medium text-neutral-700">Add a design link</p>
+        <form onSubmit={handleAddLink} className="border border-line rounded-lg bg-surface p-4 space-y-3">
+          <p className="text-xs font-medium text-ink-2">Add a design link</p>
           <div className="flex gap-3">
             <input
               value={linkLabel}
               onChange={(e) => setLinkLabel(e.target.value)}
               placeholder="Label (e.g. Figma Design)"
-              className="w-36 px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+              className="w-36 px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
             />
             <input
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
               placeholder="https://..."
-              className="flex-1 px-3 py-2 border border-neutral-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+              className="flex-1 px-3 py-2 border border-line-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
               required
             />
           </div>
-          {linkError && <p className="text-xs text-red-600">{linkError}</p>}
+          {linkError && <p className="text-xs text-rose">{linkError}</p>}
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => { setAddingLink(false); setLinkError(null); }}
-              className="px-3 py-1.5 text-sm border border-neutral-300 rounded-md hover:bg-neutral-50"
+              className="px-3 py-1.5 text-sm border border-line-2 rounded-md hover:bg-surface-2"
             >
               Cancel
             </button>
@@ -173,7 +173,7 @@ export default function MockupSection({
       ) : (
         <button
           onClick={() => setAddingLink(true)}
-          className="text-xs text-neutral-500 hover:text-neutral-900 border border-dashed border-neutral-300 hover:border-neutral-400 rounded-md px-3 py-2 transition-colors"
+          className="text-xs text-ink-3 hover:text-ink border border-dashed border-line-2 hover:border-line-3 rounded-md px-3 py-2 transition-colors"
         >
           + Add design link (Figma, staging, etc.)
         </button>
@@ -181,26 +181,26 @@ export default function MockupSection({
 
       {/* Files list */}
       {files.length > 0 && (
-        <div className="border border-neutral-200 rounded-lg bg-white divide-y divide-neutral-100 overflow-hidden">
+        <div className="border border-line rounded-lg bg-surface divide-y divide-line overflow-hidden">
           {files.map((asset, i) => (
             <div key={asset.id} className="flex items-center gap-3 px-4 py-3">
-              <span className="text-xs font-mono text-neutral-600 shrink-0 w-5">
+              <span className="text-xs font-mono text-ink-2 shrink-0 w-5">
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <span className="flex-1 text-sm text-neutral-800 truncate">{asset.filename}</span>
-              <span className="text-xs text-neutral-600 shrink-0">
+              <span className="flex-1 text-sm text-ink truncate">{asset.filename}</span>
+              <span className="text-xs text-ink-2 shrink-0">
                 {new Date(asset.uploadedAt).toLocaleDateString()}
               </span>
               <a
                 href={`/api/download?id=${asset.id}`}
-                className="text-xs text-neutral-600 hover:text-neutral-700 shrink-0"
+                className="text-xs text-ink-2 hover:text-neutral-700 shrink-0"
                 onClick={(e) => e.stopPropagation()}
               >
                 ↓
               </a>
               <button
                 onClick={() => handleDelete(asset.id)}
-                className="text-xs text-neutral-500 hover:text-red-500 transition-colors shrink-0"
+                className="text-xs text-ink-3 hover:text-red-500 transition-colors shrink-0"
               >
                 ×
               </button>
@@ -211,25 +211,25 @@ export default function MockupSection({
 
       {/* Links list */}
       {links.length > 0 && (
-        <div className="border border-neutral-200 rounded-lg bg-white divide-y divide-neutral-100 overflow-hidden">
+        <div className="border border-line rounded-lg bg-surface divide-y divide-line overflow-hidden">
           {links.map((asset) => (
             <div key={asset.id} className="flex items-center gap-3 px-4 py-3">
-              <svg className="w-3.5 h-3.5 text-neutral-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-3.5 h-3.5 text-ink-2 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
-              <span className="flex-1 text-sm text-neutral-800 truncate">{asset.filename}</span>
+              <span className="flex-1 text-sm text-ink truncate">{asset.filename}</span>
               <a
                 href={asset.storagePath}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-blue-600 hover:underline shrink-0"
+                className="text-xs text-blue hover:underline shrink-0"
                 onClick={(e) => e.stopPropagation()}
               >
                 Open ↗
               </a>
               <button
                 onClick={() => handleDelete(asset.id)}
-                className="text-xs text-neutral-500 hover:text-red-500 transition-colors shrink-0"
+                className="text-xs text-ink-3 hover:text-red-500 transition-colors shrink-0"
               >
                 ×
               </button>
@@ -240,7 +240,7 @@ export default function MockupSection({
 
       {/* Feedback status */}
       {assets.length > 0 && (
-        <p className="text-xs text-neutral-600 pt-1">
+        <p className="text-xs text-ink-2 pt-1">
           {feedbackStatus === "submitted" ? (
             <>
               Client feedback received

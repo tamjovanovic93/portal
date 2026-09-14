@@ -22,10 +22,10 @@ export default function ReviewForm({ documentId, template, initialContent }: Doc
       {visibleSections.map((section) => (
         <section
           key={section.key}
-          className="border border-neutral-200 rounded-lg bg-white px-6 py-6 space-y-5"
+          className="border border-line rounded-lg bg-surface px-6 py-6 space-y-5"
         >
-          <h3 className="text-base font-semibold text-neutral-900">{section.title}</h3>
-          <div className="divide-y divide-neutral-100">
+          <h3 className="text-base font-semibold text-ink">{section.title}</h3>
+          <div className="divide-y divide-line">
             {section.fields
               .filter((field) => isVisible(field.showIf, content))
               .map((field) => (
@@ -85,8 +85,8 @@ function ReviewField({
     <div className="py-3">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-neutral-800">{field.label}</p>
-          <p className="text-sm text-neutral-900 mt-0.5 whitespace-pre-wrap">
+          <p className="text-sm font-medium text-ink">{field.label}</p>
+          <p className="text-sm text-ink mt-0.5 whitespace-pre-wrap">
             {displayValue(field, value)}
           </p>
         </div>
@@ -94,14 +94,14 @@ function ReviewField({
           <button
             type="button"
             onClick={() => setOpen(open === "edit" ? null : "edit")}
-            className="text-xs px-2.5 py-1 rounded border border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+            className="text-xs px-2.5 py-1 rounded border border-line-2 text-ink-2 hover:bg-surface-2"
           >
             Change
           </button>
           <button
             type="button"
             onClick={() => setOpen(open === "ask" ? null : "ask")}
-            className="text-xs px-2.5 py-1 rounded border border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+            className="text-xs px-2.5 py-1 rounded border border-line-2 text-ink-2 hover:bg-surface-2"
           >
             Ask a question
           </button>
@@ -110,22 +110,22 @@ function ReviewField({
 
       {/* Existing collab status */}
       {edit && (
-        <p className="text-xs mt-1.5 text-amber-700">
+        <p className="text-xs mt-1.5 text-amber">
           {edit.status === "pending"
             ? "Your change is awaiting client approval."
             : "Client approved your change ✓"}
         </p>
       )}
       {q && (
-        <p className="text-xs mt-1.5 text-neutral-600">
+        <p className="text-xs mt-1.5 text-ink-2">
           <span className="font-medium">Q:</span> {q.text}
           {q.status === "answered" ? (
             <>
               {" "}
-              <span className="font-medium text-neutral-800">A:</span> {q.answer}
+              <span className="font-medium text-ink">A:</span> {q.answer}
             </>
           ) : (
-            <span className="text-amber-700"> — awaiting client answer</span>
+            <span className="text-amber"> — awaiting client answer</span>
           )}
         </p>
       )}
@@ -135,7 +135,7 @@ function ReviewField({
           <input
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
-            className="flex-1 rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            className="flex-1 rounded-md border border-line-2 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
             placeholder="New answer…"
           />
           <button
@@ -153,7 +153,7 @@ function ReviewField({
           <input
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            className="flex-1 rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            className="flex-1 rounded-md border border-line-2 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
             placeholder="Ask the client about this answer…"
           />
           <button
@@ -166,7 +166,7 @@ function ReviewField({
           </button>
         </div>
       )}
-      {done && <p className="text-xs text-green-700 mt-1.5">{done}</p>}
+      {done && <p className="text-xs text-mint mt-1.5">{done}</p>}
     </div>
   );
 }

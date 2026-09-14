@@ -15,11 +15,11 @@ const STATUS_OPTIONS = [
 
 // Static class strings so Tailwind always includes them
 function selectClass(status: string) {
-  if (status === "seen") return "border-blue-300 bg-blue-50 text-blue-700";
-  if (status === "in_progress") return "border-amber-300 bg-amber-50 text-amber-700";
-  if (status === "done") return "border-green-300 bg-green-50 text-green-700";
-  if (status === "wont_fix") return "border-neutral-300 bg-neutral-100 text-neutral-500";
-  return "border-neutral-300 bg-white text-neutral-500";
+  if (status === "seen") return "border-blue-300 bg-blue-fill text-blue";
+  if (status === "in_progress") return "border-amber-300 bg-amber-fill text-amber";
+  if (status === "done") return "border-green-300 bg-mint-fill text-mint";
+  if (status === "wont_fix") return "border-line-2 bg-inset text-ink-3";
+  return "border-line-2 bg-surface text-ink-3";
 }
 
 export default function RevisionTracker({
@@ -74,39 +74,39 @@ export default function RevisionTracker({
           {activeRevisions.map(({ i, pageScreen, whatToChange }) => (
             <div
               key={i}
-              className="flex items-start gap-4 bg-white border border-neutral-200 rounded-lg px-5 py-4"
+              className="flex items-start gap-4 bg-surface border border-line rounded-lg px-5 py-4"
             >
               <div className="flex-1 min-w-0">
                 {pageScreen && (
-                  <p className="text-xs text-neutral-600 mb-0.5">{pageScreen}</p>
+                  <p className="text-xs text-ink-2 mb-0.5">{pageScreen}</p>
                 )}
-                <p className="text-sm text-neutral-900">{whatToChange}</p>
+                <p className="text-sm text-ink">{whatToChange}</p>
               </div>
               <StatusSelect index={i} status={statuses[i] ?? ""} />
             </div>
           ))}
         </div>
       ) : (
-        <p className="text-sm text-neutral-600">All revisions resolved.</p>
+        <p className="text-sm text-ink-2">All revisions resolved.</p>
       )}
 
       {/* Resolved revisions */}
       {resolvedRevisions.length > 0 && (
         <div>
-          <p className="text-xs font-medium text-neutral-600 uppercase tracking-wide mb-2">
+          <p className="text-xs font-medium text-ink-2 uppercase tracking-wide mb-2">
             Resolved — {resolvedRevisions.length}
           </p>
           <div className="space-y-1.5">
             {resolvedRevisions.map(({ i, pageScreen, whatToChange }) => (
               <div
                 key={i}
-                className="flex items-center gap-4 bg-neutral-50 border border-neutral-100 rounded-lg px-5 py-3"
+                className="flex items-center gap-4 bg-page border border-line rounded-lg px-5 py-3"
               >
                 <div className="flex-1 min-w-0">
                   {pageScreen && (
-                    <span className="text-xs text-neutral-600 mr-2">{pageScreen}</span>
+                    <span className="text-xs text-ink-2 mr-2">{pageScreen}</span>
                   )}
-                  <span className="text-sm text-neutral-600 line-through">{whatToChange}</span>
+                  <span className="text-sm text-ink-2 line-through">{whatToChange}</span>
                 </div>
                 <StatusSelect index={i} status={statuses[i] ?? ""} />
               </div>

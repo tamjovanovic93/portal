@@ -33,7 +33,7 @@ export default async function DocumentPage({
   return (
     <div className="max-w-3xl mx-auto px-6 py-10 space-y-8">
       {/* Breadcrumb */}
-      <nav className="text-xs text-neutral-600 space-x-1.5">
+      <nav className="text-xs text-ink-2 space-x-1.5">
         <Link href="/dashboard" className="hover:text-neutral-700">
           Projects
         </Link>
@@ -49,7 +49,7 @@ export default async function DocumentPage({
           Stage {stageNumber} — {stageLabel(stageNumber)}
         </Link>
         <span>›</span>
-        <span className="text-neutral-600">{doc.title}</span>
+        <span className="text-ink-2">{doc.title}</span>
       </nav>
 
       <OnboardingDocView

@@ -74,7 +74,7 @@ export default function ClientOnboardingPipeline({
 
       <PipelineStep n={2} title="Project / Financial Offer" done={offerDone} disabled={!initialDone}>
         {!initialDone ? (
-          <span className="text-xs text-neutral-400">Complete the Initial Form first.</span>
+          <span className="text-xs text-ink-4">Complete the Initial Form first.</span>
         ) : !offer ? (
           <button onClick={handleCreateOffer} disabled={isPending} className="btn-mini">
             {isPending ? "Creating…" : "Create offer →"}
@@ -92,7 +92,7 @@ export default function ClientOnboardingPipeline({
 
       <PipelineStep n={3} title="Full Intake Form" done={intakeDone} disabled={!offerDone}>
         {!offerDone ? (
-          <span className="text-xs text-neutral-400">Available after the offer is approved.</span>
+          <span className="text-xs text-ink-4">Available after the offer is approved.</span>
         ) : !intake ? (
           <button onClick={handleCreateIntake} disabled={isPending} className="btn-mini">
             {isPending ? "Creating…" : "Configure & send intake →"}
@@ -110,35 +110,10 @@ export default function ClientOnboardingPipeline({
         )}
       </PipelineStep>
       {intakeDone && (
-        <p className="text-xs text-neutral-500 pl-8">
+        <p className="text-xs text-ink-3 pl-8">
           Intake complete — run the Client Data pipeline below.
         </p>
       )}
-
-      <style jsx>{`
-        .btn-mini {
-          font-size: 12px;
-          font-weight: 500;
-          padding: 4px 10px;
-          border-radius: 6px;
-          background: #171717;
-          color: #fff;
-        }
-        .chip {
-          font-size: 11px;
-          font-weight: 500;
-          padding: 3px 8px;
-          border-radius: 999px;
-        }
-        .chip-amber {
-          background: #fef3c7;
-          color: #92400e;
-        }
-        .chip-green {
-          background: #dcfce7;
-          color: #166534;
-        }
-      `}</style>
     </ol>
   );
 }

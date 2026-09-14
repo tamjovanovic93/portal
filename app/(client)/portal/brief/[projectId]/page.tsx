@@ -44,10 +44,10 @@ export default async function ClientBriefPage({
   if (!strategyPublished) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-20 text-center">
-        <p className="text-neutral-500 text-sm">
+        <p className="text-ink-3 text-sm">
           Your brief isn&apos;t ready to view yet. Your team will share it shortly.
         </p>
-        <Link href="/portal" className="mt-6 inline-block text-sm text-neutral-900 underline underline-offset-2">
+        <Link href="/portal" className="mt-6 inline-block text-sm text-ink underline underline-offset-2">
           Back to portal
         </Link>
       </div>
@@ -59,9 +59,9 @@ export default async function ClientBriefPage({
   return (
     <div className="max-w-3xl mx-auto px-6 py-10 space-y-10">
       <div>
-        <Link href="/portal" className="text-xs text-neutral-600 hover:text-neutral-700">← Back to portal</Link>
-        <h1 className="text-2xl font-semibold text-neutral-900 mt-3">{project.name}</h1>
-        <p className="text-sm text-neutral-500 mt-1">Your Brief{strategyPublished ? " & Strategy" : ""}</p>
+        <Link href="/portal" className="text-xs text-ink-2 hover:text-neutral-700">← Back to portal</Link>
+        <h1 className="text-2xl font-semibold text-ink mt-3">{project.name}</h1>
+        <p className="text-sm text-ink-3 mt-1">Your Brief{strategyPublished ? " & Strategy" : ""}</p>
       </div>
 
       {/* ── Published project briefs (client-visible sections only) ── */}
@@ -71,7 +71,7 @@ export default async function ClientBriefPage({
         return (
           <div key={b.id} className="space-y-6">
             {publishedBriefs.length > 1 && (
-              <h2 className="text-lg font-semibold text-neutral-900">{b.content.name || "Brief"}</h2>
+              <h2 className="text-lg font-semibold text-ink">{b.content.name || "Brief"}</h2>
             )}
             {sections.map((sec) => (
               <BriefSectionView key={sec.key} kind={sec.kind} label={sec.label} brief={b.content} text={sec.text} rosterName={rosterName} />
@@ -106,7 +106,7 @@ function BriefSectionView({ kind, label, brief, text, rosterName }: {
     }
     case "overview":
       if (!brief.overview) return null;
-      return <Section title={label}><p className="text-sm text-neutral-800 whitespace-pre-wrap">{brief.overview}</p></Section>;
+      return <Section title={label}><p className="text-sm text-ink whitespace-pre-wrap">{brief.overview}</p></Section>;
     case "scope": {
       const items = (brief.scope ?? []) as ScopeItem[];
       if (items.length === 0) return null;
@@ -114,10 +114,10 @@ function BriefSectionView({ kind, label, brief, text, rosterName }: {
         <Section title={label}>
           <ul className="space-y-1.5">
             {items.map((it) => (
-              <li key={it.id} className="text-sm text-neutral-800 flex items-baseline justify-between gap-3">
+              <li key={it.id} className="text-sm text-ink flex items-baseline justify-between gap-3">
                 <span>• {it.text}</span>
                 {(it.startDate || it.dueDate) && (
-                  <span className="text-xs text-neutral-500 shrink-0">{[it.startDate, it.dueDate].filter(Boolean).join(" → ")}</span>
+                  <span className="text-xs text-ink-3 shrink-0">{[it.startDate, it.dueDate].filter(Boolean).join(" → ")}</span>
                 )}
               </li>
             ))}
@@ -130,7 +130,7 @@ function BriefSectionView({ kind, label, brief, text, rosterName }: {
       if (items.length === 0) return null;
       return (
         <Section title={label}>
-          <ul className="space-y-1.5">{items.map((it) => <li key={it.id} className="text-sm text-neutral-800">• {it.text}</li>)}</ul>
+          <ul className="space-y-1.5">{items.map((it) => <li key={it.id} className="text-sm text-ink">• {it.text}</li>)}</ul>
         </Section>
       );
     }
@@ -141,11 +141,11 @@ function BriefSectionView({ kind, label, brief, text, rosterName }: {
         <Section title={label}>
           <ul className="space-y-1.5">
             {nodes.map((n) => (
-              <li key={n.id} className="text-sm text-neutral-800">
+              <li key={n.id} className="text-sm text-ink">
                 {n.name}
                 {(n.children ?? []).length > 0 && (
                   <ul className="pl-5 mt-1 space-y-0.5">
-                    {n.children!.map((c) => <li key={c.id} className="text-sm text-neutral-500">→ {c.name}</li>)}
+                    {n.children!.map((c) => <li key={c.id} className="text-sm text-ink-3">→ {c.name}</li>)}
                   </ul>
                 )}
               </li>
@@ -161,9 +161,9 @@ function BriefSectionView({ kind, label, brief, text, rosterName }: {
         <Section title={label}>
           <ul className="space-y-1.5">
             {team.map((t) => (
-              <li key={t.memberId} className="text-sm text-neutral-800">
+              <li key={t.memberId} className="text-sm text-ink">
                 {rosterName(t.memberId) ?? "Team member"}
-                {t.roles.length > 0 && <span className="text-neutral-500"> — {t.roles.join(", ")}</span>}
+                {t.roles.length > 0 && <span className="text-ink-3"> — {t.roles.join(", ")}</span>}
               </li>
             ))}
           </ul>
@@ -172,7 +172,7 @@ function BriefSectionView({ kind, label, brief, text, rosterName }: {
     }
     case "text":
       if (!text) return null;
-      return <Section title={label}><p className="text-sm text-neutral-800 whitespace-pre-wrap">{text}</p></Section>;
+      return <Section title={label}><p className="text-sm text-ink whitespace-pre-wrap">{text}</p></Section>;
     default:
       return null;
   }
@@ -205,7 +205,7 @@ async function StrategyData({ projectId }: { projectId: string }) {
       {goals.length > 0 && (
         <Section title="Goals">
           <ul className="space-y-1.5">
-            {goals.map((g, i) => <li key={i} className="text-sm text-neutral-800">• {str(g.goal_description) || str(g.goal_text) || str(g.description)}</li>)}
+            {goals.map((g, i) => <li key={i} className="text-sm text-ink">• {str(g.goal_description) || str(g.goal_text) || str(g.description)}</li>)}
           </ul>
         </Section>
       )}
@@ -214,11 +214,11 @@ async function StrategyData({ projectId }: { projectId: string }) {
         <Section title="Audience">
           <div className="space-y-4">
             {personas.map((p, i) => (
-              <div key={i} className="border border-neutral-200 rounded-md p-4">
-                <p className="text-sm font-medium text-neutral-900">{str(p.persona_name) || `Persona ${i + 1}`}</p>
+              <div key={i} className="border border-line rounded-md p-4">
+                <p className="text-sm font-medium text-ink">{str(p.persona_name) || `Persona ${i + 1}`}</p>
                 {Array.isArray(p.pain_points) && (p.pain_points as Row[]).length > 0 && (
-                  <p className="text-sm text-neutral-700 mt-1">
-                    <span className="text-neutral-500">Pain points: </span>
+                  <p className="text-sm text-ink-2 mt-1">
+                    <span className="text-ink-3">Pain points: </span>
                     {(p.pain_points as Row[]).map((x) => str(x.pain_point) || str(x.text) || str(x.description)).filter(Boolean).join("; ")}
                   </p>
                 )}
@@ -232,14 +232,14 @@ async function StrategyData({ projectId }: { projectId: string }) {
         <Section title="Messaging">
           {messaging.key_messages && messaging.key_messages.length > 0 && (
             <div className="mb-3">
-              <p className="text-xs text-neutral-500 mb-1">Key messages</p>
-              <ul className="space-y-1">{messaging.key_messages.map((m, i) => <li key={i} className="text-sm text-neutral-800">• {str(m.message_text)}</li>)}</ul>
+              <p className="text-xs text-ink-3 mb-1">Key messages</p>
+              <ul className="space-y-1">{messaging.key_messages.map((m, i) => <li key={i} className="text-sm text-ink">• {str(m.message_text)}</li>)}</ul>
             </div>
           )}
           {messaging.slogans && messaging.slogans.length > 0 && (
             <div>
-              <p className="text-xs text-neutral-500 mb-1">Slogans</p>
-              <ul className="space-y-1">{messaging.slogans.map((s, i) => <li key={i} className="text-sm text-neutral-800">• {str(s.slogan_text)}</li>)}</ul>
+              <p className="text-xs text-ink-3 mb-1">Slogans</p>
+              <ul className="space-y-1">{messaging.slogans.map((s, i) => <li key={i} className="text-sm text-ink">• {str(s.slogan_text)}</li>)}</ul>
             </div>
           )}
         </Section>
@@ -249,11 +249,11 @@ async function StrategyData({ projectId }: { projectId: string }) {
         <Section title="Strategy — Objectives">
           <div className="space-y-4">
             {objectives.map((o, i) => (
-              <div key={i} className="border border-neutral-200 rounded-md p-4">
-                <p className="text-sm font-medium text-neutral-900">{str(o.objective_text) || `Objective ${i + 1}`}</p>
+              <div key={i} className="border border-line rounded-md p-4">
+                <p className="text-sm font-medium text-ink">{str(o.objective_text) || `Objective ${i + 1}`}</p>
                 {Array.isArray(o.initiatives) && (o.initiatives as Row[]).length > 0 && (
                   <ul className="mt-2 space-y-1">
-                    {(o.initiatives as Row[]).map((ini, j) => <li key={j} className="text-sm text-neutral-700">— {str(ini.initiative_text) || str(ini.text) || str(ini.description)}</li>)}
+                    {(o.initiatives as Row[]).map((ini, j) => <li key={j} className="text-sm text-ink-2">— {str(ini.initiative_text) || str(ini.text) || str(ini.description)}</li>)}
                   </ul>
                 )}
               </div>
@@ -266,7 +266,7 @@ async function StrategyData({ projectId }: { projectId: string }) {
         <Section title="Strategy — Funnel">
           <ul className="space-y-1.5">
             {funnel.map((f, i) => (
-              <li key={i} className="text-sm text-neutral-800">
+              <li key={i} className="text-sm text-ink">
                 <span className="font-medium">{str(f.stage) || str(f.stage_name)}:</span> {str(f.approach) || str(f.description) || str(f.focus)}
               </li>
             ))}
@@ -276,11 +276,11 @@ async function StrategyData({ projectId }: { projectId: string }) {
 
       {calendar.length > 0 && (
         <Section title="Strategy — Content Calendar">
-          <div className="border border-neutral-200 rounded-md overflow-hidden">
-            <ul className="divide-y divide-neutral-100">
+          <div className="border border-line rounded-md overflow-hidden">
+            <ul className="divide-y divide-line">
               {calendar.map((c, i) => (
-                <li key={i} className="px-4 py-2.5 text-sm text-neutral-800">
-                  <span className="text-neutral-500">{str(c.month) || str(c.period) || str(c.date)}</span> — {str(c.theme) || str(c.focus) || str(c.description)}
+                <li key={i} className="px-4 py-2.5 text-sm text-ink">
+                  <span className="text-ink-3">{str(c.month) || str(c.period) || str(c.date)}</span> — {str(c.theme) || str(c.focus) || str(c.description)}
                 </li>
               ))}
             </ul>
@@ -294,8 +294,8 @@ async function StrategyData({ projectId }: { projectId: string }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">{title}</h2>
-      <div className="border border-neutral-200 rounded-lg bg-white px-5 py-4">{children}</div>
+      <h2 className="text-xs font-semibold text-ink-3 uppercase tracking-wider mb-3">{title}</h2>
+      <div className="border border-line rounded-lg bg-surface px-5 py-4">{children}</div>
     </section>
   );
 }
@@ -304,8 +304,8 @@ function Field({ label, value }: { label: string; value: string }) {
   if (!value) return null;
   return (
     <div className="flex items-start gap-3 py-1">
-      <span className="text-xs text-neutral-500 w-32 shrink-0 pt-0.5">{label}</span>
-      <span className="text-sm text-neutral-800 whitespace-pre-wrap">{value}</span>
+      <span className="text-xs text-ink-3 w-32 shrink-0 pt-0.5">{label}</span>
+      <span className="text-sm text-ink whitespace-pre-wrap">{value}</span>
     </div>
   );
 }

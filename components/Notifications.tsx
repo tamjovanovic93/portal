@@ -64,10 +64,10 @@ export default function Notifications({ items }: { items: NotificationItem[] }) 
         type="button"
         onClick={toggle}
         aria-label="Notifications"
-        className={`relative flex items-center justify-center w-9 h-9 rounded-md border text-neutral-700 transition-colors ${
+        className={`relative flex items-center justify-center w-9 h-9 rounded-md border text-ink-2 transition-colors ${
           attention > 0
-            ? "border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100 animate-pulse"
-            : "border-neutral-300 hover:bg-neutral-50"
+            ? "border-amber-400 bg-amber-fill text-amber hover:bg-amber-100 animate-pulse"
+            : "border-line-2 hover:bg-surface-2"
         }`}
       >
         <svg className="w-4.5 h-4.5" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -86,20 +86,20 @@ export default function Notifications({ items }: { items: NotificationItem[] }) 
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-h-[420px] overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-xl z-50">
-          <div className="px-4 py-2.5 border-b border-neutral-100">
-            <p className="text-sm font-semibold text-neutral-900">Notifications</p>
+        <div className="absolute right-0 mt-2 w-80 max-h-[420px] overflow-y-auto rounded-lg border border-line bg-surface shadow-xl z-50">
+          <div className="px-4 py-2.5 border-b border-line">
+            <p className="text-sm font-semibold text-ink">Notifications</p>
           </div>
           {items.length === 0 ? (
-            <p className="px-4 py-8 text-sm text-neutral-500 text-center">
+            <p className="px-4 py-8 text-sm text-ink-3 text-center">
               No notifications yet.
             </p>
           ) : (
-            <ul className="divide-y divide-neutral-100">
+            <ul className="divide-y divide-line">
               {items.map((n) => {
                 const isAttention = ATTENTION_TYPES.has(n.type) && !n.readAt;
                 const body = (
-                  <div className={`flex items-start gap-2.5 px-4 py-3 ${isAttention ? "bg-amber-50" : ""}`}>
+                  <div className={`flex items-start gap-2.5 px-4 py-3 ${isAttention ? "bg-amber-fill" : ""}`}>
                     <span
                       className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${
                         isAttention ? "bg-amber-500 animate-pulse" : n.readAt ? "bg-transparent" : "bg-blue-500"
@@ -107,12 +107,12 @@ export default function Notifications({ items }: { items: NotificationItem[] }) 
                     />
                     <div className="min-w-0">
                       {isAttention && (
-                        <span className="inline-block mb-1 text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-100 rounded px-1.5 py-0.5">
+                        <span className="inline-block mb-1 text-[10px] font-semibold uppercase tracking-wide text-amber bg-amber-fill rounded px-1.5 py-0.5">
                           New question — needs a look
                         </span>
                       )}
-                      <p className="text-sm text-neutral-800">{n.message}</p>
-                      <p className="text-xs text-neutral-500 mt-0.5">
+                      <p className="text-sm text-ink">{n.message}</p>
+                      <p className="text-xs text-ink-3 mt-0.5">
                         {new Date(n.createdAt).toLocaleString()}
                       </p>
                     </div>
@@ -124,7 +124,7 @@ export default function Notifications({ items }: { items: NotificationItem[] }) 
                       <Link
                         href={n.link}
                         onClick={() => (isAttention ? viewAttention(n.id) : setOpen(false))}
-                        className={`block transition-colors ${isAttention ? "hover:bg-amber-100" : "hover:bg-neutral-50"}`}
+                        className={`block transition-colors ${isAttention ? "hover:bg-amber-100" : "hover:bg-surface-2"}`}
                       >
                         {body}
                       </Link>

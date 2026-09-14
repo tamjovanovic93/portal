@@ -34,7 +34,7 @@ export default async function ClientsPage() {
     .sort((a, b) => (b.lastActivity?.getTime() ?? 0) - (a.lastActivity?.getTime() ?? 0));
 
   return (
-    <div style={{ padding: "28px 32px 60px", maxWidth: 1320, margin: "0 auto" }}>
+    <div className="page-wrap page-wrap-lg">
       <div className="fade-up flex items-start justify-between gap-4" style={{ marginBottom: 24 }}>
         <div>
           <Eyebrow style={{ marginBottom: 10 }}>CLIENTS</Eyebrow>

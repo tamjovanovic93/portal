@@ -25,12 +25,12 @@ export default function RetainerStageBar({
   }
 
   return (
-    <section className={`rounded-lg border border-neutral-200 bg-white px-5 py-4 ${isPending ? "opacity-60" : ""}`}>
+    <section className={`rounded-lg border border-line bg-surface px-5 py-4 ${isPending ? "opacity-60" : ""}`}>
       <div className="flex items-baseline justify-between mb-3">
-        <p className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">
+        <p className="text-xs font-semibold text-ink-2 uppercase tracking-wider">
           Current stage
         </p>
-        <p className="text-sm font-semibold text-neutral-900">
+        <p className="text-sm font-semibold text-ink">
           Stage {currentStage} — {STAGE_LABELS[currentStage]}
         </p>
       </div>
@@ -55,7 +55,7 @@ export default function RetainerStageBar({
               <span className={`h-1.5 w-full rounded-full transition-colors ${bg}`} />
               <span
                 className={`text-xs transition-colors ${
-                  current ? "text-neutral-900 font-medium" : "text-neutral-600 group-hover:text-neutral-600"
+                  current ? "text-ink font-medium" : "text-ink-2 group-hover:text-neutral-600"
                 }`}
               >
                 {n}
@@ -65,7 +65,7 @@ export default function RetainerStageBar({
         })}
       </div>
 
-      <p className="text-xs text-neutral-500 mt-2">{STAGE_DESCRIPTIONS[currentStage]}</p>
+      <p className="text-xs text-ink-3 mt-2">{STAGE_DESCRIPTIONS[currentStage]}</p>
     </section>
   );
 }

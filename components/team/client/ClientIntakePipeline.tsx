@@ -100,10 +100,10 @@ export default function ClientIntakePipeline({
           <span
             className={`text-xs px-2 py-1 rounded-full font-medium ${
               verified
-                ? "bg-green-100 text-green-800"
+                ? "bg-mint-fill text-mint"
                 : hasProfile
-                ? "bg-amber-100 text-amber-800"
-                : "bg-neutral-100 text-neutral-500"
+                ? "bg-amber-fill text-amber"
+                : "bg-inset text-ink-3"
             }`}
           >
             {verified ? "Verified" : hasProfile ? "Draft" : "—"}
@@ -157,7 +157,7 @@ export default function ClientIntakePipeline({
       </ol>
 
       {hasStrategy && (
-        <p className="text-xs text-neutral-500 pl-8">
+        <p className="text-xs text-ink-3 pl-8">
           Client Data is ready. Suggested Projects can be generated from it (next phase).
         </p>
       )}

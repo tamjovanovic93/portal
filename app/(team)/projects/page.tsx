@@ -31,8 +31,8 @@ export default async function ProjectsPage({
     <div className="p-8">
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-neutral-900">Projects</h1>
-          <p className="mt-0.5 text-sm text-neutral-500">
+          <h1 className="text-xl font-semibold text-ink">Projects</h1>
+          <p className="mt-0.5 text-sm text-ink-3">
             {projects.length} {showArchived ? "archived" : "active"} project
             {projects.length !== 1 ? "s" : ""}
           </p>
@@ -41,13 +41,13 @@ export default async function ProjectsPage({
       </div>
 
       {/* View toggle */}
-      <div className="flex gap-4 mb-6 border-b border-neutral-100 pb-4">
+      <div className="flex gap-4 mb-6 border-b border-line pb-4">
         <Link
           href="/projects"
           className={`text-sm font-medium pb-0.5 border-b-2 transition-colors ${
             !showArchived
-              ? "border-neutral-900 text-neutral-900"
-              : "border-transparent text-neutral-600 hover:text-neutral-600"
+              ? "border-neutral-900 text-ink"
+              : "border-transparent text-ink-2 hover:text-neutral-600"
           }`}
         >
           Active
@@ -56,13 +56,13 @@ export default async function ProjectsPage({
           href="/projects?view=archived"
           className={`text-sm font-medium pb-0.5 border-b-2 transition-colors ${
             showArchived
-              ? "border-neutral-900 text-neutral-900"
-              : "border-transparent text-neutral-600 hover:text-neutral-600"
+              ? "border-neutral-900 text-ink"
+              : "border-transparent text-ink-2 hover:text-neutral-600"
           }`}
         >
           Archived
           {archivedCount > 0 && (
-            <span className="ml-1.5 text-xs text-neutral-600">
+            <span className="ml-1.5 text-xs text-ink-2">
               {archivedCount}
             </span>
           )}
@@ -70,7 +70,7 @@ export default async function ProjectsPage({
       </div>
 
       {projects.length === 0 ? (
-        <div className="text-center py-24 text-neutral-600 text-sm">
+        <div className="text-center py-24 text-ink-2 text-sm">
           {showArchived
             ? "No archived projects."
             : "No active projects. Create one to get started."}
@@ -87,25 +87,25 @@ export default async function ProjectsPage({
               <div key={project.id} className="relative">
                 <Link
                   href={`/projects/${project.id}`}
-                  className="block bg-white border border-neutral-200 rounded-lg p-5 hover:border-neutral-400 transition-colors"
+                  className="block bg-surface border border-line rounded-lg p-5 hover:border-line-3 transition-colors"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-neutral-900 truncate">
+                      <p className="text-sm font-medium text-ink truncate">
                         {project.name}
                       </p>
-                      <p className="text-xs text-neutral-600 mt-0.5 truncate">
+                      <p className="text-xs text-ink-2 mt-0.5 truncate">
                         {project.client.name ?? project.client.email}
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5 ml-3 shrink-0">
                       {isOngoing && (
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium">
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-blue-fill text-blue font-medium">
                           Retainer
                         </span>
                       )}
                       {hasGate && (
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-medium">
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-amber-fill text-amber font-medium">
                           Gate
                         </span>
                       )}
@@ -117,10 +117,10 @@ export default async function ProjectsPage({
                   </div>
 
                   <div className="mt-3 flex items-center justify-between">
-                    <span className="text-xs text-neutral-500">
+                    <span className="text-xs text-ink-3">
                       {PROJECT_TYPE_LABELS[project.type]}
                     </span>
-                    <span className="text-xs font-medium text-neutral-700">
+                    <span className="text-xs font-medium text-ink-2">
                       Stage {project.currentStage} —{" "}
                       {STAGE_LABELS[project.currentStage]}
                     </span>

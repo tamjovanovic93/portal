@@ -28,7 +28,7 @@ export default function ApproveButton({
 
   if (approved) {
     return (
-      <p className="mt-3 text-sm font-medium text-green-700">
+      <p className="mt-3 text-sm font-medium text-mint">
         ✓ Approved — thank you.
       </p>
     );
@@ -43,7 +43,7 @@ export default function ApproveButton({
       >
         {loading ? "Recording…" : "Approve and continue"}
       </button>
-      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+      {error && <p className="text-xs text-rose mt-1">{error}</p>}
     </div>
   );
 }

@@ -109,8 +109,8 @@ export default async function CalendarPage({
   return (
     <div className="p-8 h-full">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-neutral-900">Calendar</h1>
-        <p className="mt-0.5 text-sm text-neutral-500">
+        <h1 className="text-xl font-semibold text-ink">Calendar</h1>
+        <p className="mt-0.5 text-sm text-ink-3">
           Events, deadlines, and project milestones
         </p>
       </div>
