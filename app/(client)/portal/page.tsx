@@ -491,7 +491,7 @@ export default async function ClientPortalPage() {
                   Your sign-off is needed before we continue.
                 </p>
                 <p className="text-xs text-amber-700 mt-1">
-                  Please review the shared work below and approve when you're
+                  Please review the shared work below and approve when you&apos;re
                   ready.
                 </p>
                 <ApproveButton

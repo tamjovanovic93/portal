@@ -386,6 +386,7 @@ export default async function RetainerView({ projectId }: { projectId: string })
       <div>
         <h2 className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-3">Files</h2>
         <ProjectFiles
+          clientId={project.clientId}
           projectId={projectId}
           briefGenerated={databaseGenerated}
           assets={project.assets.map((a) => ({

@@ -1,0 +1,21 @@
+[
+  {
+    "key": "example",
+    "name": "Example Member",
+    "email": "member@example.com",
+    "accent": "mint",
+    "sortOrder": 1,
+    "title": "Role · Focus",
+    "photoUrl": null,
+    "skills": [
+      "Skill one",
+      "Skill two"
+    ],
+    "bio": "One-line bio.",
+    "availability": {
+      "tz": "GMT+1",
+      "hours": "Mon–Fri · 09:00–18:00",
+      "note": ""
+    }
+  }
+]

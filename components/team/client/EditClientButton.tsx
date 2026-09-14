@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import { updateClient } from "@/app/actions/clients";
+import Modal from "@/components/ui/Modal";
 
 // Edit a client's business name and email after creation.
 export default function EditClientButton({
@@ -15,11 +15,8 @@ export default function EditClientButton({
   email: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => setMounted(true), []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -45,11 +42,7 @@ export default function EditClientButton({
         Edit
       </button>
 
-      {open &&
-        mounted &&
-        createPortal(
-          <div className="theme-dark fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+      <Modal open={open}>
               <h2 className="text-base font-semibold text-neutral-900 mb-5">Edit client</h2>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
@@ -95,10 +88,7 @@ export default function EditClientButton({
                   </button>
                 </div>
               </form>
-            </div>
-          </div>,
-          document.body
-        )}
+      </Modal>
     </>
   );
 }

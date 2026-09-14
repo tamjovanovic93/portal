@@ -54,7 +54,7 @@ type Props = {
 const ADDABLE_DEFAULTS: BriefSectionKind[] = ["meta", "overview", "scope", "keyFunctions", "sitemap", "team"];
 
 export default function ProjectBriefCard(props: Props) {
-  const { projectId, briefId: id, currentStageLabel, brief, publishedAt, roster } = props;
+  const { briefId: id, currentStageLabel, brief, publishedAt, roster } = props;
   const [expanded, setExpanded] = useState(false);
   // The AI draft runs as a background job; the hook polls it to completion.
   const draftJob = useAiJob({ initialJobId: props.activeDraftJobId });

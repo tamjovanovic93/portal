@@ -78,10 +78,12 @@ function AssetRow({ asset }: { asset: FolderAsset }) {
 
 export default function ProjectFiles({
   projectId,
+  clientId,
   assets,
   briefGenerated = false,
 }: {
   projectId: string;
+  clientId: string;
   assets: FolderAsset[];
   briefGenerated?: boolean;
 }) {
@@ -175,7 +177,7 @@ export default function ProjectFiles({
           {/* Brief & Data: pinned link to the generated brief */}
           {open === "brief" && briefGenerated && (
             <Link
-              href={`/projects/${projectId}/brief`}
+              href={`/clients/${clientId}/data`}
               className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 hover:bg-neutral-50 transition-colors group"
             >
               <div className="flex items-center gap-2">

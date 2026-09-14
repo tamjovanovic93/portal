@@ -58,15 +58,6 @@ export function Pill({
   );
 }
 
-export function StatusPill({ label, color = "mint" }: { label: string; color?: Accent }) {
-  return (
-    <Pill color={color}>
-      <span className="dot" />
-      {label}
-    </Pill>
-  );
-}
-
 // ── Avatar (initials-based stub) ──
 export function Avatar({
   name,
@@ -123,21 +114,6 @@ export function Avatar({
       }}
     >
       {initialsOf(name)}
-    </div>
-  );
-}
-
-export function AvatarStack({ names, size = 26 }: { names: string[]; size?: number }) {
-  return (
-    <div style={{ display: "flex" }}>
-      {names.map((n, i) => (
-        <div
-          key={n + i}
-          style={{ marginLeft: i ? -8 : 0, boxShadow: "0 0 0 2px var(--surface)", borderRadius: "50%" }}
-        >
-          <Avatar name={n} size={size} />
-        </div>
-      ))}
     </div>
   );
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClientAccount } from "@/app/actions/clients";
+import Modal from "@/components/ui/Modal";
 
 // Create a Client without a Project. Only business name, email and mode are
 // captured here — projects (and their types) are proposed later by the agent.
@@ -17,7 +17,6 @@ export default function NewClientButton({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<{
@@ -26,8 +25,6 @@ export default function NewClientButton({
     tempPassword?: string;
   } | null>(null);
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => setMounted(true), []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -58,11 +55,7 @@ export default function NewClientButton({
         {label}
       </button>
 
-      {open &&
-        mounted &&
-        createPortal(
-          <div className="theme-dark fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+      <Modal open={open}>
               {created ? (
                 <>
                   <h2 className="text-base font-semibold text-neutral-900 mb-1">Client created</h2>
@@ -181,10 +174,7 @@ export default function NewClientButton({
                   </form>
                 </>
               )}
-            </div>
-          </div>,
-          document.body
-        )}
+      </Modal>
     </>
   );
 }

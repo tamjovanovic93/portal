@@ -1,46 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { StageStatus } from "@prisma/client";
 import NewProjectButton from "@/components/team/NewProjectButton";
 import ProjectCardMenu from "@/components/team/ProjectCardMenu";
-import { STAGE_LABELS, STAGE_COUNT } from "@/lib/stages";
+import { STAGE_LABELS } from "@/lib/stages";
 import { PROJECT_TYPE_LABELS } from "@/lib/constants/projects";
-
-function StagePips({
-  currentStage,
-  stageStatuses,
-}: {
-  currentStage: number;
-  stageStatuses: { stageNumber: number; status: StageStatus }[];
-}) {
-  const statusMap = Object.fromEntries(
-    stageStatuses.map((s) => [s.stageNumber, s.status])
-  );
-
-  return (
-    <div className="flex items-center gap-1 mt-3">
-      {Array.from({ length: STAGE_COUNT }, (_, i) => i + 1).map((n) => {
-        const status = statusMap[n];
-        const isCurrent = n === currentStage;
-        const isDone = status === "COMPLETE";
-        const isGate = status === "GATE_PENDING";
-
-        let bg = "bg-neutral-200";
-        if (isDone) bg = "bg-neutral-900";
-        else if (isGate) bg = "bg-amber-400";
-        else if (isCurrent) bg = "bg-neutral-500";
-
-        return (
-          <div
-            key={n}
-            title={`Stage ${n} — ${STAGE_LABELS[n]}`}
-            className={`h-1.5 w-6 rounded-full ${bg}`}
-          />
-        );
-      })}
-    </div>
-  );
-}
+import StagePips from "@/components/team/StagePips";
 
 export default async function ProjectsPage({
   searchParams,

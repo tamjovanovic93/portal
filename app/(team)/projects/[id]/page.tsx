@@ -782,7 +782,7 @@ export default async function ProjectPage({
         <p className="text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-3">
           Files
         </p>
-        <ProjectFiles projectId={id} briefGenerated={databaseGenerated} assets={assetRows} />
+        <ProjectFiles projectId={id} clientId={clientId} briefGenerated={databaseGenerated} assets={assetRows} />
       </div>
 
       {/* ── Latest uploads + Brief snapshot + Activity log ───────────────────── */}
@@ -968,7 +968,7 @@ export default async function ProjectPage({
 
         {/* Files tab — folders */}
         {activeTab === "files" && (
-          <ProjectFiles projectId={id} briefGenerated={databaseGenerated} assets={assetRows} />
+          <ProjectFiles projectId={id} clientId={clientId} briefGenerated={databaseGenerated} assets={assetRows} />
         )}
 
         {/* Approvals tab */}

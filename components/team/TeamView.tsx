@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Icon from "@/components/ui/Icon";
-import { Avatar, Pill, Health, VAR, type Accent } from "@/components/ui/kit";
+import { Avatar, Pill, Health, VAR } from "@/components/ui/kit";
 import { capacityColor, capacityLabel, type TeamMember } from "@/lib/team";
 import TeamMemberModal from "@/components/team/TeamMemberModal";
 import DeactivateMemberButton from "@/components/team/DeactivateMemberButton";

@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { StageStatus } from "@prisma/client";
 import NewProjectButton from "@/components/team/NewProjectButton";
 import DeleteClientButton from "@/components/team/DeleteClientButton";
 import EditClientButton from "@/components/team/client/EditClientButton";
@@ -9,39 +8,13 @@ import ClientCredentials from "@/components/team/client/ClientCredentials";
 import ProjectCardMenu from "@/components/team/ProjectCardMenu";
 import Icon from "@/components/ui/Icon";
 import { Eyebrow, Pill, Avatar, VAR, type Accent } from "@/components/ui/kit";
-import { STAGE_LABELS, STAGE_COUNT } from "@/lib/stages";
+import { STAGE_LABELS } from "@/lib/stages";
 import ClientOnboardingPipeline from "@/components/team/client/ClientOnboardingPipeline";
 import ClientIntakePipeline from "@/components/team/client/ClientIntakePipeline";
 import { getProfile, getStrategy } from "@/lib/intake/store";
 import { findActiveJob } from "@/lib/ai/jobs";
 import { PROJECT_TYPE_LABELS } from "@/lib/constants/projects";
-
-function StagePips({ currentStage, stageStatuses }: {
-  currentStage: number;
-  stageStatuses: { stageNumber: number; status: StageStatus }[];
-}) {
-  const statusMap = Object.fromEntries(stageStatuses.map((s) => [s.stageNumber, s.status]));
-  return (
-    <div className="flex items-center gap-1 mt-3">
-      {Array.from({ length: STAGE_COUNT }, (_, i) => i + 1).map((n) => {
-        const status = statusMap[n];
-        const isCurrent = n === currentStage;
-        let bg = "var(--surface-3)";
-        if (status === "COMPLETE") bg = "var(--mint)";
-        else if (status === "GATE_PENDING") bg = "var(--amber)";
-        else if (isCurrent) bg = "var(--mint)";
-        return (
-          <div
-            key={n}
-            title={`Stage ${n} — ${STAGE_LABELS[n]}`}
-            className="h-1.5 flex-1 rounded-full"
-            style={{ background: bg, boxShadow: isCurrent ? `0 0 8px ${VAR.mint}` : "none", opacity: status === "COMPLETE" || isCurrent || status === "GATE_PENDING" ? 1 : 0.6 }}
-          />
-        );
-      })}
-    </div>
-  );
-}
+import StagePips from "@/components/team/StagePips";
 
 export default async function ClientStreamPage({
   params,
@@ -265,7 +238,7 @@ export default async function ClientStreamPage({
                     <span className="faint" style={{ fontSize: 12 }}>{PROJECT_TYPE_LABELS[p.type]}</span>
                     <span className="tech" style={{ fontSize: 11, color: "var(--text-2)" }}>{STAGE_LABELS[p.currentStage]}</span>
                   </div>
-                  <StagePips currentStage={p.currentStage} stageStatuses={p.stages} />
+                  <StagePips currentStage={p.currentStage} stageStatuses={p.stages} variant="stream" />
                   <p className="faint" style={{ fontSize: 11.5, marginTop: 10 }}>
                     {outstanding > 0 ? `${outstanding} material${outstanding !== 1 ? "s" : ""} outstanding` : "Materials clear"}
                   </p>

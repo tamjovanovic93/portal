@@ -9,6 +9,7 @@ import {
   runStrategyAgent,
 } from "@/app/actions/intake";
 import { useAiJob } from "@/components/ai/useAiJob";
+import PipelineStep from "@/components/team/PipelineStep";
 
 // Client-level Client Data pipeline: Agent 1 (profile + verification) →
 // verify gate → Agent 2 (strategy). All keyed by clientId. The two agents run
@@ -67,7 +68,7 @@ export default function ClientIntakePipeline({
   return (
     <div className="space-y-3">
       <ol className="space-y-2">
-        <Step
+        <PipelineStep
           n={1}
           title="Run intake (Agent 1)"
           done={hasProfile}
@@ -88,9 +89,9 @@ export default function ClientIntakePipeline({
           >
             {busy("intake") ? "Running…" : hasProfile ? "Re-run intake" : "Run intake"}
           </button>
-        </Step>
+        </PipelineStep>
 
-        <Step
+        <PipelineStep
           n={2}
           title="Verify the profile"
           done={verified}
@@ -130,9 +131,9 @@ export default function ClientIntakePipeline({
               {busy("unverify") ? "…" : "Re-open as draft"}
             </button>
           )}
-        </Step>
+        </PipelineStep>
 
-        <Step
+        <PipelineStep
           n={3}
           title="Generate strategy (Agent 2)"
           done={hasStrategy}
@@ -152,7 +153,7 @@ export default function ClientIntakePipeline({
           >
             {busy("strategy") ? "Generating…" : hasStrategy ? "Regenerate strategy" : "Generate strategy"}
           </button>
-        </Step>
+        </PipelineStep>
       </ol>
 
       {hasStrategy && (
@@ -165,33 +166,3 @@ export default function ClientIntakePipeline({
   );
 }
 
-function Step({
-  n,
-  title,
-  desc,
-  done,
-  children,
-}: {
-  n: number;
-  title: string;
-  desc: string;
-  done: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <li className="flex items-start gap-3">
-      <span
-        className={`mt-0.5 shrink-0 w-5 h-5 rounded-full text-[11px] font-semibold flex items-center justify-center ${
-          done ? "bg-green-600 text-white" : "bg-neutral-200 text-neutral-600"
-        }`}
-      >
-        {done ? "✓" : n}
-      </span>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-neutral-900">{title}</p>
-        <p className="text-xs text-neutral-600 mt-0.5">{desc}</p>
-        <div className="flex items-center gap-2 mt-2">{children}</div>
-      </div>
-    </li>
-  );
-}

@@ -1,6 +1,6 @@
 // One-off backfill: move typography/colors off individual briefs into a single
 // per-project Brand Kit document (templateType "brand_kit"), then strip them
-// from the briefs. Re-runnable. Run: node scripts/migrate-brandkit.mjs
+// from the briefs. Re-runnable. Run: node scripts/archive/migrate-brandkit.mjs
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();

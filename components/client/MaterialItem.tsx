@@ -95,7 +95,7 @@ export default function MaterialItem({
             </p>
           )}
           {status === "submitted" && !attachedFile && !item.fileRef && (
-            <p className="text-xs text-blue-600 mt-0.5">Submitted — we'll confirm receipt shortly.</p>
+            <p className="text-xs text-blue-600 mt-0.5">Submitted — we&apos;ll confirm receipt shortly.</p>
           )}
           {status === "verified" && (
             <p className="text-xs text-green-600 mt-0.5">Received and verified.</p>

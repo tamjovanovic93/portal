@@ -3,18 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { TEMPLATES } from "@/lib/templates/registry";
-import DocumentForm, { type FormMode } from "@/components/DocumentForm";
 import DeleteDocumentButton from "@/components/team/project/DeleteDocumentButton";
-import OfferEditor from "@/components/team/project/OfferEditor";
-import IntakeBuilder from "@/components/team/project/IntakeBuilder";
-import { applyConfig, getConfig } from "@/lib/templates/config";
-import type { FormContent } from "@/lib/forms/collab";
+import OnboardingDocView from "@/components/team/project/OnboardingDocView";
 import { stageLabel } from "@/lib/stages";
-import { COLLAB_FORM_TYPES } from "@/lib/documents/types";
-import { DOC_STATUS_LABEL } from "@/lib/constants/documents";
 
-// Onboarding forms use the collaborative prefill → review flow.
-
+// Team-side editor for a PROJECT stage document. Onboarding forms use the
+// collaborative prefill → review flow (see OnboardingDocView).
 export default async function DocumentPage({
   params,
 }: {
@@ -27,7 +21,7 @@ export default async function DocumentPage({
   if (!user) redirect("/login");
 
   const [project, doc] = await Promise.all([
-    prisma.project.findUnique({ where: { id: projectId } }),
+    prisma.project.findUnique({ where: { id: projectId }, select: { name: true } }),
     prisma.document.findUnique({ where: { id: documentId } }),
   ]);
 
@@ -35,31 +29,6 @@ export default async function DocumentPage({
 
   const template = TEMPLATES[doc.templateType];
   if (!template) notFound();
-
-  const content = (doc.content ?? {}) as Record<string, unknown>;
-
-  // Decide how the team interacts with this document.
-  const isOffer = doc.templateType === "financial_offer";
-  const isIntake = doc.templateType === "intake_form";
-  const isCollab = COLLAB_FORM_TYPES.has(doc.templateType);
-  // Collaborative forms honor the team's builder config (removed/reordered).
-  const effectiveTemplate = isCollab
-    ? applyConfig(template, getConfig(content))
-    : template;
-  let mode: FormMode = "fill";
-  let isReadOnly = doc.status === "APPROVED";
-  if (isCollab) {
-    if (doc.status === "DRAFT") {
-      mode = "prefill";
-      isReadOnly = false;
-    } else if (doc.status === "APPROVED") {
-      mode = "review";
-      isReadOnly = false; // review mode manages its own controls
-    } else {
-      mode = "fill";
-      isReadOnly = true; // SENT — waiting on the client
-    }
-  }
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-10 space-y-8">
@@ -83,72 +52,13 @@ export default async function DocumentPage({
         <span className="text-neutral-600">{doc.title}</span>
       </nav>
 
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-neutral-900">{doc.title}</h1>
-          {template.description && (
-            <p className="text-sm text-neutral-500 mt-1">{template.description}</p>
-          )}
-        </div>
-        <div className="flex items-center gap-3 shrink-0 ml-4">
-          <span className="text-xs text-neutral-600">
-            {DOC_STATUS_LABEL[doc.status] ?? doc.status}
-          </span>
-          {doc.status === "DRAFT" && (
-            <DeleteDocumentButton
-              documentId={documentId}
-              projectId={projectId}
-              stageNumber={stageNumber}
-            />
-          )}
-        </div>
-      </div>
-
-      {isCollab && doc.status === "SENT" && (
-        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 inline-block">
-          Sent to the client — waiting for them to complete it.
-        </p>
-      )}
-      {isCollab && doc.status === "APPROVED" && (
-        <p className="text-xs text-neutral-600">
-          Client completed this form. Review each answer below — you can change an answer
-          (the client re-approves) or ask a question about it.
-        </p>
-      )}
-
-      {/* Form */}
-      {isOffer ? (
-        doc.status === "DRAFT" ? (
-          <OfferEditor documentId={documentId} template={template} initialContent={content} />
-        ) : (
-          <div className="border border-neutral-200 rounded-lg bg-white px-6 py-6 space-y-4">
-            {template.sections[0].fields.map((field) => (
-              <div key={field.key}>
-                <p className="text-xs text-neutral-500">{field.label}</p>
-                <p className="text-sm text-neutral-900 whitespace-pre-wrap">
-                  {(content[field.key] as string) || "—"}
-                </p>
-              </div>
-            ))}
-          </div>
-        )
-      ) : isIntake && doc.status === "DRAFT" ? (
-        <IntakeBuilder
-          documentId={documentId}
-          template={template}
-          initialContent={content as FormContent}
-        />
-      ) : (
-        <DocumentForm
-          documentId={documentId}
-          template={effectiveTemplate}
-          initialContent={content}
-          readOnly={isReadOnly}
-          isTeam
-          mode={mode}
-        />
-      )}
+      <OnboardingDocView
+        doc={doc}
+        template={template}
+        deleteControl={
+          <DeleteDocumentButton documentId={documentId} projectId={projectId} stageNumber={stageNumber} />
+        }
+      />
     </div>
   );
 }

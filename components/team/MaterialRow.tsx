@@ -15,7 +15,6 @@ type Item = {
 
 export default function MaterialRow({
   item,
-  statusLabel,
   statusStyle,
 }: {
   item: Item;

@@ -67,7 +67,6 @@ export async function createProject(formData: FormData) {
       type,
       mode,
       currentStage: 1,
-      onboardingStep: "initial_form",
       // Projects begin at Strategy (stage 1). Client intake / discovery happens
       // at the client level before the project exists — see lib/stages.ts.
       stages: {

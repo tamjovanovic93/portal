@@ -43,6 +43,7 @@ export default async function FilesPage({
 
       <ProjectFiles
         projectId={id}
+        clientId={project.clientId}
         briefGenerated={!!profileDoc}
         assets={assets.map((a) => ({
           id: a.id,

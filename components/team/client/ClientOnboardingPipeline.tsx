@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClientInitialForm, createClientOffer, createClientIntakeForm } from "@/app/actions/onboarding";
+import PipelineStep from "@/components/team/PipelineStep";
 
 // Client-level onboarding: Initial Client Form → Offer → Full Intake Form.
 // All documents are client-scoped (no project required). Mirrors the old
@@ -53,7 +54,7 @@ export default function ClientOnboardingPipeline({
 
   return (
     <ol className="space-y-2">
-      <Step n={1} title="Initial Client Form" done={initialDone}>
+      <PipelineStep n={1} title="Initial Client Form" done={initialDone}>
         {!initialForm ? (
           <button onClick={handleCreateInitial} disabled={isPending} className="btn-mini">
             {isPending ? "Creating…" : "Create form →"}
@@ -69,9 +70,9 @@ export default function ClientOnboardingPipeline({
             Review client answers →
           </Link>
         )}
-      </Step>
+      </PipelineStep>
 
-      <Step n={2} title="Project / Financial Offer" done={offerDone} disabled={!initialDone}>
+      <PipelineStep n={2} title="Project / Financial Offer" done={offerDone} disabled={!initialDone}>
         {!initialDone ? (
           <span className="text-xs text-neutral-400">Complete the Initial Form first.</span>
         ) : !offer ? (
@@ -87,9 +88,9 @@ export default function ClientOnboardingPipeline({
         ) : (
           <span className="chip chip-green">Approved ✓</span>
         )}
-      </Step>
+      </PipelineStep>
 
-      <Step n={3} title="Full Intake Form" done={intakeDone} disabled={!offerDone}>
+      <PipelineStep n={3} title="Full Intake Form" done={intakeDone} disabled={!offerDone}>
         {!offerDone ? (
           <span className="text-xs text-neutral-400">Available after the offer is approved.</span>
         ) : !intake ? (
@@ -107,7 +108,7 @@ export default function ClientOnboardingPipeline({
             Review intake answers →
           </Link>
         )}
-      </Step>
+      </PipelineStep>
       {intakeDone && (
         <p className="text-xs text-neutral-500 pl-8">
           Intake complete — run the Client Data pipeline below.
@@ -142,32 +143,3 @@ export default function ClientOnboardingPipeline({
   );
 }
 
-function Step({
-  n,
-  title,
-  done,
-  disabled,
-  children,
-}: {
-  n: number;
-  title: string;
-  done: boolean;
-  disabled?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <li className={`flex items-start gap-3 ${disabled ? "opacity-60" : ""}`}>
-      <span
-        className={`mt-0.5 shrink-0 w-5 h-5 rounded-full text-[11px] font-semibold flex items-center justify-center ${
-          done ? "bg-green-600 text-white" : "bg-neutral-200 text-neutral-600"
-        }`}
-      >
-        {done ? "✓" : n}
-      </span>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-neutral-900">{title}</p>
-        <div className="flex items-center gap-2 mt-1">{children}</div>
-      </div>
-    </li>
-  );
-}

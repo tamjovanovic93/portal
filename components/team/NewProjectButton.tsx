@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { createPortal } from "react-dom";
 import { createProject, listClients } from "@/app/actions/projects";
 import { PROJECT_TYPE_OPTIONS } from "@/lib/constants/projects";
+import Modal from "@/components/ui/Modal";
 
 type ClientOption = { id: string; name: string | null; email: string };
 
@@ -19,13 +19,9 @@ export default function NewProjectButton({
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [clientChoice, setClientChoice] = useState<"new" | "existing">("new");
   const [clients, setClients] = useState<ClientOption[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
-
-  // Portal target is only available in the browser.
-  useEffect(() => setMounted(true), []);
 
   // Load existing clients the first time the modal opens.
   useEffect(() => {
@@ -52,9 +48,11 @@ export default function NewProjectButton({
         {label}
       </button>
 
-      {open && mounted && createPortal(
-        <div className="theme-dark fixed inset-0 z-[100] flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
+      <Modal
+        open={open}
+        overlayClassName="theme-dark fixed inset-0 z-[100] flex items-center justify-center bg-black/40"
+        cardClassName="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6"
+      >
             <h2 className="text-base font-semibold text-neutral-900 mb-5">
               Create project
             </h2>
@@ -173,10 +171,7 @@ export default function NewProjectButton({
                 </button>
               </div>
             </form>
-          </div>
-        </div>,
-        document.body
-      )}
+      </Modal>
     </>
   );
 }

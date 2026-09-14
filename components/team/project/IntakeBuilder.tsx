@@ -10,6 +10,10 @@ import { teamPrefill, getCollab, type FormContent } from "@/lib/forms/collab";
 // Team-side "building blocks" editor for the full intake form: remove fields or
 // whole sections, reorder sections, and pre-fill answers. Pre-filled answers are
 // sent to the client to approve or change; empty ones the client fills.
+function newFieldKey() {
+  return `custom_${Math.random().toString(36).slice(2, 9)}`;
+}
+
 export default function IntakeBuilder({
   documentId,
   template,
@@ -83,7 +87,7 @@ export default function IntakeBuilder({
     setSaved(false);
   }
   function addField(sectionKey: string, label: string, type: Field["type"]) {
-    const key = `custom_${Math.random().toString(36).slice(2, 9)}`;
+    const key = newFieldKey();
     setAddedFields((prev) => [...prev, { section: sectionKey, field: { key, label, type } }]);
     setSaved(false);
   }
