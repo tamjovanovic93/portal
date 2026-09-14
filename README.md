@@ -48,9 +48,12 @@ Two roles, stored on `profiles.role` and mirrored to Supabase `app_metadata`:
 Prerequisites: Node 20+, a Supabase project, an Anthropic API key.
 
 1. `npm install` (runs `prisma generate`).
-2. Copy `.env.example` to `.env.local` and fill it in. Every variable is
-   documented in that file. On Vercel `DATABASE_URL` must be the transaction
-   pooler URL (port 6543); `DIRECT_URL` (port 5432) is only used by migrations.
+2. Copy `.env.example` to `.env` and fill it in. Every variable is documented
+   in that file. Use `.env`, not `.env.local`: Next.js reads both, but the
+   Prisma CLI only reads `.env`, so migrations would not see the database URL.
+   `DATABASE_URL` must be the transaction pooler URL (port 6543);
+   `DIRECT_URL` (port 5432) is used only by migrations. The Supabase dashboard
+   has both under Connect → ORMs → Prisma.
 3. Apply the schema: `npm run db:migrate` (`prisma migrate deploy`).
 4. Run `supabase/setup.sql` in the Supabase SQL editor. It installs the
    signup trigger (creates a `profiles` row with the role from
@@ -76,7 +79,7 @@ under "Scripts" below, in order.
 
 ## Scripts
 
-Run with `node scripts/<name>.mjs` against the `DATABASE_URL` in `.env.local`.
+Run with `node scripts/<name>.mjs` against the `DATABASE_URL` in `.env`.
 
 | Script | Purpose |
 |--------|---------|
