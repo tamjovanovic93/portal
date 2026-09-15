@@ -41,23 +41,26 @@ const emptyStats = (): ProjectStats => ({
 });
 
 async function loadProjects(now: Date): Promise<DashboardProject[]> {
-  const rows = await prisma.project.findMany({
-    where: { isArchived: false },
-    select: {
-      id: true, name: true, type: true, mode: true, currentStage: true, updatedAt: true,
-      client: { select: { name: true, email: true } },
-      stages: { select: { stageNumber: true, status: true, gateApproved: true } },
-    },
-    orderBy: { updatedAt: "desc" },
-  });
-  const ids = rows.map((p) => p.id);
-  if (ids.length === 0) return [];
+  // One wave. Filtering the aggregates by the project relation rather than by a
+  // list of ids means none of them has to wait for the project query, so the
+  // whole loader costs a single database round trip instead of two. At the
+  // latency of a cross-region connection that is the difference between ~250ms
+  // and ~500ms before any work is done.
+  const activeProject = { project: { isArchived: false } };
+  const inActiveProjects = activeProject;
+  const openInActiveCycle = { cycle: { status: "ACTIVE" as const, ...activeProject }, status: { not: "DONE" as const } };
 
-  const inActiveProjects = { projectId: { in: ids } };
-  const openInActiveCycle = { cycle: { status: "ACTIVE" as const, ...inActiveProjects }, status: { not: "DONE" as const } };
-
-  const [materials, overdueMaterials, draftDocs, cycles, openTasks, overdueTasks, blockerTasks, awaitingTasks] =
+  const [rows, materials, overdueMaterials, draftDocs, cycles, openTasks, overdueTasks, blockerTasks, awaitingTasks] =
     await Promise.all([
+      prisma.project.findMany({
+        where: { isArchived: false },
+        select: {
+          id: true, name: true, type: true, mode: true, currentStage: true, updatedAt: true,
+          client: { select: { name: true, email: true } },
+          stages: { select: { stageNumber: true, status: true, gateApproved: true } },
+        },
+        orderBy: { updatedAt: "desc" },
+      }),
       prisma.materialItem.groupBy({ by: ["projectId", "status"], where: inActiveProjects, _count: { _all: true } }),
       prisma.materialItem.groupBy({
         by: ["projectId"],
@@ -76,7 +79,7 @@ async function loadProjects(now: Date): Promise<DashboardProject[]> {
       prisma.task.groupBy({
         by: ["cycleId"],
         where: {
-          cycle: { status: "ACTIVE", ...inActiveProjects },
+          cycle: { status: "ACTIVE", ...activeProject },
           type: "DELIVERABLE",
           requiresClientApproval: true,
           status: "WAITING_FINAL_APPROVAL",
@@ -85,6 +88,9 @@ async function loadProjects(now: Date): Promise<DashboardProject[]> {
         _count: { _all: true },
       }),
     ]);
+
+  const ids = rows.map((p) => p.id);
+  if (ids.length === 0) return [];
 
   const stats = new Map<string, ProjectStats>(ids.map((id) => [id, emptyStats()]));
   const cycleProject = new Map(cycles.map((c) => [c.id, c.projectId]));
