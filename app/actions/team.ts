@@ -56,14 +56,13 @@ export async function createTeamMember(
   }
 
   try {
-    await prisma.profile.create({
-      data: {
-        id: created.user.id,
-        email,
-        role: "TEAM",
-        active: true,
-        ...profileFieldsFrom(parsed.data),
-      },
+    // The auth trigger may already have inserted a bare row for this id, so
+    // fill it in rather than colliding on the primary key.
+    const fields = { email, role: "TEAM" as const, active: true, ...profileFieldsFrom(parsed.data) };
+    await prisma.profile.upsert({
+      where: { id: created.user.id },
+      update: fields,
+      create: { id: created.user.id, ...fields },
     });
   } catch (err) {
     await admin.auth.admin.deleteUser(created.user.id).catch(() => {});

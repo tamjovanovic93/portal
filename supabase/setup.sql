@@ -14,14 +14,19 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.profiles (id, email, role)
+  -- Only for users an admin gave a role to. A self-service signup gets an auth
+  -- user with no profile, which the app treats as no access. updated_at is set
+  -- explicitly: it is NOT NULL and Prisma applies @updatedAt client-side.
+  insert into public.profiles (id, email, role, updated_at)
   select
     new.id,
     new.email,
-    coalesce(new.raw_app_meta_data->>'role', 'CLIENT')::"UserRole"
-  where not exists (
-    select 1 from public.profiles p where p.id = new.id or p.email = new.email
-  );
+    (new.raw_app_meta_data->>'role')::"UserRole",
+    now()
+  where new.raw_app_meta_data->>'role' is not null
+    and not exists (
+      select 1 from public.profiles p where p.id = new.id or p.email = new.email
+    );
   return new;
 end;
 $$;
@@ -31,6 +36,8 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
+
+alter table public.profiles alter column updated_at set default current_timestamp;
 
 -- ─── 2. Row Level Security ────────────────────────────────────────
 -- Enable RLS on all tables

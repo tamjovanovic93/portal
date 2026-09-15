@@ -299,11 +299,23 @@ export async function generateClientAccess(
       create: { id: authUserId, email, role: "CLIENT" },
     });
 
-    if (!existingProfile || existingProfile.id !== authUserId) {
+    if (!existingProfile) {
+      // No profile existed for this email: point the project at the one we
+      // just created.
       await prisma.project.update({
         where: { id: projectId },
         data: { clientId: authUserId },
       });
+    } else if (existingProfile.id !== authUserId) {
+      // A profile exists but the new login got a different id. Silently
+      // re-pointing the project here would orphan that profile's documents,
+      // tasks and approvals. Fail instead and let a human reconcile it.
+      await adminSupabase.auth.admin.deleteUser(authUserId).catch(() => {});
+      return {
+        error:
+          "This client's profile and login have different ids. Reconcile them " +
+          "before generating access.",
+      };
     }
   }
 

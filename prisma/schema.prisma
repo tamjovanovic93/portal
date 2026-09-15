@@ -152,7 +152,7 @@ model Profile {
   active       Boolean  @default(true)
   sortOrder    Int?     @map("sort_order")
   createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  updatedAt    DateTime @updatedAt @default(now()) @map("updated_at")
 
   projectsAsClient  Project[]      @relation("ClientProjects")
   clientDocuments   Document[]     @relation("ClientDocuments") // shared Client Data docs

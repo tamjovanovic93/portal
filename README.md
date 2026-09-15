@@ -59,10 +59,22 @@ Prerequisites: Node 20+, a Supabase project, an Anthropic API key.
    signup trigger (creates a `profiles` row with the role from
    `app_metadata`), row-level security on every table and the storage bucket.
    Safe to re-run: every policy is dropped before it is created.
-5. Create the first team login in the Supabase Auth dashboard with
-   `app_metadata` set to `{"role": "TEAM"}`. Every later team member is created
-   from the `/team` page, every client from the `/clients` page.
-6. `npm run dev` and sign in at `/login`.
+5. Create the first team login. Add the user in the Supabase Auth dashboard
+   with `app_metadata` set to `{"role": "TEAM"}`, then insert the matching
+   profile (the app, not the database, is what normally creates profiles):
+
+   ```sql
+   insert into public.profiles (id, email, role, updated_at)
+   values ('<the new auth user id>', '<their email>', 'TEAM', now());
+   ```
+
+   Every later team member is created from the `/team` page, every client from
+   the `/clients` page. Both provision the login for you.
+6. Turn **off** self-service signup: Authentication → Providers → Email →
+   disable "Enable sign ups". The app never uses it, and a signup that slips
+   through gets no profile and therefore no access, but closing it removes the
+   ability to create unlimited auth users.
+7. `npm run dev` and sign in at `/login`.
 
 Existing databases that predate September 2026 also need the one-off scripts
 under "Scripts" below, in order.
