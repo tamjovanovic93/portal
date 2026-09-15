@@ -6,6 +6,7 @@ import { briefId, PROJECT_TYPES, type ProjectBrief, type ScopeItem, type BriefIt
 import { runAgent, parseJsonResponse, type AgentUsage } from "../client";
 import { MODELS } from "../models";
 import { buildBriefDraftPrompt } from "../prompts/briefDraft";
+import { getSecret } from "@/lib/secrets";
 
 const draftSchema = z.object({
   project_type: z.string().nullable().optional(),
@@ -16,7 +17,7 @@ const draftSchema = z.object({
 });
 
 export async function checkBriefDraftPreconditions(briefDocId: string): Promise<{ error?: string; projectId?: string }> {
-  if (!process.env.ANTHROPIC_API_KEY) return { error: "ANTHROPIC_API_KEY is not set." };
+  if (!(await getSecret("ANTHROPIC_API_KEY"))) return { error: "ANTHROPIC_API_KEY is not set." };
   const brief = await prisma.document.findUnique({ where: { id: briefDocId }, select: { projectId: true } });
   if (!brief?.projectId) return { error: "Brief not found." };
   return { projectId: brief.projectId };

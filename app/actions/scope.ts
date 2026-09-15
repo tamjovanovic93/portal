@@ -9,6 +9,7 @@ import { runAgent, parseJsonResponse, AgentTimeoutError } from "@/lib/ai/client"
 import { MODELS } from "@/lib/ai/models";
 import { buildScopeBreakdownPrompt, FIRST_DELIVERY_STAGE } from "@/lib/ai/prompts/scopeBreakdown";
 import type { ProjectBrief, ScopeItem } from "@/lib/brief/types";
+import { getSecret } from "@/lib/secrets";
 
 // A desired task derived from a scope item. scopeItemId is the stable sync key:
 //   simple item        → scopeItemId = item.id
@@ -45,7 +46,7 @@ async function breakdown(
   items: ScopeItem[],
   projectType: string | null
 ): Promise<Record<string, ItemPlan>> {
-  if (!process.env.ANTHROPIC_API_KEY || items.length === 0) return {};
+  if (items.length === 0 || !(await getSecret("ANTHROPIC_API_KEY"))) return {};
   try {
     const { text } = await runAgent(buildScopeBreakdownPrompt(items, projectType), {
       model: MODELS.fast,

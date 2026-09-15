@@ -3,11 +3,14 @@
 // Run: node --env-file=.env scripts/p1-sync-app-metadata.mjs
 import { PrismaClient } from "@prisma/client";
 import { createClient } from "@supabase/supabase-js";
+import { requireSecret } from "./_secrets.mjs";
 
 const prisma = new PrismaClient();
-const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false },
-});
+const admin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  await requireSecret(prisma, "SUPABASE_SERVICE_ROLE_KEY"),
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
 
 const profiles = await prisma.profile.findMany({ select: { id: true, email: true, role: true } });
 let updated = 0, missing = 0, failed = 0;

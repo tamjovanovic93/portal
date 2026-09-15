@@ -11,6 +11,7 @@ import { runAgentWithSearchFallback, parseJsonResponse, type AgentUsage } from "
 import { MODELS } from "../models";
 import { buildIntakePrompt } from "../prompts/intake";
 import { buildStrategyPrompt } from "../prompts/strategy";
+import { getSecret } from "@/lib/secrets";
 
 // ─── Form → readable text ────────────────────────────────────────────────────
 
@@ -47,7 +48,7 @@ function buildFormText(template: Template, content: Record<string, unknown>): st
 // Precondition shared by the action (so the user sees the error immediately)
 // and the runner (so a stale job cannot run on missing data).
 export async function checkIntakePreconditions(clientId: string): Promise<{ error?: string }> {
-  if (!process.env.ANTHROPIC_API_KEY) return { error: "ANTHROPIC_API_KEY is not set in environment variables." };
+  if (!(await getSecret("ANTHROPIC_API_KEY"))) return { error: "ANTHROPIC_API_KEY is not configured." };
   const doc = await prisma.document.findFirst({
     where: { clientId, templateType: TEMPLATE_TYPES.intakeForm, status: "APPROVED" },
     select: { id: true },
@@ -144,7 +145,7 @@ export async function runIntakeJob(
 
 // ─── Agent 2 — Strategy ─────────────────────────────────────────────────────────
 export async function checkStrategyPreconditions(clientId: string): Promise<{ error?: string }> {
-  if (!process.env.ANTHROPIC_API_KEY) return { error: "ANTHROPIC_API_KEY is not set in environment variables." };
+  if (!(await getSecret("ANTHROPIC_API_KEY"))) return { error: "ANTHROPIC_API_KEY is not configured." };
   const profile = await getProfile(clientId);
   if (!profile) return { error: "No client profile found. Run intake first." };
   // Hard gate — Agent 2 must not run on an unverified profile.

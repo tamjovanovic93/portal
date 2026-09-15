@@ -75,6 +75,11 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // /api is excluded on purpose. Every route under it authenticates itself
+    // (getSessionUser for uploads and downloads, x-ai-job-secret for
+    // /api/ai/run, Bearer CRON_SECRET for /api/ai/sweep). Routing them through
+    // this proxy redirected server-to-server callers to /login, which silently
+    // stopped every AI job and the sweep cron from ever running.
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

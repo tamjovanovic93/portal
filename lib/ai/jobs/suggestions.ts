@@ -7,6 +7,7 @@ import { briefId, PROJECT_TYPES, type ProjectBrief, type ScopeItem, type BriefIt
 import { runAgent, parseJsonResponse, type AgentUsage } from "../client";
 import { MODELS } from "../models";
 import { buildSuggestionsPrompt } from "../prompts/suggestions";
+import { getSecret } from "@/lib/secrets";
 
 const suggestionSchema = z.object({
   name: z.string().min(1),
@@ -46,7 +47,7 @@ function draftToBrief(d: SuggestionDraft): ProjectBrief {
 }
 
 export async function checkSuggestionsPreconditions(clientId: string): Promise<{ error?: string }> {
-  if (!process.env.ANTHROPIC_API_KEY) return { error: "ANTHROPIC_API_KEY is not set." };
+  if (!(await getSecret("ANTHROPIC_API_KEY"))) return { error: "ANTHROPIC_API_KEY is not set." };
   const [profile, strategy] = await Promise.all([getProfile(clientId), getStrategy(clientId)]);
   if (!profile) return { error: "No client profile yet. Run the intake pipeline first." };
   if (profile._meta?.status !== "verified") return { error: "Verify the client profile first." };
