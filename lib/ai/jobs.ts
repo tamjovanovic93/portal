@@ -7,6 +7,7 @@ import { runIntakeJob, runStrategyJob } from "./jobs/intake";
 import { runSuggestionsJob } from "./jobs/suggestions";
 import { runBriefDraftJob } from "./jobs/briefDraft";
 import type { AgentUsage } from "./client";
+import { getSecret } from "@/lib/secrets";
 
 // ─── Job model ───────────────────────────────────────────────────────────────
 // A job is a row in ai_jobs. The action that starts it enqueues the row and
@@ -63,7 +64,7 @@ async function requestOrigin(): Promise<string> {
 // Fire-and-forget POST to the run route. The route claims the job and returns
 // 202 at once, so this resolves in milliseconds.
 export async function dispatchJob(jobId: string, origin: string): Promise<void> {
-  const secret = process.env.AI_JOB_SECRET;
+  const secret = await getSecret("AI_JOB_SECRET");
   if (!secret) {
     console.error("AI_JOB_SECRET is not set — cannot dispatch AI jobs.");
     await prisma.aiJob.update({ where: { id: jobId }, data: { status: "failed", error: "AI_JOB_SECRET is not configured.", finishedAt: new Date() } }).catch(() => {});

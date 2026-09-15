@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { claimJob, executeJob } from "@/lib/ai/jobs";
+import { getSecret } from "@/lib/secrets";
 
 // Executes one queued AI job. Called server-to-server (lib/ai/jobs dispatchJob)
 // with the shared secret; responds 202 immediately and runs the job in after(),
@@ -8,7 +9,7 @@ export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const secret = process.env.AI_JOB_SECRET;
+  const secret = await getSecret("AI_JOB_SECRET");
   if (!secret || req.headers.get("x-ai-job-secret") !== secret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

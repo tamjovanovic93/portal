@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ZodTypeAny, z } from "zod";
 import { MODELS, WEB_SEARCH_TOOL } from "./models";
+import { getSecret, requireSecret } from "@/lib/secrets";
 
 export type AgentUsage = { inputTokens: number; outputTokens: number };
 
@@ -30,7 +31,13 @@ export async function runAgent(
   prompt: string,
   options: RunAgentOptions
 ): Promise<{ text: string; usage: AgentUsage }> {
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  // A workspace-scoped key needs nothing extra. An organisation-level key is
+  // rejected with "not scoped to a workspace" unless this header names one.
+  const workspaceId = await getSecret("ANTHROPIC_WORKSPACE_ID");
+  const anthropic = new Anthropic({
+    apiKey: await requireSecret("ANTHROPIC_API_KEY"),
+    ...(workspaceId ? { defaultHeaders: { "anthropic-workspace-id": workspaceId } } : {}),
+  });
   const tools = options.webSearch
     ? [{ type: WEB_SEARCH_TOOL as "web_search_20260209", name: "web_search" as const }]
     : [];

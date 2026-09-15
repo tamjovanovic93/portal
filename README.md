@@ -94,6 +94,31 @@ Prisma CLI do.
 | `p4-verification-context-ids.mjs` | Prefix verification question ids with the client id |
 | `archive/` | Scripts that already ran in production; see `scripts/archive/README.md` |
 
+## Secrets
+
+Secrets resolve through `lib/secrets.ts`: the environment first, then Supabase
+Vault. Move one into Vault with
+
+```
+node --env-file=.env scripts/secrets-push.mjs ANTHROPIC_API_KEY
+node --env-file=.env scripts/secrets-push.mjs --list
+```
+
+then delete it from `.env` and from the Vercel project settings. Values are
+cached per process, so a rotation takes effect on the next cold start.
+
+Four must stay in the environment, and the script refuses to move them:
+
+| Secret | Why it cannot move |
+|--------|--------------------|
+| `DATABASE_URL`, `DIRECT_URL` | They are the credential for the database Vault lives in. Storing them there is circular. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Needed before any database call is possible, and it is the only credential that can create logins or sign private file URLs. |
+| `CRON_SECRET` | Vercel reads it to sign cron requests. Our code only verifies the header. |
+
+Vault removes copies of a secret and gives one place to rotate. It does not
+reduce blast radius: anything holding `DATABASE_URL` or the service-role key
+can read Vault too.
+
 ## AI jobs and cron
 
 The four agents (intake, strategy, suggestions, brief draft) never run inside
