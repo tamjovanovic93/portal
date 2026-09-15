@@ -110,11 +110,33 @@ sure the plan allows the 300 s `maxDuration` used by `app/api/ai/run/route.ts`
 
 ## Deploying on Vercel
 
-- Environment variables: everything in `.env.example`.
+Pushing to `main` deploys straight to production; any other branch gets a
+preview URL. **Preview and production share one database**, so a schema change
+is live for both the moment it is applied.
+
+- Environment variables live in the Vercel project settings, not in `.env`.
+  Everything in `.env.example` must be set there, and `DATABASE_URL` should
+  have `&connection_limit=1` appended for serverless.
 - Build command is the default `npm run build`.
 - `vercel.json` registers the sweep cron.
-- Run `npm run db:migrate` against production before deploying a build that
-  ships a new migration.
+
+### Migrations must be expand → deploy → contract
+
+Because one database serves the running release and every preview, a migration
+that *removes* something breaks whatever is still deployed. Order it as:
+
+1. **Expand** — add columns/tables. Safe to apply any time; old code ignores them.
+2. **Deploy** — ship the release that stops using the old column.
+3. **Contract** — only now drop it, in a follow-up migration.
+
+Prisma selects an explicit column list, so dropping a column that the deployed
+release still declares fails every query on that table with
+`column "..." does not exist`. That is not a slow degradation, it is an
+immediate outage.
+
+Retained purely for step 3: `projects.health`, `projects.brief_reviewed_at`
+and `projects.onboarding_step`. No code in this repo reads them. Drop them
+once the current release is replaced, in a new migration.
 
 ## Known limitations
 

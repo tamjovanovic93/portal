@@ -168,6 +168,12 @@ model Profile {
   @@map("profiles")
 }
 
+enum ProjectHealth {
+  ON_TRACK
+  NEEDS_ATTENTION
+  AT_RISK
+}
+
 model Project {
   id               String      @id @default(uuid()) @db.Uuid
   name             String
@@ -177,6 +183,13 @@ model Project {
   mode             ProjectMode @default(PROJECT)
   currentStage     Int         @default(1) @map("current_stage") // 1–7 (Strategy=1)
   isArchived       Boolean     @default(false) @map("is_archived")
+  // Legacy: no code in this repo reads these. They exist only because the
+  // release currently in production still selects them on every Project
+  // query. Drop them once that release is replaced — see
+  // prisma/migrations/20260915090000_restore_legacy_project_columns.
+  health           ProjectHealth @default(ON_TRACK)
+  briefReviewedAt  DateTime?   @map("brief_reviewed_at")
+  onboardingStep   String?     @map("onboarding_step")
   // Set when the team publishes the finished Brief + Strategy to the client.
   briefPublishedAt DateTime?   @map("brief_published_at")
   createdAt        DateTime    @default(now()) @map("created_at")

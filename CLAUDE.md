@@ -37,4 +37,8 @@ Conventions that must hold:
   `className` (it collides with the variant's class and CSS order decides the
   winner). `className` is layout only. See the tables in `docs/ARCHITECTURE.md`.
   Clickable rows, tabs and state-driven toggles stay plain elements.
+- Migrations are expand → deploy → contract. Preview and production share one
+  database, and Prisma selects an explicit column list, so dropping a column
+  the deployed release still declares is an instant outage. Add now, drop only
+  after the release that stopped using it is live. See README.
 - Verify with `npm run typecheck`, `npm run lint`, `npx next build`.
