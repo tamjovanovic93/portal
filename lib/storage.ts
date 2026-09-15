@@ -5,7 +5,7 @@ import { createAdminClient, STORAGE_BUCKET } from "@/lib/supabase/admin";
 export async function removeStorageObjects(paths: string[]): Promise<void> {
   const real = paths.filter((p) => p && !/^https?:\/\//i.test(p));
   if (real.length === 0) return;
-  const admin = createAdminClient();
+  const admin = await createAdminClient();
   for (let i = 0; i < real.length; i += 100) {
     const chunk = real.slice(i, i + 100);
     const { error } = await admin.storage.from(STORAGE_BUCKET).remove(chunk);
@@ -23,7 +23,7 @@ export async function getSignedUrls(
   const real = paths.filter((p) => p && !/^https?:\/\//i.test(p));
   for (const p of paths) if (!real.includes(p)) out.set(p, p);
   if (real.length === 0) return out;
-  const admin = createAdminClient();
+  const admin = await createAdminClient();
   const { data, error } = await admin.storage.from(STORAGE_BUCKET).createSignedUrls(real, ttlSeconds);
   if (error || !data) {
     console.error("getSignedUrls failed:", error?.message);

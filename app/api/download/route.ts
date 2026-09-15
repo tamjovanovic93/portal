@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const adminClient = createAdminClient();
+  const adminClient = await createAdminClient();
 
   const { data, error } = await adminClient.storage
     .from(STORAGE_BUCKET)

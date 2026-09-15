@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   const safeName = safeFilename(file.name);
   const storagePath = `${projectId}/client-uploads/${folder}/${Date.now()}_${safeName}`;
 
-  const adminClient = createAdminClient();
+  const adminClient = await createAdminClient();
 
   const { error: uploadError } = await adminClient.storage
     .from(STORAGE_BUCKET)

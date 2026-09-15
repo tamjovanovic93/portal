@@ -37,7 +37,7 @@ export async function createClientAccount(
   let tempPassword: string | undefined;
   if (!clientProfile) {
     tempPassword = generateTempPassword();
-    const adminSupabase = createAdminClient();
+    const adminSupabase = await createAdminClient();
     const { data: userData, error: userError } =
       await adminSupabase.auth.admin.createUser({
         email,
@@ -107,7 +107,7 @@ export async function updateClient(
   if (email && email !== client.email) {
     const clash = await prisma.profile.findUnique({ where: { email } });
     if (clash && clash.id !== clientId) return { error: "That email is already in use." };
-    const adminSupabase = createAdminClient();
+    const adminSupabase = await createAdminClient();
     const { error: authErr } = await adminSupabase.auth.admin.updateUserById(clientId, {
       email,
       email_confirm: true,
@@ -139,7 +139,7 @@ export async function resetClientPassword(
   });
   if (!client || client.role !== "CLIENT") return { error: "Client not found." };
   const tempPassword = generateTempPassword();
-  const adminSupabase = createAdminClient();
+  const adminSupabase = await createAdminClient();
   const { error: authErr } = await adminSupabase.auth.admin.updateUserById(clientId, {
     password: tempPassword,
   });

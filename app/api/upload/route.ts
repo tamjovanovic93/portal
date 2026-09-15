@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   const storagePath = `${projectId}/${stage}/${Date.now()}_${safeName}`;
 
   // Upload via admin client (bypasses RLS on storage)
-  const adminClient = createAdminClient();
+  const adminClient = await createAdminClient();
 
   const { error: uploadError } = await adminClient.storage
     .from(STORAGE_BUCKET)

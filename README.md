@@ -107,17 +107,19 @@ node --env-file=.env scripts/secrets-push.mjs --list
 then delete it from `.env` and from the Vercel project settings. Values are
 cached per process, so a rotation takes effect on the next cold start.
 
-Four must stay in the environment, and the script refuses to move them:
+Three must stay in the environment, and the script refuses to move them:
 
 | Secret | Why it cannot move |
 |--------|--------------------|
 | `DATABASE_URL`, `DIRECT_URL` | They are the credential for the database Vault lives in. Storing them there is circular. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Needed before any database call is possible, and it is the only credential that can create logins or sign private file URLs. |
 | `CRON_SECRET` | Vercel reads it to sign cron requests. Our code only verifies the header. |
 
+`SUPABASE_SERVICE_ROLE_KEY` does move: Vault is read over the Prisma
+connection, which never needs that key, so there is no circularity.
+
 Vault removes copies of a secret and gives one place to rotate. It does not
-reduce blast radius: anything holding `DATABASE_URL` or the service-role key
-can read Vault too.
+reduce blast radius: anything holding `DATABASE_URL` can read Vault, and so can
+anything holding the service-role key.
 
 ## AI jobs and cron
 

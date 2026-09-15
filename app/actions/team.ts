@@ -45,7 +45,7 @@ export async function createTeamMember(
 
   // Provision a real login so the profile id matches auth.users.id. The member
   // sets their password via "Forgot password" on the login page.
-  const admin = createAdminClient();
+  const admin = await createAdminClient();
   const { data: created, error: authErr } = await admin.auth.admin.createUser({
     email,
     email_confirm: true,
@@ -117,8 +117,9 @@ export async function deactivateTeamMember(
   await prisma.profile.update({ where: { id }, data: { active: false } });
 
   // Best-effort: block the login too (no auth user exists for legacy members).
-  await createAdminClient()
-    .auth.admin.updateUserById(id, { ban_duration: "876000h" })
+  const adminForBan = await createAdminClient();
+  await adminForBan.auth.admin
+    .updateUserById(id, { ban_duration: "876000h" })
     .catch(() => {});
 
   revalidatePath("/team");

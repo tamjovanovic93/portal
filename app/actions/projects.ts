@@ -34,7 +34,7 @@ export async function createProject(formData: FormData) {
     clientProfile = await prisma.profile.findUnique({ where: { email: clientEmail } });
     if (!clientProfile) {
       // Create the client user via Supabase Auth admin API
-      const adminSupabase = createAdminClient();
+      const adminSupabase = await createAdminClient();
       const { data: userData, error: userError } =
         await adminSupabase.auth.admin.createUser({
           email: clientEmail,
@@ -232,7 +232,7 @@ export async function deleteClient(clientId: string) {
   // Remove the client's Supabase Auth login so no orphaned auth user remains and
   // the email can be reused. Best-effort — the data is already gone by here.
   try {
-    const adminSupabase = createAdminClient();
+    const adminSupabase = await createAdminClient();
     await adminSupabase.auth.admin.deleteUser(clientId);
   } catch (err) {
     console.error("deleteClient: auth user cleanup failed", err);
@@ -261,7 +261,7 @@ export async function generateClientAccess(
   if (!project) return { error: "Project not found" };
 
   const email = project.client.email;
-  const adminSupabase = createAdminClient();
+  const adminSupabase = await createAdminClient();
 
   // Ensure the Supabase auth user exists (reuse existing profile UUID to avoid trigger conflicts)
   const existingProfile = await prisma.profile.findUnique({

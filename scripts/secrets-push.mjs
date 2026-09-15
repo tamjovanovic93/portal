@@ -7,18 +7,12 @@
 // Re-running with a changed value updates the stored secret.
 //
 // Not every secret can move. DATABASE_URL and DIRECT_URL are the credential for
-// the database Vault lives in, SUPABASE_SERVICE_ROLE_KEY is needed before any
-// database call is possible, and CRON_SECRET is read by Vercel itself to sign
-// cron requests. Those stay in the environment.
+// the database Vault lives in, so storing them there is circular. CRON_SECRET is
+// read by Vercel itself to sign cron requests. Those stay in the environment.
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
-const BLOCKED = new Set([
-  "DATABASE_URL",
-  "DIRECT_URL",
-  "SUPABASE_SERVICE_ROLE_KEY",
-  "CRON_SECRET",
-]);
+const BLOCKED = new Set(["DATABASE_URL", "DIRECT_URL", "CRON_SECRET"]);
 
 const args = process.argv.slice(2);
 
