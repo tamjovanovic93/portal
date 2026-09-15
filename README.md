@@ -143,9 +143,20 @@ Cron, every five minutes, protected by `CRON_SECRET`) re-dispatches jobs that
 were queued but never picked up and fails jobs stuck in `running`. Pages poll
 the job with `useAiJob` and refresh when it finishes.
 
-On Vercel set `ANTHROPIC_API_KEY`, `AI_JOB_SECRET` and `CRON_SECRET`, and make
-sure the plan allows the 300 s `maxDuration` used by `app/api/ai/run/route.ts`
-(lower it there if not).
+Recovery does not depend on the cron. `getAiJobView` re-dispatches a job left
+queued for more than a minute and fails one stuck running for more than
+fifteen, and the UI polls it every four seconds while a job is in flight. The
+cron is the backstop for a job nobody is watching, because the user closed the
+tab.
+
+`vercel.json` therefore schedules the sweep **daily** (`0 3 * * *`), which is
+what the Hobby plan allows. A `*/5 * * * *` schedule fails the build on Hobby
+with a link to the cron pricing docs. On Pro, change it to `*/5 * * * *` for
+near-immediate recovery.
+
+On Vercel set `ANTHROPIC_API_KEY`, `AI_JOB_SECRET` and `CRON_SECRET`, and check
+the plan allows the 300 s `maxDuration` in `app/api/ai/run/route.ts`. Hobby caps
+functions at 60 s, so lower it there or the long agents will be killed.
 
 ## Deploying on Vercel
 
