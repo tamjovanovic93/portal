@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { Avatar, Pill, VAR, type Accent } from "@/components/ui/kit";
 import { listWorkTasks } from "@/app/actions/work";
+import Loader from "@/components/ui/Loader";
 
 export type WorkTask = {
   id: string;
@@ -205,7 +206,11 @@ export default function MyWork({
       {!showList ? (
         <p className="faint" style={{ fontSize: 12.5 }}>Pick a person above or choose a category to see their tasks.</p>
       ) : filtered.length === 0 ? (
-        <p className="faint" style={{ fontSize: 12.5 }}>{loading && !tasksByWho[effectiveWho] ? "Loading…" : "No tasks match this filter."}</p>
+        loading && !tasksByWho[effectiveWho] ? (
+          <Loader />
+        ) : (
+          <p className="faint" style={{ fontSize: 12.5 }}>No tasks match this filter.</p>
+        )
       ) : (
         <div className="flex flex-col" style={{ gap: 2 }}>
           {filtered.slice(0, 40).map((t) => {

@@ -36,6 +36,7 @@ import {
 } from "@/lib/brief/types";
 import type { RosterMember } from "@/lib/team";
 import Button from "@/components/ui/Button";
+import Loader from "@/components/ui/Loader";
 
 type Props = {
   projectId: string;
@@ -152,6 +153,7 @@ export default function ProjectBriefCard(props: Props) {
           <Button variant="ghost" size="sm" type="button" onClick={generate} disabled={genPending}>
             {genPending ? "Generating…" : "Generate draft (AI)"}
           </Button>
+          {genPending && <Loader label="Writing the draft" />}
           <div className="flex-1" />
           {genError && <span style={{ fontSize: 12, color: "var(--rose)" }}>{genError}</span>}
         </div>

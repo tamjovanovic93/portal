@@ -12,6 +12,7 @@ import {
   approveSuggestion,
 } from "@/app/actions/suggested-projects";
 import Button from "@/components/ui/Button";
+import Loader from "@/components/ui/Loader";
 
 type Suggestion = {
   id: string;
@@ -76,6 +77,14 @@ export default function SuggestedProjectsPanel({
           {busy ? "Analyzing…" : suggestions.length ? "Generate more" : "Generate suggestions"}
         </button>
       </div>
+      {busy && (
+        <div className="rounded-lg border border-line bg-surface px-4 py-3">
+          <Loader label="Analyzing client data" />
+          <p className="text-xs text-ink-3 mt-1.5">
+            This runs in the background and can take a minute. You can leave this page.
+          </p>
+        </div>
+      )}
       {error && <p className="text-sm text-rose">{error}</p>}
 
       {suggestions.length === 0 && !busy && (

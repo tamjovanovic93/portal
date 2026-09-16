@@ -11,6 +11,7 @@ import {
 import { useAiJob } from "@/components/ai/useAiJob";
 import PipelineStep from "@/components/team/PipelineStep";
 import Button from "@/components/ui/Button";
+import Loader from "@/components/ui/Loader";
 
 // Client-level Client Data pipeline: Agent 1 (profile + verification) →
 // verify gate → Agent 2 (strategy). All keyed by clientId. The two agents run
@@ -161,6 +162,14 @@ export default function ClientIntakePipeline({
         <p className="text-xs text-ink-3 pl-8">
           Client Data is ready. Suggested Projects can be generated from it (next phase).
         </p>
+      )}
+      {job.running && (
+        <div className="rounded-lg border border-line bg-surface px-4 py-3">
+          <Loader label={active === "strategy" ? "Building the strategy" : "Building Client Data"} />
+          <p className="text-xs text-ink-3 mt-1.5">
+            This runs in the background and can take a minute. You can leave this page.
+          </p>
+        </div>
       )}
       {shownError && <p style={{ fontSize: 12, color: "var(--rose)" }}>{shownError}</p>}
     </div>
