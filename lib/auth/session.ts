@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 export type SessionUser = {
   id: string;
   email: string;
+  name: string | null;
   role: UserRole;
 };
 
@@ -34,11 +35,11 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
 
   const profile = await prisma.profile.findUnique({
     where: { id: userId },
-    select: { email: true, role: true, active: true },
+    select: { email: true, name: true, role: true, active: true },
   });
   if (!profile || !profile.active) return null;
 
-  return { id: userId, email: profile.email, role: profile.role };
+  return { id: userId, email: profile.email, name: profile.name, role: profile.role };
 });
 
 export async function requireUser(): Promise<SessionUser> {

@@ -100,6 +100,6 @@ export async function recordApproval(
   ]);
 
   revalidatePath(`/projects/${projectId}`);
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
   return { success: true };
 }

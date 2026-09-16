@@ -36,10 +36,10 @@ export default async function DesignReviewPage({
           No designs have been shared yet. Check back shortly.
         </p>
         <Link
-          href="/portal"
+          href={`/portal/projects/${projectId}`}
           className="mt-4 inline-block text-sm text-ink-3 hover:text-ink underline underline-offset-2"
         >
-          ← Back to portal
+          ← Back to project
         </Link>
       </div>
     );
@@ -58,10 +58,10 @@ export default async function DesignReviewPage({
   return (
     <div className="max-w-3xl mx-auto px-6 py-10 space-y-8">
       <Link
-        href="/portal"
+        href={`/portal/projects/${projectId}`}
         className="text-xs text-ink-2 hover:text-neutral-700 transition-colors"
       >
-        ← Back to portal
+        ← Back to project
       </Link>
 
       <div>

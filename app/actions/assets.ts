@@ -27,7 +27,7 @@ export async function toggleAssetVisibility(assetId: string) {
 
   revalidatePath(`/projects/${asset.projectId}/files`);
   revalidatePath(`/projects/${asset.projectId}`);
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
   return { success: true };
 }
 
@@ -59,6 +59,6 @@ export async function deleteAsset(assetId: string) {
 
   revalidatePath(`/projects/${asset.projectId}/files`);
   revalidatePath(`/projects/${asset.projectId}`);
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
   return { success: true };
 }

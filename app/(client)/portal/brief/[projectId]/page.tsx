@@ -47,7 +47,7 @@ export default async function ClientBriefPage({
         <p className="text-ink-3 text-sm">
           Your brief isn&apos;t ready to view yet. Your team will share it shortly.
         </p>
-        <Link href="/portal" className="mt-6 inline-block text-sm text-ink underline underline-offset-2">
+        <Link href={`/portal/projects/${projectId}`} className="mt-6 inline-block text-sm text-ink underline underline-offset-2">
           Back to portal
         </Link>
       </div>
@@ -59,7 +59,7 @@ export default async function ClientBriefPage({
   return (
     <div className="max-w-3xl mx-auto px-6 py-10 space-y-10">
       <div>
-        <Link href="/portal" className="text-xs text-ink-2 hover:text-neutral-700">← Back to portal</Link>
+        <Link href={`/portal/projects/${projectId}`} className="text-xs text-ink-2 hover:text-neutral-700">← Back to project</Link>
         <h1 className="text-2xl font-semibold text-ink mt-3">{project.name}</h1>
         <p className="text-sm text-ink-3 mt-1">Your Brief{strategyPublished ? " & Strategy" : ""}</p>
       </div>

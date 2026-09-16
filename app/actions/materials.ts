@@ -65,7 +65,7 @@ export async function updateMaterialStatus(
   revalidatePath(`/projects/${item.projectId}/materials`);
   revalidatePath(`/projects/${item.projectId}`);
   revalidatePath("/dashboard");
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
   return { success: true };
 }
 

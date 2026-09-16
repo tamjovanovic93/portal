@@ -17,6 +17,7 @@ export const NOTIFICATION_TYPES = {
   verificationAsked: "verification_asked",
   copyApprovalRequested: "copy_approval_requested",
   teamQuestion: "team_question",
+  clientQuestion: "client_question",
 } as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[keyof typeof NOTIFICATION_TYPES];
@@ -33,4 +34,5 @@ export const FEED_NOTIFICATION_TYPES: ReadonlySet<string> = new Set([
   NOTIFICATION_TYPES.questionChangeRequested,
   NOTIFICATION_TYPES.editApproved,
   NOTIFICATION_TYPES.offerQuestion,
+  NOTIFICATION_TYPES.clientQuestion,
 ]);

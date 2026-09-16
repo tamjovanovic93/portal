@@ -151,7 +151,7 @@ export async function publishBrief(briefDocId: string): Promise<{ ok?: boolean; 
     message: `${doc.project.name}: a new brief "${name}" is ready to view.`,
     link: `/portal/brief/${doc.project.id}`,
   });
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
   return { ok: true };
 }
 
@@ -161,7 +161,7 @@ export async function unpublishBrief(briefDocId: string): Promise<{ ok?: boolean
   if (projectId) {
     await prisma.project.update({ where: { id: projectId }, data: { briefPublishedAt: null } });
   }
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
   return { ok: true };
 }
 

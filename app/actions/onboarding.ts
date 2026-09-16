@@ -285,7 +285,7 @@ export async function askAboutOffer(
     link: teamDocLink(doc),
   });
   revalidateDoc(doc);
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
   return { ok: true };
 }
 

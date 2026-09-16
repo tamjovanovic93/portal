@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireTeam, requireUser } from "@/lib/auth/session";
+import { notifyTeam } from "@/lib/notifications";
+import { NOTIFICATION_TYPES } from "@/lib/notification-types";
+import { parseInput } from "@/lib/validation/form";
+import { askAsClientSchema } from "@/lib/validation/schemas";
 import { notifyClient, notify } from "@/lib/notifications";
 import { mutateDoc } from "@/lib/intake/store";
 import { VERIFICATION_DOC, type VerificationQueue } from "@/lib/intake/types";
@@ -15,7 +19,9 @@ import type { QuestionContext } from "@prisma/client";
 
 function revalidateFor(projectId: string | null) {
   if (projectId) revalidatePath(`/projects/${projectId}`);
-  revalidatePath("/portal");
+  // "layout" invalidates the whole /portal subtree — the dashboard, the project
+  // detail pages and /portal/messages all read the same rows.
+  revalidatePath("/portal", "layout");
   revalidatePath("/dashboard");
 }
 
@@ -59,9 +65,63 @@ export async function askClient(input: {
     message: kind === "CONFIRM"
       ? `${project.name}: your team needs you to confirm something.`
       : `${project.name}: your team asked you a question.`,
-    link: `/portal`,
+    link: "/portal/messages",
   });
   revalidateFor(input.projectId);
+  return { id: q.id };
+}
+
+// ─── Client asks their team ───────────────────────────────────────────────────
+// The mirror of askClient. Addressed to the team as a whole (recipientId null,
+// recipientRole TEAM) because no single member owns a client's question.
+export async function askAsClient(input: {
+  projectId?: string | null;
+  questionText: string;
+}): Promise<{ id?: string; error?: string }> {
+  const user = await requireUser();
+  if (user.role !== "CLIENT") return { error: "Unauthorized" };
+
+  const parsed = parseInput(askAsClientSchema, input);
+  if (!parsed.ok) return { error: parsed.error };
+  const { projectId, questionText } = parsed.data;
+
+  // Ownership, not just existence — a client must not ask about someone
+  // else's project.
+  let project: { id: string; name: string } | null = null;
+  if (projectId) {
+    project = await prisma.project.findFirst({
+      where: { id: projectId, clientId: user.id, isArchived: false },
+      select: { id: true, name: true },
+    });
+    if (!project) return { error: "Project not found." };
+  }
+
+  const q = await prisma.question.create({
+    data: {
+      projectId: project?.id ?? null,
+      // QuestionContext has no GENERAL member and adding one would break the
+      // deployed Prisma client mid-release (expand → deploy → contract).
+      contextType: "PROJECT",
+      kind: "ANSWER",
+      askedById: user.id,
+      recipientRole: "TEAM",
+      questionText,
+      status: "WAITING_TEAM",
+    },
+  });
+
+  // The notification carries the question itself: no team screen lists
+  // questions addressed to the team as a whole, so this is how the team sees it.
+  const asker = user.name ?? user.email;
+  const preview = questionText.length > 80 ? `${questionText.slice(0, 80)}…` : questionText;
+  await notifyTeam({
+    projectId: project?.id,
+    type: NOTIFICATION_TYPES.clientQuestion,
+    message: `${project ? `${project.name}: ` : ""}${asker} asked — "${preview}"`,
+    link: project ? `/projects/${project.id}` : `/clients/${user.id}`,
+  });
+
+  revalidateFor(project?.id ?? null);
   return { id: q.id };
 }
 

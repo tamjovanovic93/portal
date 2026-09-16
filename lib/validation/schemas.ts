@@ -102,3 +102,11 @@ export const teamMemberSchema = z.object({
   availTz: trimmed.optional().default(""),
   availNote: trimmed.optional().default(""),
 });
+
+// ── Client portal ──
+// A client asking their team a question. projectId is optional: the composer
+// defaults to one of their projects, but a client with none can still ask.
+export const askAsClientSchema = z.object({
+  projectId: z.union([uuid, z.literal("")]).optional().transform((v) => (v ? v : null)),
+  questionText: requiredText("Question").max(2000, "Keep your question under 2000 characters."),
+});

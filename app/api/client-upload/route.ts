@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
   revalidatePath(`/projects/${projectId}/materials`);
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/dashboard");
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
 
   return NextResponse.json({ id: asset.id, filename: file.name, folder });
 }

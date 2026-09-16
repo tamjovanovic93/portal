@@ -38,9 +38,9 @@ export async function requestClientApprovalForItem(
     projectId,
     type: "copy_approval_requested",
     message: "Your team sent new copy for your approval.",
-    link: "/portal",
+    link: `/portal/projects/${projectId}`,
   });
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
   revalidatePath(`/projects/${projectId}`);
   return { ok: true };
 }
@@ -56,7 +56,7 @@ export async function respondToKeyMessage(
     const item = content.messaging?.key_messages?.find((m) => m.message_id === messageId);
     if (item) item.approved = decision;
   });
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
   revalidatePath(`/projects/${projectId}`);
 }
 
@@ -70,7 +70,7 @@ export async function respondToSlogan(
     const item = content.messaging?.slogans?.find((s) => s.slogan_id === sloganId);
     if (item) item.approved = decision;
   });
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
   revalidatePath(`/projects/${projectId}`);
 }
 
@@ -151,7 +151,7 @@ export async function respondToDeliverableTask(
     ]);
   }
 
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/dashboard");
   return { success: true };

@@ -18,7 +18,7 @@ export async function saveWireframeFeedback(
     where: { id: doc.id },
     data: { content: content as Prisma.InputJsonValue },
   });
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
 }
 
 export async function submitWireframeFeedback(
@@ -37,7 +37,7 @@ export async function submitWireframeFeedback(
     },
   });
 
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/projects/${projectId}/stage/${WIREFRAME_STAGE}`);
   revalidatePath("/dashboard");
@@ -84,7 +84,7 @@ export async function approveWireframesAndSubmit(
     }),
   ]);
 
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/projects/${projectId}/stage/${WIREFRAME_STAGE}`);
   revalidatePath("/dashboard");

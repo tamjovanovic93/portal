@@ -28,7 +28,7 @@ export async function saveDesignLink(projectId: string, label: string, url: stri
   // A new design after a submitted review reopens the review round.
   await resetFeedbackIfSubmitted(projectId, "design_feedback");
   revalidatePath(`/projects/${projectId}/stage/${DESIGN_STAGE}`);
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
 }
 
 export async function deleteDesignAsset(assetId: string, projectId: string) {
@@ -49,7 +49,7 @@ export async function saveDesignFeedback(projectId: string, content: Record<stri
     where: { id: doc.id },
     data: { content: content as Prisma.InputJsonValue },
   });
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
 }
 
 export async function submitDesignFeedback(projectId: string, content: Record<string, unknown>) {
@@ -65,7 +65,7 @@ export async function submitDesignFeedback(projectId: string, content: Record<st
     },
   });
 
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/projects/${projectId}/stage/${DESIGN_STAGE}`);
   revalidatePath("/dashboard");
@@ -131,7 +131,7 @@ export async function approveDesignAndSubmit(
     }),
   ]);
 
-  revalidatePath("/portal");
+  revalidatePath("/portal", "layout");
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/projects/${projectId}/stage/${DESIGN_STAGE}`);
   revalidatePath("/dashboard");

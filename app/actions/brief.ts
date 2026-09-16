@@ -292,7 +292,7 @@ export async function sendVerificationToClient(clientId: string, itemId: string)
   await notifyClient(clientId, {
     type: "verification_asked",
     message: "Your team asked you to verify a detail.",
-    link: "/portal",
+    link: "/portal/messages",
   });
   revalidate(clientId);
   return { ok: true };

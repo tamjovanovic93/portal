@@ -32,8 +32,40 @@ export const GATED_STAGES: number[] = Object.entries(STAGE_INFO)
 export const WIREFRAME_STAGE = 2; // Sketch
 export const DESIGN_STAGE = 3; // Make
 
+// Client-facing stage names. STAGE_LABELS above is internal shorthand ("Sketch",
+// "Make"); these are the words a client is shown. Same 1..STAGE_COUNT keys.
+export const CLIENT_STAGE_LABELS: Record<number, string> = {
+  1: "Strategy",
+  2: "Wireframes",
+  3: "Design",
+  4: "Build",
+  5: "Your review",
+  6: "Launch",
+  7: "Complete",
+};
+
+// Plain-language stage copy for the client portal — clients never see "Stage N"
+// or the internal labels above.
+export const CLIENT_STAGE_DESCRIPTION: Record<number, string> = {
+  1: "We're working on your strategy and scope.",
+  2: "We're putting together the first structural direction.",
+  3: "We're working on the full design.",
+  4: "We're building everything.",
+  5: "Your project is ready for your final review.",
+  6: "We're preparing to launch or deliver.",
+  7: "Your project is complete.",
+};
+
 export function stageLabel(n: number): string {
   return STAGE_LABELS[n] ?? `Stage ${n}`;
+}
+
+export function clientStageLabel(n: number): string {
+  return CLIENT_STAGE_LABELS[n] ?? STAGE_LABELS[n] ?? "In progress";
+}
+
+export function clientStageDescription(n: number): string {
+  return CLIENT_STAGE_DESCRIPTION[n] ?? "In progress.";
 }
 
 export function isGatedStage(n: number): boolean {
