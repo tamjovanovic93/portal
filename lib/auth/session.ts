@@ -19,20 +19,26 @@ export class UnauthorizedError extends Error {
 // The role comes from profiles.role — the only trusted source. Supabase
 // user_metadata is editable by the user and must never drive authorization.
 // React.cache dedupes this across layout, bell, page and actions in one request.
+//
+// getClaims() rather than getUser(): both prove the token is genuine, but
+// getUser() asks the Auth server every time (~100ms) while getClaims() verifies
+// the signature locally against the project's public key, cached after the
+// first call (~3ms). The identity it yields is just as trustworthy — it is a
+// verified signature, not a decoded payload. Everything that decides access
+// still comes from the database below.
 export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  const { data, error } = await supabase.auth.getClaims();
+  const userId = data?.claims?.sub;
+  if (error || !userId) return null;
 
   const profile = await prisma.profile.findUnique({
-    where: { id: user.id },
+    where: { id: userId },
     select: { email: true, role: true, active: true },
   });
   if (!profile || !profile.active) return null;
 
-  return { id: user.id, email: profile.email, role: profile.role };
+  return { id: userId, email: profile.email, role: profile.role };
 });
 
 export async function requireUser(): Promise<SessionUser> {
